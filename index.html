@@ -3673,7 +3673,7 @@ h1, h2, h3, h4, h5 {
           <div id="ct-global-stripe-wrap" style="display:none;margin-top:0.875rem;">
             <label class="form-label" for="ct-stripe-link-prof">Global Tournament Payment Link</label>
             <input type="url" id="ct-stripe-link-prof" class="form-input" placeholder="https://... (payment link URL)">
-            <div class="form-hint">Contact support@macronations.com to get your tournament's Stripe payment link.</div>
+            <div class="form-hint">Contact <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="31424441415e4345715c5052435e5f5045585e5f421f525e5c">[email&#160;protected]</a> to get your tournament's Stripe payment link.</div>
           </div>
         </div>
       </div>
@@ -3829,7 +3829,7 @@ h1, h2, h3, h4, h5 {
         <div class="form-field">
           <label class="form-label form-label--required" for="reg-email">University Email</label>
           <input type="email" id="reg-email" class="form-input" placeholder="jsmith@university.edu" autocomplete="email">
-          <div class="form-hint">Must be a .edu address (e.g. jsmith@university.edu)</div>
+          <div class="form-hint">Must be a .edu address (e.g. <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0b617866627f634b7e65627d6e7978627f72256e6f7e">[email&#160;protected]</a>)</div>
         </div>
         <div class="form-field">
           <label class="form-label form-label--required" for="reg-institution">Institution</label>
@@ -4011,7 +4011,7 @@ h1, h2, h3, h4, h5 {
         <li><a href="#" class="footer__link" onclick="openAuthModal('register');return false;">Professor Portal</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('tournaments');return false;">Class Tournaments</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('about');setTimeout(function(){var e=document.querySelector('[data-about-tab=\'curriculum\']');if(e){e.click();}},100);return false;">Curriculum Guide</a></li>
-        <li><a href="mailto:support@macronations.com" class="footer__link">Contact Us</a></li>
+        <li><a href="/cdn-cgi/l/email-protection#d4a7a1a4a4bba6a094b9b5b7a6bbbab5a0bdbbbaa7fab7bbb9" class="footer__link">Contact Us</a></li>
       </ul>
     </div>
 
@@ -4021,7 +4021,7 @@ h1, h2, h3, h4, h5 {
         <li><a href="#" class="footer__link" onclick="showPage('about');setTimeout(function(){var e=document.querySelector('[data-about-tab=\'legal\']');if(e){e.click();}},100);return false;">Tournament Rules</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('about');setTimeout(function(){var e=document.querySelector('[data-about-tab=\'legal\']');if(e){e.click();}},100);return false;">Privacy Policy</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('about');setTimeout(function(){var e=document.querySelector('[data-about-tab=\'legal\']');if(e){e.click();}},100);return false;">Terms of Service</a></li>
-        <li><a href="mailto:support@macronations.com" class="footer__link">support@macronations.com</a></li>
+        <li><a href="/cdn-cgi/l/email-protection#3c4f494c4c534e487c515d5f4e53525d485553524f125f5351" class="footer__link"><span class="__cf_email__" data-cfemail="05767075756a777145686466776a6b64716c6a6b762b666a68">[email&#160;protected]</span></a></li>
       </ul>
     </div>
 
@@ -4038,12 +4038,13 @@ h1, h2, h3, h4, h5 {
 </footer>
 
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ═══════════════════════════════════════════════════════════════════
 //  1. SUPABASE CONFIG & REST HELPERS
 // ═══════════════════════════════════════════════════════════════════
 var SUPA_URL  = 'https://rtaiivegcqqmdchpguzn.supabase.co';
 var SUPA_ANON = 'sb_publishable_KCPCMiKYQoEUgG45DVF5uA_ke-UxQKm';
+var SIM_EDGE_URL = SUPA_URL + '/functions/v1/simulate';
 
 // ⚠️ DEPENDENCY WARNING: _authToken() is called by every authenticated DB operation (sbGet x57, sbPatch x12, sbPost x12).
 // It MUST check currentSession before localStorage — reversing breaks password reset and profile upload.
@@ -6345,14 +6346,20 @@ async function doJoinTeam() {
   setLoading('btn-do-join-team', true, 'Joining…');
 
   try {
-    // Block joining if tournament has already started
+    // Warn if tournament underway but don't hard block — captain can still add members
     if (tourn && Number(tourn.current_round) > 0) {
-      _setFormErr('join-team-error','This tournament is already underway (Round ' + tourn.current_round + '). New members cannot join after Round 1 has begun.');
-      setLoading('btn-do-join-team',false,'Join This Team');
-      return;
+      // Allow join but note they will inherit the current economy state
+      var proceed = confirm(
+        'Round ' + tourn.current_round + ' has already run in this tournament. ' +
+        'You can still join, but your team\'s economy is already in progress. Continue?'
+      );
+      if (!proceed) {
+        setLoading('btn-do-join-team',false,'Join This Team');
+        return;
+      }
     }
 
-    // Email domain check for class/university tournaments
+    // Email domain check — only enforce for .edu class tournaments
     if (tourn && (tourn.tier === 'class' || tourn.tier === 'university')) {
       var jStudentDomain = (currentUser.email || '').split('@')[1] || '';
       var jCreatorEmail  = '';
@@ -6361,7 +6368,9 @@ async function doJoinTeam() {
         if (jCreatorRows && jCreatorRows.length) { jCreatorEmail = jCreatorRows[0].email || ''; }
       } catch(jde) {}
       var jCreatorDomain = jCreatorEmail.split('@')[1] || '';
-      if (jCreatorDomain && jStudentDomain && jStudentDomain.toLowerCase() !== jCreatorDomain.toLowerCase()) {
+      // Only enforce domain match when professor is at a .edu institution
+      if (jCreatorDomain && jCreatorDomain.toLowerCase().endsWith('.edu') &&
+          jStudentDomain && jStudentDomain.toLowerCase() !== jCreatorDomain.toLowerCase()) {
         _setFormErr('join-team-error',
           'This tournament is restricted to ' + jCreatorDomain + ' email addresses. ' +
           'Your account uses ' + jStudentDomain + '. Please contact your professor.'
@@ -6371,18 +6380,23 @@ async function doJoinTeam() {
       }
     }
 
-    // One-team-per-season check
-    var seasonYear = (tourn && tourn.season_year) ? tourn.season_year : null;
-    if (seasonYear) {
-      var conflict = await _checkSeasonConflict(seasonYear);
-      if (conflict && conflict.id !== team.id) {
-        _setFormErr('join-team-error',
-          'You are already on team "' + ((conflict && conflict.name) || 'another team') +
-          '" in Season ' + seasonYear + '. Each player can only be on one team per season.'
-        );
-        setLoading('btn-do-join-team',false,'Join This Team');
-        return;
-      }
+    // One-team-per-tournament check (not per-season — students can be in multiple class tournaments)
+    var existingInTourn = await sbGet('teams',
+      'members=cs.{' + currentUser.id + '}&tournament_id=eq.' + team.tournament_id + '&limit=1'
+    );
+    if (!existingInTourn) {
+      // Also check if they're the captain of another team in this tournament
+      existingInTourn = await sbGet('teams',
+        'captain_id=eq.' + currentUser.id + '&tournament_id=eq.' + team.tournament_id + '&limit=1'
+      );
+    }
+    if (existingInTourn && existingInTourn.length && existingInTourn[0].id !== team.id) {
+      _setFormErr('join-team-error',
+        'You are already on team "' + (existingInTourn[0].name || 'another team') +
+        '" in this tournament. You cannot join two teams in the same tournament.'
+      );
+      setLoading('btn-do-join-team',false,'Join This Team');
+      return;
     }
 
     // Re-check member count (race condition guard)
@@ -8574,9 +8588,24 @@ async function runSimulation(tournId) {
         }
       }
 
-      // Run simulation
-      var newState = simRound(state, policy, activeCrises);
-      var scores   = computeScores(newState);
+      // ── Call simulation Edge Function (keeps engine server-side) ──
+      var simRes = await fetch(SIM_EDGE_URL, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + _authToken(),
+          'apikey':        SUPA_ANON
+        },
+        body: JSON.stringify({ state: state, policy: policy, crises: activeCrises })
+      });
+      if (!simRes.ok) {
+        var simErr = await simRes.text();
+        log('  Simulation error: ' + simErr, 'err');
+        continue;
+      }
+      var simData  = await simRes.json();
+      var newState = simData.newState;
+      var scores   = simData.scores;
       log('  GDP: ' + newState.gdp_growth + '% | Inflation: ' + newState.inflation + '% | Score: ' + scores.total + '/1000');
 
       // Resolve crisis
@@ -9329,28 +9358,119 @@ function renderAdminAnalytics(el) {
       '<div class="card__header"><span class="card__title">Data Exports</span></div>' +
       '<div class="card__body">' +
         '<div class="admin-action-row">' +
-          '<button class="btn btn--ghost" onclick="exportCSV()">📥 Export Full Dataset (CSV)</button>' +
+          '<button class="btn btn--ghost" onclick="exportCSV()">📥 Export Grades (CSV)</button>' +
           '<button class="btn btn--ghost" onclick="exportJSON()">📦 Export JSON Snapshot</button>' +
         '</div>' +
-        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">CSV includes: all tournaments, teams, users, and payment records. JSON includes the same data plus economy snapshots.</p>' +
+        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">Grades CSV includes: team scores across all 5 pillars with rankings, plus every round\'s policy decisions and student rationale — ready for your gradebook. JSON includes full economy snapshots.</p>' +
       '</div>' +
     '</div>';
 }
 
-function exportCSV() {
-  var rows = [['Type','ID','Name','Status','Season','Round','EntryFee','MaxTeams','CreatedAt']];
-  for (var i = 0; i < _adminTournaments.length; i++) {
-    var t = _adminTournaments[i];
-    rows.push(['tournament', t.id, t.name || '', t.status || '', t.season_year || '', t.current_round || 0, t.entry_fee || 0, t.max_teams || '', t.created_at || '']);
+async function exportCSV() {
+  // Fetch decisions and economies for all professor's tournaments for grading export
+  var tids = _adminTournaments.map(function(t){ return t.id; });
+  var decisions = [], economies = [];
+  if (tids.length) {
+    try {
+      decisions = await sbGet('decisions',
+        'tournament_id=in.(' + tids.join(',') + ')&order=submitted_at.asc&limit=2000') || [];
+      economies = await sbGet('economies',
+        'tournament_id=in.(' + tids.join(',') + ')&select=team_id,tournament_id,current&limit=500') || [];
+    } catch(e) {}
   }
-  rows.push(['---TEAMS---','','','','','','','','']);
-  rows.push(['Type','ID','Name','TournamentID','InviteCode','Members','FeePaid','CaptainID','CreatedAt']);
-  for (var j = 0; j < _adminTeams.length; j++) {
-    var tm = _adminTeams[j];
-    rows.push(['team', tm.id, tm.name || '', tm.tournament_id || '', tm.invite_code || '', (tm.members ? tm.members.length : 0), tm.fee_paid ? 'yes' : 'no', tm.captain_id || '', tm.created_at || '']);
+
+  // Build score map
+  var scoreMap = {};
+  for (var sei = 0; sei < economies.length; sei++) {
+    var er = economies[sei];
+    if (er.current) {
+      var st = typeof er.current === 'string' ? JSON.parse(er.current) : er.current;
+      scoreMap[er.team_id] = computeScores(st);
+    }
   }
-  var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
-  _downloadFile('macronations-export-' + new Date().toISOString().slice(0,10) + '.csv', csv, 'text/csv');
+
+  // Team name map
+  var teamMap = {};
+  for (var tmi = 0; tmi < _adminTeams.length; tmi++) {
+    teamMap[_adminTeams[tmi].id] = _adminTeams[tmi];
+  }
+  var tournMap = {};
+  for (var tni = 0; tni < _adminTournaments.length; tni++) {
+    tournMap[_adminTournaments[tni].id] = _adminTournaments[tni];
+  }
+
+  // Sheet 1: Grades summary (one row per team)
+  var rows = [['GRADES SUMMARY','','','','','','','','','','','','']];
+  rows.push(['Team','Tournament','Captain ID','Members','Fee Paid','Score (Total/1000)','GDP (200)','Stability (200)','Equality (200)','Sustainability (200)','Innovation (200)','Rank','Final Round']);
+  var teamScores = [];
+  for (var tsi = 0; tsi < _adminTeams.length; tsi++) {
+    var tm = _adminTeams[tsi];
+    var sc = scoreMap[tm.id] || { total:0, gdp:0, stability:0, equality:0, sustainability:0, innovation:0 };
+    var tourn = tournMap[tm.tournament_id] || {};
+    teamScores.push({ tm: tm, sc: sc, tournName: tourn.name || '' });
+  }
+  // Sort by tournament then score
+  teamScores.sort(function(a,b){
+    if (a.tournName < b.tournName) return -1;
+    if (a.tournName > b.tournName) return 1;
+    return b.sc.total - a.sc.total;
+  });
+  var rankCounter = {}, lastTourn = '';
+  for (var rsi = 0; rsi < teamScores.length; rsi++) {
+    var entry = teamScores[rsi];
+    if (entry.tournName !== lastTourn) { rankCounter[entry.tournName] = 1; lastTourn = entry.tournName; }
+    else { rankCounter[entry.tournName]++; }
+    var tourn2 = tournMap[entry.tm.tournament_id] || {};
+    rows.push([
+      entry.tm.name || '',
+      entry.tournName,
+      entry.tm.captain_id || '',
+      entry.tm.members ? entry.tm.members.length : 0,
+      entry.tm.fee_paid ? 'yes' : 'no',
+      entry.sc.total,
+      entry.sc.gdp,
+      entry.sc.stability,
+      entry.sc.equality,
+      entry.sc.sustainability,
+      entry.sc.innovation,
+      rankCounter[entry.tournName],
+      tourn2.current_round || 0
+    ]);
+  }
+
+  // Sheet 2: Decisions with rationale (one row per round per team)
+  rows.push(['','','','','','','','','','','','','']);
+  rows.push(['ROUND-BY-ROUND DECISIONS & RATIONALE','','','','','','','','','','','','']);
+  rows.push(['Team','Tournament','Round','Interest Rate','Gov Spending','Tax Rate','Trade Openness','R&D','Green Energy','Welfare','Regulation','Foreign Aid','Infrastructure','Rationale','Submitted At','Final?']);
+  for (var di = 0; di < decisions.length; di++) {
+    var dec = decisions[di];
+    var pol = dec.policy || {};
+    var dtm = teamMap[dec.team_id] || {};
+    var dtn = tournMap[dec.tournament_id] || {};
+    rows.push([
+      dtm.name || dec.team_id || '',
+      dtn.name || '',
+      dec.round || '',
+      pol.interest_rate_target !== undefined ? pol.interest_rate_target : '',
+      pol.gov_spending_pct     !== undefined ? pol.gov_spending_pct     : '',
+      pol.tax_rate             !== undefined ? pol.tax_rate             : '',
+      pol.trade_openness       !== undefined ? pol.trade_openness       : '',
+      pol.rd_investment        !== undefined ? pol.rd_investment        : '',
+      pol.green_energy         !== undefined ? pol.green_energy         : '',
+      pol.welfare_spending     !== undefined ? pol.welfare_spending     : '',
+      pol.regulation           !== undefined ? pol.regulation           : '',
+      pol.foreign_aid          !== undefined ? pol.foreign_aid          : '',
+      pol.infrastructure       !== undefined ? pol.infrastructure       : '',
+      pol.rationale || '',
+      dec.submitted_at || '',
+      dec.is_final ? 'yes' : 'draft'
+    ]);
+  }
+
+  var csv = rows.map(function(r){
+    return r.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(',');
+  }).join('\n');
+  _downloadFile('macronations-grades-' + new Date().toISOString().slice(0,10) + '.csv', csv, 'text/csv');
 }
 
 function exportJSON() {
@@ -10248,6 +10368,49 @@ function _aboutCurriculum() {
   return '<div style="max-width:860px;margin:0 auto;">' +
     '<div style="margin-bottom:2rem;">' +
       '<p style="font-size:0.9375rem;color:var(--text-500);line-height:1.8;">This guide explains the macroeconomic principles behind each policy lever in MacroNations. Use it as a refresher when deciding how to set your levers each round.</p>' +
+    '</div>' +
+
+    // GRADING GUIDE SECTION
+    '<div class="card" style="margin-bottom:2rem;border-left:3px solid var(--blue);border-radius:0 var(--radius-lg) var(--radius-lg) 0;">' +
+      '<div class="card__header">' +
+        '<span class="card__title">📋 Professor Grading Guide</span>' +
+        '<span class="badge badge--blue badge--no-dot">For professors</span>' +
+      '</div>' +
+      '<div class="card__body" style="font-size:0.9375rem;line-height:1.8;color:var(--text-700);">' +
+
+        '<p style="margin-bottom:1rem;">MacroNations is designed to work as a graded assignment with zero extra class time. Here is how to use it across different course formats.</p>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">What the platform captures automatically</div>' +
+        '<p style="margin-bottom:1rem;">Every student team\'s final score (0–1000) across five pillars, their policy decisions for every round (all 10 lever values), their written rationale for each round\'s decisions, the round timestamp and whether they submitted before the deadline, and the full leaderboard ranking within your class. All of this is exportable from Admin → Analytics → Export Grades (CSV) — one file, ready for your gradebook.</p>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Suggested grading approaches</div>' +
+
+        '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:0.875rem;">' +
+          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 1 — Outcome-based (simplest)</div>' +
+          '<p>Grade entirely on final score. Assign letter grades by score band — for example A = 700+, B = 550–699, C = 400–549, D = 250–399. This requires no manual review and takes five minutes to enter in your gradebook after the tournament ends. Works well for extra credit or short assignments.</p>' +
+        '</div>' +
+
+        '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:0.875rem;">' +
+          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 2 — Process + outcome (recommended)</div>' +
+          '<p style="margin-bottom:0.5rem;">Split the grade 50/50: half on final score, half on the quality of written rationale submitted each round. Students write up to 500 characters explaining why they set their levers the way they did. The Export Grades CSV includes every rationale in a dedicated column — open it in Excel and read across each team\'s reasoning round by round.</p>' +
+          '<p>Rubric for rationale: <strong>Full marks</strong> — references at least one economic concept (e.g. "We held rates low to stimulate demand given our output gap"), explains the trade-off acknowledged, and is internally consistent with the levers chosen. <strong>Partial marks</strong> — explains the decision without economic framing. <strong>Minimal marks</strong> — empty or purely descriptive ("we raised spending").</p>' +
+        '</div>' +
+
+        '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">' +
+          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 3 — Full analytical assessment</div>' +
+          '<p>Treat the tournament as a policy memo assignment. After the tournament ends, ask each team to submit a 2-page reflection covering: what strategy they chose, which trade-offs they faced, how their economy responded, what they would do differently, and what real-world policy parallel their approach resembles. Grade the memo on analytical depth. The tournament score and round-by-round decisions in the CSV give you the factual record to verify their claims.</p>' +
+        '</div>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Pillar scores as a diagnostic tool</div>' +
+        '<p style="margin-bottom:1rem;">The five pillar scores in the CSV (GDP, Stability, Equality, Sustainability, Innovation) tell you more than the total. A team with a high GDP score and a low Stability score chose aggressive stimulus — they grew fast but built up debt or inflation. A team with high Equality but low Innovation invested in welfare but neglected R&D. These patterns are the start of a productive debrief conversation.</p>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Preventing gaming and academic dishonesty</div>' +
+        '<p style="margin-bottom:1rem;">The AI Advisor uses the Socratic method — it never recommends specific lever values, only asks questions. Students cannot copy "the right answer" from the advisor. The random crisis events (rounds 3, 6, 9) mean identical lever choices produce different outcomes across teams, making answer-sharing unreliable. The written rationale is the primary AI-resistant element — a student who can articulate why a 2% interest rate with 40% government spending makes sense in their economic context has demonstrated real understanding.</p>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Connecting to your syllabus</div>' +
+        '<p>The five scoring pillars map directly to standard macroeconomics topics: GDP Performance → aggregate demand and supply; Stability → monetary policy and fiscal sustainability; Equality → redistribution and labour markets; Sustainability → long-run growth theory; Innovation → endogenous growth and human capital. Assign the tournament at the end of the relevant unit so students are applying concepts they have just learned, not guessing.</p>' +
+
+      '</div>' +
     '</div>' +
 
     concept('1','🏦','Monetary Policy & Interest Rates','Taylor Rule · Monetary transmission · UIP',
@@ -11479,18 +11642,4 @@ function _renderDashProfileTab() {
             '<div style="font-size:0.9375rem;color:var(--text-900);font-weight:500;">' + esc(currentUser.name || '—') + '</div></div>' +
           '<div class="form-field"><label class="form-label">Email</label>' +
             '<div style="font-size:0.9375rem;color:var(--text-700);">' + esc(currentUser.email || '—') + '</div></div>' +
-          '<div class="form-field"><label class="form-label">Institution</label>' +
-            '<div style="font-size:0.9375rem;color:var(--text-700);">' + esc(currentUser.institution || '—') + '</div></div>' +
-          '<div class="form-field"><label class="form-label">Role</label>' +
-            '<div style="font-size:0.9375rem;color:var(--text-700);text-transform:capitalize;">' + esc(currentUser.role || 'student') + '</div></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-
-  renderProfileUploader(document.getElementById('profile-uploader-mount'));
-}
-
-
-</script>
-</body>
-</html>
+          '<div class="form-field"><label class="f
