@@ -5987,6 +5987,13 @@ PAGE_LOADERS['tournaments'] = renderTournaments;
 function openTeamModal(tournamentId) {
   if (!currentUser) { openAuthModal('login'); return; }
 
+  // If user is already in a team for this tournament, go straight to dashboard
+  if (_userTeams[tournamentId]) {
+    flash('You\'re already on team "' + esc((_userTeams[tournamentId].name) || 'your team') + '". Going to your dashboard.', 'info');
+    showPage('dashboard');
+    return;
+  }
+
   _teamModalTournId = tournamentId;
   _lookedUpTeam     = null;
 
@@ -6420,10 +6427,12 @@ async function doJoinTeam() {
     // Patch team members array
     await sbPatch('teams', 'id=eq.' + team.id, { members: members });
 
-    // Update app state
+    // Update app state — store the updated team (with current user in members)
+    var updatedTeam = JSON.parse(JSON.stringify(freshTeam));
+    updatedTeam.members = members;
     currentTeamId       = team.id;
     currentTournamentId = team.tournament_id;
-    _userTeams[team.tournament_id] = freshTeam;
+    _userTeams[team.tournament_id] = updatedTeam;
 
     closeModal('modal-team');
     flash('You joined team "' + esc(freshTeam.name || 'Team') + '"!', 'success');
