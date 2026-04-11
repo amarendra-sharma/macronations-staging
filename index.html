@@ -7855,18 +7855,40 @@ async function openManageTeamsModal(tournId) {
     teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
   } catch(e) { flash('Could not load teams.', 'error'); return; }
 
+  // Build destination options (all other tournaments, admin-visible)
+  var destOptions = '<option value="">— Pick destination —</option>';
+  for (var di = 0; di < _adminTournaments.length; di++) {
+    var dt = _adminTournaments[di];
+    if (dt.id === tournId) { continue; }
+    destOptions += '<option value="' + esc(dt.id) + '">' +
+      esc(dt.name || 'Unnamed') + ' (R' + (dt.current_round || 0) + '/' + (dt.rounds_total || '?') + ')</option>';
+  }
+
   var rows = '';
   for (var i = 0; i < teams.length; i++) {
     var tm = teams[i];
     rows +=
-      '<tr>' +
+      '<tr id="tm-row-' + tm.id + '">' +
       '<td>' + esc(tm.name || '') + '</td>' +
       '<td class="text-mono">' + esc(tm.invite_code || '') + '</td>' +
       '<td>' + (tm.fee_paid ? '<span class="badge badge--green badge--no-dot">Paid</span>' : '<span class="badge badge--subtle badge--no-dot">Unpaid</span>') + '</td>' +
       '<td>' +
         '<button class="btn btn--ghost btn--sm" onclick="doMarkPaid(\'' + tm.id + '\')">Mark Paid</button> ' +
+        '<button class="btn btn--ghost btn--sm" onclick="toggleTransferRow(\'' + tm.id + '\')">⇄ Transfer</button> ' +
         '<button class="btn btn--danger btn--sm" onclick="doRemoveTeam(\'' + tm.id + '\',\'' + esc(tm.name||'') + '\')">Remove</button>' +
       '</td>' +
+      '</tr>' +
+      '<tr id="tm-transfer-' + tm.id + '" style="display:none;background:var(--bg-subtle);">' +
+        '<td colspan="4" style="padding:0.75rem 1rem;">' +
+          '<div style="display:flex;gap:0.625rem;align-items:center;flex-wrap:wrap;">' +
+            '<span style="font-size:0.875rem;color:var(--text-500);">Move <strong>' + esc(tm.name || 'team') + '</strong> to:</span>' +
+            '<div class="form-select-wrap" style="min-width:220px;">' +
+              '<select id="dest-' + tm.id + '" class="form-select" style="font-size:0.875rem;">' + destOptions + '</select>' +
+            '</div>' +
+            '<button class="btn btn--primary btn--sm" onclick="doTransferTeam(\'' + tm.id + '\',\'' + tournId + '\')">Confirm Transfer</button>' +
+            '<button class="btn btn--ghost btn--sm" onclick="toggleTransferRow(\'' + tm.id + '\')">Cancel</button>' +
+          '</div>' +
+        '</td>' +
       '</tr>';
   }
 
@@ -7884,7 +7906,7 @@ async function openManageTeamsModal(tournId) {
     '<div class="modal modal--wide">' +
       '<div class="modal__header">' +
         '<div><h2 class="modal__title">Manage Teams — ' + esc(t.name || '') + '</h2>' +
-          '<p class="modal__subtitle">Remove teams for misconduct or mark fees as paid.</p></div>' +
+          '<p class="modal__subtitle">Transfer, remove, or update payment for teams.</p></div>' +
         '<button class="modal__close" onclick="closeModal(\'modal-manage-teams\')">✕</button>' +
       '</div>' +
       '<div class="modal__body">' +
@@ -7900,6 +7922,65 @@ async function openManageTeamsModal(tournId) {
       '</div>' +
     '</div>';
   openModal('modal-manage-teams');
+}
+
+function toggleTransferRow(teamId) {
+  var row = document.getElementById('tm-transfer-' + teamId);
+  if (!row) { return; }
+  row.style.display = (row.style.display === 'none') ? 'table-row' : 'none';
+}
+
+async function doTransferTeam(teamId, fromTournId) {
+  var sel = document.getElementById('dest-' + teamId);
+  if (!sel || !sel.value) { flash('Please select a destination tournament.', 'error'); return; }
+  var destId   = sel.value;
+  var destTourn = _getTournById(destId);
+  var srcTourn  = _getTournById(fromTournId);
+  var team      = null;
+  for (var i = 0; i < _adminTeams.length; i++) {
+    if (_adminTeams[i].id === teamId) { team = _adminTeams[i]; break; }
+  }
+  var teamName  = (team && team.name) ? team.name : 'Team';
+  var destName  = (destTourn && destTourn.name) ? destTourn.name : destId;
+  var srcRound  = (srcTourn && srcTourn.current_round)  ? srcTourn.current_round  : 0;
+  var destRound = (destTourn && destTourn.current_round) ? destTourn.current_round : 0;
+
+  var warning = 'Transfer "' + teamName + '" to "' + destName + '"?\n\n';
+  if (srcRound !== destRound) {
+    warning += '⚠️ Round mismatch: source is Round ' + srcRound + ', destination is Round ' + destRound + '.\n' +
+               'Decisions will be re-assigned as-is. Economy state carries over unchanged.\n\n';
+  }
+  warning += 'This will move the team\'s economy, decisions, and crises to the destination tournament.';
+  if (!confirm(warning)) { return; }
+
+  try {
+    // 1. Move team row
+    await sbPatch('teams', 'id=eq.' + teamId, { tournament_id: destId });
+
+    // 2. Move economy
+    await sbPatch('economies', 'team_id=eq.' + teamId + '&tournament_id=eq.' + fromTournId,
+      { tournament_id: destId });
+
+    // 3. Move decisions
+    await sbPatch('decisions', 'team_id=eq.' + teamId + '&tournament_id=eq.' + fromTournId,
+      { tournament_id: destId });
+
+    // 4. Move crises
+    await sbPatch('crises_active', 'team_id=eq.' + teamId + '&tournament_id=eq.' + fromTournId,
+      { tournament_id: destId });
+
+    // 5. Update in-memory admin teams
+    for (var ti = 0; ti < _adminTeams.length; ti++) {
+      if (_adminTeams[ti].id === teamId) { _adminTeams[ti].tournament_id = destId; break; }
+    }
+
+    flash('"' + teamName + '" transferred to "' + destName + '" successfully.', 'success');
+    closeModal('modal-manage-teams');
+    renderAdminTournaments(document.getElementById('admin-panel-content'));
+
+  } catch(e) {
+    flash('Transfer failed: ' + ((e && e.message) || 'Unknown error'), 'error');
+  }
 }
 
 async function doRemoveTeam(teamId, teamName) {
