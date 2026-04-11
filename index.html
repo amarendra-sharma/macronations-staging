@@ -6346,20 +6346,7 @@ async function doJoinTeam() {
   setLoading('btn-do-join-team', true, 'Joining…');
 
   try {
-    // Warn if tournament underway but don't hard block — captain can still add members
-    if (tourn && Number(tourn.current_round) > 0) {
-      // Allow join but note they will inherit the current economy state
-      var proceed = confirm(
-        'Round ' + tourn.current_round + ' has already run in this tournament. ' +
-        'You can still join, but your team\'s economy is already in progress. Continue?'
-      );
-      if (!proceed) {
-        setLoading('btn-do-join-team',false,'Join This Team');
-        return;
-      }
-    }
-
-    // Email domain check — only enforce for .edu class tournaments
+    // Email domain check for class/university tournaments
     if (tourn && (tourn.tier === 'class' || tourn.tier === 'university')) {
       var jStudentDomain = (currentUser.email || '').split('@')[1] || '';
       var jCreatorEmail  = '';
@@ -6368,9 +6355,7 @@ async function doJoinTeam() {
         if (jCreatorRows && jCreatorRows.length) { jCreatorEmail = jCreatorRows[0].email || ''; }
       } catch(jde) {}
       var jCreatorDomain = jCreatorEmail.split('@')[1] || '';
-      // Only enforce domain match when professor is at a .edu institution
-      if (jCreatorDomain && jCreatorDomain.toLowerCase().endsWith('.edu') &&
-          jStudentDomain && jStudentDomain.toLowerCase() !== jCreatorDomain.toLowerCase()) {
+      if (jCreatorDomain && jStudentDomain && jStudentDomain.toLowerCase() !== jCreatorDomain.toLowerCase()) {
         _setFormErr('join-team-error',
           'This tournament is restricted to ' + jCreatorDomain + ' email addresses. ' +
           'Your account uses ' + jStudentDomain + '. Please contact your professor.'
@@ -6380,23 +6365,18 @@ async function doJoinTeam() {
       }
     }
 
-    // One-team-per-tournament check (not per-season — students can be in multiple class tournaments)
-    var existingInTourn = await sbGet('teams',
-      'members=cs.{' + currentUser.id + '}&tournament_id=eq.' + team.tournament_id + '&limit=1'
-    );
-    if (!existingInTourn) {
-      // Also check if they're the captain of another team in this tournament
-      existingInTourn = await sbGet('teams',
-        'captain_id=eq.' + currentUser.id + '&tournament_id=eq.' + team.tournament_id + '&limit=1'
-      );
-    }
-    if (existingInTourn && existingInTourn.length && existingInTourn[0].id !== team.id) {
-      _setFormErr('join-team-error',
-        'You are already on team "' + (existingInTourn[0].name || 'another team') +
-        '" in this tournament. You cannot join two teams in the same tournament.'
-      );
-      setLoading('btn-do-join-team',false,'Join This Team');
-      return;
+    // One-team-per-season check
+    var seasonYear = (tourn && tourn.season_year) ? tourn.season_year : null;
+    if (seasonYear) {
+      var conflict = await _checkSeasonConflict(seasonYear);
+      if (conflict && conflict.id !== team.id) {
+        _setFormErr('join-team-error',
+          'You are already on team "' + ((conflict && conflict.name) || 'another team') +
+          '" in Season ' + seasonYear + '. Each player can only be on one team per season.'
+        );
+        setLoading('btn-do-join-team',false,'Join This Team');
+        return;
+      }
     }
 
     // Re-check member count (race condition guard)
@@ -11642,4 +11622,19 @@ function _renderDashProfileTab() {
             '<div style="font-size:0.9375rem;color:var(--text-900);font-weight:500;">' + esc(currentUser.name || '—') + '</div></div>' +
           '<div class="form-field"><label class="form-label">Email</label>' +
             '<div style="font-size:0.9375rem;color:var(--text-700);">' + esc(currentUser.email || '—') + '</div></div>' +
-          '<div class="form-field"><label class="f
+          '<div class="form-field"><label class="form-label">Country</label>' +
+            '<div style="font-size:0.9375rem;color:var(--text-700);">' + esc(currentUser.country || '\u2014') + '</div></div>' +
+          '<div class="form-field"><label class="form-label">Institution</label>' +
+            '<div style="font-size:0.9375rem;color:var(--text-700);">' + esc(currentUser.institution || '\u2014') + '</div></div>' +
+          '<div class="form-field"><label class="form-label">Role</label>' +
+            '<div style="font-size:0.9375rem;color:var(--text-700);text-transform:capitalize;">' + esc(currentUser.role || 'student') + '</div></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  renderProfileUploader(document.getElementById('profile-uploader-mount'));
+}
+
+</script>
+</body>
+</html>
