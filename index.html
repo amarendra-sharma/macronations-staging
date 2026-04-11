@@ -4863,11 +4863,21 @@ async function afterLogin() {
     dbSetupDefaults();
   }
   try {
+    // Check captained teams first
     var captained = await sbGet('teams','captain_id=eq.'+currentUser.id+'&limit=1');
     if (captained && captained.length) {
       currentTeamId       = captained[0].id;
       currentTournamentId = captained[0].tournament_id;
+    } else {
+      // Also check teams where user is a member (joined via invite code)
+      var membered = await sbGet('teams','members=cs.{'+currentUser.id+'}&limit=1');
+      if (membered && membered.length) {
+        currentTeamId       = membered[0].id;
+        currentTournamentId = membered[0].tournament_id;
+      }
     }
+    // Pre-load all user teams so tournament cards show joined state immediately
+    await _loadUserTeams();
   } catch(e) {}
   showPage('dashboard');
 }
@@ -5118,6 +5128,8 @@ async function dbSetupDefaults() {
           currentUser = rows[0];
           _saveSession(sess, currentUser);
           _renderLoggedInNav();
+          // Pre-load team membership so tournament cards show joined state immediately
+          await _loadUserTeams();
         } else { _clearSession(); currentSession = null; }
       } catch(e) {
         // JWT expired or network error — clear stale session so user can sign in fresh
@@ -5899,8 +5911,7 @@ function _buildTournamentCard(t) {
   // User's team in this tournament
   var userTeam    = _userTeams[t.id];
   var alreadyIn   = !!userTeam;
-  var tourRound   = Number(t.current_round) || 0;
-  var canJoin     = (status === 'registration' || (status === 'active' && tourRound === 0)) && currentUser && !alreadyIn;
+  var canJoin     = (status === 'registration' || status === 'active') && currentUser && !alreadyIn;
 
   var footerAction = '';
   if (alreadyIn) {
