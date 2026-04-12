@@ -7884,12 +7884,42 @@ async function openManageTeamsModal(tournId) {
       esc(dt.name || 'Unnamed') + ' (R' + (dt.current_round || 0) + '/' + (dt.rounds_total || '?') + ')</option>';
   }
 
+  // Build team options for assign-student dropdown
+  var teamOptions = '<option value="">— Select team —</option>';
+  for (var ti2 = 0; ti2 < teams.length; ti2++) {
+    var tmo = teams[ti2];
+    var mCount = (tmo.members && tmo.members.length) ? tmo.members.length : 0;
+    teamOptions += '<option value="' + esc(tmo.id) + '" ' + (mCount >= 5 ? 'disabled' : '') + '>' +
+      esc(tmo.name || 'Unnamed') + ' (' + mCount + '/5 members)' + (mCount >= 5 ? ' — Full' : '') + '</option>';
+  }
+
   var rows = '';
   for (var i = 0; i < teams.length; i++) {
     var tm = teams[i];
+    // Show current members
+    var memberList = '';
+    if (tm.members && tm.members.length) {
+      for (var mi = 0; mi < tm.members.length; mi++) {
+        var uid = tm.members[mi];
+        var uObj = null;
+        if (_adminUsers) {
+          for (var ui = 0; ui < _adminUsers.length; ui++) {
+            if (_adminUsers[ui].id === uid) { uObj = _adminUsers[ui]; break; }
+          }
+        }
+        memberList += '<span class="badge badge--subtle badge--no-dot" style="margin:1px 2px;font-size:0.7rem;">' +
+          esc(uObj ? (uObj.name || uObj.email || uid) : uid) + '</span>';
+      }
+    } else {
+      memberList = '<span class="text-muted" style="font-size:0.8125rem;">No members yet</span>';
+    }
+
     rows +=
       '<tr id="tm-row-' + tm.id + '">' +
-      '<td>' + esc(tm.name || '') + '</td>' +
+      '<td>' +
+        '<div style="font-weight:600;">' + esc(tm.name || '') + '</div>' +
+        '<div style="margin-top:4px;">' + memberList + '</div>' +
+      '</td>' +
       '<td class="text-mono">' + esc(tm.invite_code || '') + '</td>' +
       '<td>' + (tm.fee_paid ? '<span class="badge badge--green badge--no-dot">Paid</span>' : '<span class="badge badge--subtle badge--no-dot">Unpaid</span>') + '</td>' +
       '<td>' +
@@ -7926,13 +7956,37 @@ async function openManageTeamsModal(tournId) {
     '<div class="modal modal--wide">' +
       '<div class="modal__header">' +
         '<div><h2 class="modal__title">Manage Teams — ' + esc(t.name || '') + '</h2>' +
-          '<p class="modal__subtitle">Transfer, remove, or update payment for teams.</p></div>' +
+          '<p class="modal__subtitle">Assign students, transfer, remove, or update payment.</p></div>' +
         '<button class="modal__close" onclick="closeModal(\'modal-manage-teams\')">✕</button>' +
       '</div>' +
       '<div class="modal__body">' +
+
+        // ── ASSIGN STUDENT SECTION ──
+        '<div class="card" style="margin-bottom:1.25rem;border:1.5px solid var(--blue-light);">' +
+          '<div class="card__header" style="background:var(--blue-light);">' +
+            '<span class="card__title" style="color:var(--blue);">➕ Assign Registered Student to Team</span>' +
+          '</div>' +
+          '<div class="card__body">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:0.75rem;align-items:end;">' +
+              '<div class="form-field" style="margin:0;">' +
+                '<label class="form-label">Search student (name or email)</label>' +
+                '<input type="text" id="assign-student-search" class="form-input" placeholder="e.g. john or john@university.edu" oninput="doSearchStudentForAssign(\'' + tournId + '\')">' +
+              '</div>' +
+              '<div class="form-field" style="margin:0;">' +
+                '<label class="form-label">Assign to team</label>' +
+                '<div class="form-select-wrap"><select id="assign-team-select" class="form-select">' + teamOptions + '</select></div>' +
+              '</div>' +
+              '<button class="btn btn--primary" id="btn-assign-student" onclick="doAssignStudentToTeam(\'' + tournId + '\')" disabled>Assign</button>' +
+            '</div>' +
+            '<div id="assign-search-results" style="margin-top:0.75rem;"></div>' +
+            '<div id="assign-student-error" class="form-error" style="margin-top:0.5rem;"></div>' +
+          '</div>' +
+        '</div>' +
+
+        // ── TEAMS TABLE ──
         '<div class="table-wrap" style="border:none;box-shadow:none;">' +
           '<table class="table">' +
-            '<thead><tr><th>Team</th><th>Code</th><th>Payment</th><th>Actions</th></tr></thead>' +
+            '<thead><tr><th>Team &amp; Members</th><th>Code</th><th>Payment</th><th>Actions</th></tr></thead>' +
             '<tbody>' + (rows || '<tr><td colspan="4" style="text-align:center;color:var(--text-400);padding:1.5rem;">No teams yet.</td></tr>') + '</tbody>' +
           '</table>' +
         '</div>' +
@@ -7942,12 +7996,148 @@ async function openManageTeamsModal(tournId) {
       '</div>' +
     '</div>';
   openModal('modal-manage-teams');
+
+  // Store teams on window for assign functions
+  window._assignModalTeams = teams;
+  window._assignSelectedUserId = null;
 }
 
 function toggleTransferRow(teamId) {
   var row = document.getElementById('tm-transfer-' + teamId);
   if (!row) { return; }
   row.style.display = (row.style.display === 'none') ? 'table-row' : 'none';
+}
+
+async function doSearchStudentForAssign(tournId) {
+  var query  = (document.getElementById('assign-student-search').value || '').trim().toLowerCase();
+  var resEl  = document.getElementById('assign-search-results');
+  var errEl  = document.getElementById('assign-student-error');
+  var btn    = document.getElementById('btn-assign-student');
+  if (errEl) { errEl.textContent = ''; }
+  window._assignSelectedUserId = null;
+  if (btn) { btn.disabled = true; }
+
+  if (!query || query.length < 2) {
+    if (resEl) { resEl.innerHTML = ''; }
+    return;
+  }
+
+  try {
+    // Search by name or email — fetch from _adminUsers if loaded, else fetch
+    var allUsers = _adminUsers && _adminUsers.length ? _adminUsers
+      : await sbGet('mn_users', 'order=created_at.desc&limit=500') || [];
+
+    var matches = [];
+    for (var i = 0; i < allUsers.length; i++) {
+      var u = allUsers[i];
+      var haystack = ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.username || '')).toLowerCase();
+      if (haystack.indexOf(query) !== -1) { matches.push(u); }
+      if (matches.length >= 8) { break; }
+    }
+
+    if (!matches.length) {
+      if (resEl) { resEl.innerHTML = '<p class="text-sm text-muted">No registered users found matching "' + esc(query) + '".</p>'; }
+      return;
+    }
+
+    // Check which users are already in a team in this tournament
+    var teams = window._assignModalTeams || [];
+    var assignedIds = {};
+    for (var ti = 0; ti < teams.length; ti++) {
+      var tm = teams[ti];
+      if (tm.captain_id) { assignedIds[tm.captain_id] = tm.name; }
+      if (tm.members) {
+        for (var mi = 0; mi < tm.members.length; mi++) {
+          assignedIds[tm.members[mi]] = tm.name;
+        }
+      }
+    }
+
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+    for (var j = 0; j < matches.length; j++) {
+      var mu = matches[j];
+      var already = assignedIds[mu.id];
+      html +=
+        '<button type="button" ' +
+        (already ? 'disabled title="Already in team: ' + esc(already) + '" style="opacity:0.5;cursor:not-allowed;" ' : 'onclick="selectStudentForAssign(\'' + mu.id + '\',this)" ') +
+        'class="btn btn--ghost btn--sm" style="font-size:0.8125rem;">' +
+          esc(mu.name || mu.email || mu.id) +
+          (mu.institution ? ' <span style="color:var(--text-400);font-size:0.75rem;">· ' + esc(mu.institution) + '</span>' : '') +
+          (already ? ' <span style="color:var(--text-400);font-size:0.75rem;">(in ' + esc(already) + ')</span>' : '') +
+        '</button>';
+    }
+    html += '</div>';
+    if (resEl) { resEl.innerHTML = html; }
+
+  } catch(e) {
+    if (errEl) { errEl.textContent = 'Search error: ' + (e.message || ''); }
+  }
+}
+
+function selectStudentForAssign(userId, btn) {
+  window._assignSelectedUserId = userId;
+  // Highlight selected
+  var resEl = document.getElementById('assign-search-results');
+  if (resEl) {
+    var btns = resEl.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) { btns[i].style.background = ''; btns[i].style.color = ''; }
+    if (btn) { btn.style.background = 'var(--blue)'; btn.style.color = '#fff'; }
+  }
+  var assignBtn = document.getElementById('btn-assign-student');
+  if (assignBtn) { assignBtn.disabled = false; }
+}
+
+async function doAssignStudentToTeam(tournId) {
+  var userId = window._assignSelectedUserId;
+  var teamId = (document.getElementById('assign-team-select') || {}).value;
+  var errEl  = document.getElementById('assign-student-error');
+  if (errEl) { errEl.textContent = ''; }
+
+  if (!userId) { if (errEl) { errEl.textContent = 'Select a student from the search results first.'; } return; }
+  if (!teamId) { if (errEl) { errEl.textContent = 'Select a destination team.'; } return; }
+
+  // Find team
+  var teams = window._assignModalTeams || [];
+  var team = null;
+  for (var i = 0; i < teams.length; i++) { if (teams[i].id === teamId) { team = teams[i]; break; } }
+  if (!team) { if (errEl) { errEl.textContent = 'Team not found.'; } return; }
+
+  var members = (team.members && team.members.length) ? team.members.slice() : [];
+
+  // Guard: already in this team
+  for (var j = 0; j < members.length; j++) {
+    if (members[j] === userId) { if (errEl) { errEl.textContent = 'Student is already a member of this team.'; } return; }
+  }
+
+  // Guard: team full
+  if (members.length >= 5) { if (errEl) { errEl.textContent = 'This team is full (5 members maximum).'; } return; }
+
+  // Find user name for confirmation
+  var userName = userId;
+  if (_adminUsers) {
+    for (var k = 0; k < _adminUsers.length; k++) {
+      if (_adminUsers[k].id === userId) { userName = _adminUsers[k].name || _adminUsers[k].email || userId; break; }
+    }
+  }
+
+  if (!confirm('Assign "' + userName + '" to team "' + (team.name || 'team') + '"?')) { return; }
+
+  try {
+    members.push(userId);
+    await sbPatch('teams', 'id=eq.' + teamId, { members: members });
+
+    // Update local state
+    team.members = members;
+
+    flash('"' + userName + '" assigned to team "' + (team.name || '') + '".', 'success');
+    window._assignSelectedUserId = null;
+
+    // Refresh the modal
+    openManageTeamsModal(tournId);
+
+  } catch(e) {
+    if (errEl) { errEl.textContent = 'Assign failed: ' + (e.message || 'Unknown error'); }
+  }
 }
 
 async function doTransferTeam(teamId, fromTournId) {
