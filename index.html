@@ -2042,6 +2042,35 @@ h1, h2, h3, h4, h5 {
 }
 .round-pip__label { font-size: 0.65rem; color: var(--text-400); font-family: 'DM Mono', monospace; }
 
+/* Per-round schedule table on tournament card */
+.tourn-schedule-table {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.tourn-schedule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  gap: 0.5rem;
+}
+.tourn-schedule-round {
+  font-family: 'DM Mono', monospace;
+  color: var(--text-700);
+  white-space: nowrap;
+  min-width: 70px;
+}
+.tourn-schedule-dates {
+  color: var(--text-400);
+  text-align: right;
+}
+
 /* Countdown chip */
 .countdown-chip {
   display: inline-flex;
@@ -3427,6 +3456,9 @@ h1, h2, h3, h4, h5 {
         <button class="filter-chip" data-filter="completed">Completed</button>
       </div>
 
+      <!-- World Cup season banner — populated by JS -->
+      <div id="wc-season-banner" style="margin-bottom:1.5rem;display:none;"></div>
+
       <!-- Cards grid — populated by JS -->
       <div id="tournaments-grid" class="grid-3">
         <div class="empty-state" style="grid-column:1/-1;">
@@ -4793,26 +4825,67 @@ async function doRegister() {
     currentSession = { access_token: accessToken, refresh_token: refreshToken, expires_at: Date.now() + (expiresIn*1000) };
   }
 
-  // Step 4: Insert profile into mn_users
-  // Use the Supabase Auth user's UUID as the id — this links auth to profile
-  // and satisfies the NOT NULL constraint without needing a DB default.
+  // Step 4: Insert or upgrade profile in mn_users
+  // Use the Supabase Auth user's UUID as the id — this links auth to profile.
   var authUserId = (sd.user && sd.user.id) ? sd.user.id : (sd.id || null);
 
   var profile = null;
   try {
-    var profileData = {
-      name:        name,
-      username:    username,
-      email:       email,
-      country:     country,
-      institution: inst,
-      role:        finalRole,
-      is_admin:    isFirst
-    };
-    // Only include id if we have it from Auth — avoids the NOT NULL violation
-    if (authUserId) { profileData.id = authUserId; }
+    // Check for existing placeholder account created by admin (id starts with 'ph-')
+    var existingProfile = null;
+    try {
+      var epRows = await sbGet('mn_users', 'email=eq.' + encodeURIComponent(email) + '&limit=1');
+      if (epRows && epRows.length) { existingProfile = epRows[0]; }
+    } catch(epe) {}
 
-    profile = await sbPost('mn_users', profileData);
+    if (existingProfile && existingProfile.id && existingProfile.id.indexOf('ph-') === 0) {
+      // Upgrade placeholder: update the id to the real auth UUID, fill in full details
+      // Must delete and re-insert because id is the primary key
+      await sbDelete('mn_users', 'id=eq.' + existingProfile.id);
+      var profileData = {
+        id:          authUserId || existingProfile.id,
+        name:        name,
+        username:    username,
+        email:       email,
+        country:     country,
+        institution: inst,
+        role:        finalRole,
+        is_admin:    isFirst
+      };
+      profile = await sbPost('mn_users', profileData);
+      // Re-link any teams that had the placeholder id in their members array
+      // (cascade update — patch teams where members contains the old placeholder id)
+      try {
+        var phId = existingProfile.id;
+        var linkedTeams = await sbGet('teams', 'members=cs.{' + phId + '}&limit=100');
+        if (linkedTeams && linkedTeams.length) {
+          for (var lt = 0; lt < linkedTeams.length; lt++) {
+            var lteam = linkedTeams[lt];
+            var lmembers = (lteam.members || []).map(function(m) {
+              return m === phId ? (authUserId || phId) : m;
+            });
+            var lcaptain = lteam.captain_id === phId ? (authUserId || phId) : lteam.captain_id;
+            await sbPatch('teams', 'id=eq.' + lteam.id, { members: lmembers, captain_id: lcaptain });
+          }
+        }
+      } catch(lte) { /* non-fatal — team links best-effort */ }
+    } else if (!existingProfile) {
+      // Normal registration — create new profile
+      var profileData = {
+        name:        name,
+        username:    username,
+        email:       email,
+        country:     country,
+        institution: inst,
+        role:        finalRole,
+        is_admin:    isFirst
+      };
+      if (authUserId) { profileData.id = authUserId; }
+      profile = await sbPost('mn_users', profileData);
+    } else {
+      // Fully registered account already exists — use it
+      profile = existingProfile;
+    }
   } catch(e) {
     _setFormErr('register-error', 'Auth account created but profile save failed: ' + (e.message || 'unknown error') + '. Please contact support@macronations.com');
     setLoading('btn-do-register',false,'Create Account');
@@ -5751,6 +5824,9 @@ async function renderTournaments() {
     // Wire admin create button
     _renderTournamentHeaderActions();
 
+    // Render World Cup season banner
+    _renderWCBanner();
+
     _renderTournamentGrid();
 
   } catch(e) {
@@ -5760,6 +5836,77 @@ async function renderTournaments() {
         '<div class="empty-state__title">Could not load tournaments</div>' +
         '<div class="empty-state__desc">' + esc(e.message || 'Network error') + '</div>' +
       '</div>';
+  }
+}
+
+async function _renderWCBanner() {
+  var banner = document.getElementById('wc-season-banner');
+  if (!banner) { return; }
+
+  try {
+    var curYear = new Date().getFullYear();
+    var seasons = await sbGetPublic('global_seasons', 'year=eq.' + curYear + '&limit=1') || [];
+    if (!seasons.length) { banner.style.display = 'none'; return; }
+    var season = seasons[0];
+
+    // Default 2026 schedule — stored in playoff_bracket.schedule
+    // Admin can edit via Global Season panel
+    var sched = (season.playoff_bracket && season.playoff_bracket.schedule)
+      ? season.playoff_bracket.schedule
+      : [
+          { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + curYear,  note: 'All paid teams in elected tournaments qualify' },
+          { label: 'Qualification cutoff', date: 'Nov 30, ' + curYear,          note: 'Elected tournaments must complete by this date' },
+          { label: 'Quarterfinals',        date: 'Dec 7, ' + curYear,           note: 'Top 8 teams compete' },
+          { label: 'Semifinals',           date: 'Dec 14, ' + curYear,          note: 'Top 4 advance' },
+          { label: 'Final',               date: 'Dec 21, ' + curYear,           note: 'Championship match' },
+          { label: 'Prize announcement',  date: 'Dec 22, ' + curYear,           note: 'Winners announced and prize distributed' }
+        ];
+
+    // Prize pool
+    var prizePool = Number(season.prize_pool) || 0;
+    var poolHtml = prizePool > 0
+      ? '<div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1.25rem;">' +
+          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Est. Prize Pool</div>' +
+            '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#FFD700;">' + fmt$(prizePool) + '</div></div>' +
+          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">🥇 Winner</div>' +
+            '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#fff;">' + fmt$(Math.round(prizePool * 0.7)) + '</div></div>' +
+          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">🥈 Runner-up</div>' +
+            '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#fff;">' + fmt$(Math.round(prizePool * 0.3)) + '</div></div>' +
+        '</div>'
+      : '';
+
+    // Schedule rows
+    var schedRows = '';
+    var today = new Date();
+    for (var si = 0; si < sched.length; si++) {
+      var s = sched[si];
+      schedRows +=
+        '<div style="display:flex;align-items:baseline;gap:1rem;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.08);">' +
+          '<div style="min-width:170px;font-size:0.875rem;color:rgba(255,255,255,0.9);font-weight:500;">' + esc(s.label) + '</div>' +
+          '<div style="font-family:\'DM Mono\',monospace;font-size:0.8125rem;color:#FFD700;min-width:180px;">' + esc(s.date) + '</div>' +
+          '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.45);">' + esc(s.note || '') + '</div>' +
+        '</div>';
+    }
+
+    banner.style.display = 'block';
+    banner.innerHTML =
+      '<div style="background:#0D1F3C;border:2px solid #FFD700;border-radius:var(--radius-xl);overflow:hidden;">' +
+        '<div style="padding:1.25rem 1.75rem 1rem;border-bottom:1px solid rgba(255,215,0,0.25);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">' +
+          '<div>' +
+            '<div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#FFD700;margin-bottom:0.25rem;">MacroNations World Cup</div>' +
+            '<div style="font-family:\'DM Serif Display\',serif;font-size:1.375rem;color:#fff;">Season ' + curYear + ' Championship Schedule</div>' +
+          '</div>' +
+          '<span style="background:#FFD700;color:#0D1F3C;font-size:0.75rem;font-weight:700;padding:0.25rem 0.75rem;border-radius:var(--radius-full);letter-spacing:0.05em;">🏆 GLOBAL</span>' +
+        '</div>' +
+        '<div style="padding:1.25rem 1.75rem;">' +
+          poolHtml +
+          '<div>' + schedRows + '</div>' +
+          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: all teams in paid elected tournaments. Prize pool estimated at 25% of entry fees. Final percentage at management discretion.</div>' +
+        '</div>' +
+      '</div>';
+
+  } catch(e) {
+    banner.style.display = 'none';
   }
 }
 
@@ -5892,9 +6039,44 @@ function _buildTournamentCard(t) {
     pipsHtml += '</div>';
   }
 
+  // ── Dates from schedule ──────────────────────────────────────────
+  var sched      = t.schedule;
+  var startDateStr = '';
+  var endDateStr   = '';
+  var schedHtml    = '';
+
+  if (sched && Array.isArray(sched) && sched.length) {
+    // Start = first round open date, End = last round deadline
+    var firstRound = sched[0];
+    var lastRound  = sched[sched.length - 1];
+    if (firstRound && firstRound.date)     { startDateStr = firstRound.date; }
+    if (lastRound  && lastRound.deadline)  { endDateStr   = lastRound.deadline; }
+
+    // Per-round schedule table
+    schedHtml = '<div class="tourn-schedule-table">';
+    for (var si2 = 0; si2 < sched.length; si2++) {
+      var sr = sched[si2];
+      var isPast    = sr.round < curRound;
+      var isCurrent = sr.round === curRound;
+      var rowStyle  = isCurrent
+        ? 'background:var(--blue-light);font-weight:600;'
+        : isPast ? 'color:var(--text-400);' : '';
+      schedHtml +=
+        '<div class="tourn-schedule-row" style="' + rowStyle + '">' +
+          '<span class="tourn-schedule-round">' +
+            (isPast ? '✓ ' : isCurrent ? '▶ ' : '') +
+            'Round ' + sr.round +
+          '</span>' +
+          '<span class="tourn-schedule-dates">' +
+            esc(sr.date || '') + ' → ' + esc(sr.deadline || '') +
+          '</span>' +
+        '</div>';
+    }
+    schedHtml += '</div>';
+  }
+
   // Countdown: use schedule if available
   var countdownHtml = '';
-  var sched = t.schedule;
   if (sched && Array.isArray(sched) && sched.length && status === 'active') {
     var nextRound = null;
     for (var si = 0; si < sched.length; si++) {
@@ -5948,11 +6130,14 @@ function _buildTournamentCard(t) {
           (seaYear ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">📆</span>Season ' + esc(seaYear) + '</span>' : '') +
           '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🔄</span>' + esc(String(totRound)) + ' Rounds</span>' +
           (maxTeams ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">👥</span>' + esc(String(maxTeams)) + ' Teams Max</span>' : '') +
+          (startDateStr ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🗓</span>Starts ' + esc(startDateStr) + '</span>' : '') +
+          (endDateStr   ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🏁</span>Ends ' + esc(endDateStr) + '</span>' : '') +
         '</div>' +
         _statusBadge(status) +
         (countdownHtml ? ' ' + countdownHtml : '') +
         prizeHtml +
         pipsHtml +
+        schedHtml +
       '</div>' +
       '<div class="tournament-card__footer">' +
         footerLeft +
@@ -8140,6 +8325,224 @@ async function doAssignStudentToTeam(tournId) {
   }
 }
 
+// ── Add student to tournament (admin + professor) ─────────────────
+async function openAddStudentModal(tournId) {
+  var t = _getTournById(tournId);
+  if (!t) { flash('Tournament not found.', 'error'); return; }
+
+  var teams = [];
+  try {
+    teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
+  } catch(e) {}
+
+  var teamOptions = '<option value="">— Create new team —</option>';
+  for (var ti = 0; ti < teams.length; ti++) {
+    var tmo = teams[ti];
+    var mc = (tmo.members && tmo.members.length) ? tmo.members.length : 0;
+    var full = mc >= 5;
+    teamOptions += '<option value="' + esc(tmo.id) + '"' + (full ? ' disabled' : '') + '>' +
+      esc(tmo.name || 'Unnamed') + ' (' + mc + '/5)' + (full ? ' — Full' : '') + '</option>';
+  }
+
+  var existing = document.getElementById('modal-add-student');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = 'modal-add-student';
+    existing.className = 'modal-backdrop';
+    existing.setAttribute('role', 'dialog');
+    existing.setAttribute('aria-modal', 'true');
+    document.body.appendChild(existing);
+  }
+
+  existing.innerHTML =
+    '<div class="modal modal--wide">' +
+      '<div class="modal__header">' +
+        '<div>' +
+          '<h2 class="modal__title">Add Student to Tournament</h2>' +
+          '<p class="modal__subtitle">Works even if the student has not registered yet.</p>' +
+        '</div>' +
+        '<button class="modal__close" onclick="closeModal(\'modal-add-student\')">X</button>' +
+      '</div>' +
+      '<div class="modal__body">' +
+        '<div class="dash-alert dash-alert--info" style="margin-bottom:1.25rem;">' +
+          '<div class="dash-alert__icon">i</div>' +
+          '<div class="dash-alert__body"><div class="dash-alert__title">How this works</div>' +
+          'Enter the student name and email. If already registered they are added immediately. ' +
+          'If not, a placeholder account is created and they receive instructions to activate it.</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">' +
+          '<div class="form-field" style="margin:0;">' +
+            '<label class="form-label form-label--required">Full Name</label>' +
+            '<input type="text" id="add-student-name" class="form-input" placeholder="Jane Smith">' +
+          '</div>' +
+          '<div class="form-field" style="margin:0;">' +
+            '<label class="form-label form-label--required">Email Address</label>' +
+            '<input type="email" id="add-student-email" class="form-input" placeholder="jane@university.edu">' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">' +
+          '<div class="form-field" style="margin:0;">' +
+            '<label class="form-label">Institution</label>' +
+            '<input type="text" id="add-student-institution" class="form-input" placeholder="Binghamton University">' +
+          '</div>' +
+          '<div class="form-field" style="margin:0;">' +
+            '<label class="form-label">Assign to team</label>' +
+            '<div class="form-select-wrap"><select id="add-student-team" class="form-select" onchange="toggleNewTeamField()">' + teamOptions + '</select></div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="add-student-newteam-wrap" class="form-field" style="margin-bottom:1.25rem;">' +
+          '<label class="form-label">New Team Name</label>' +
+          '<input type="text" id="add-student-newteam" class="form-input" placeholder="e.g. Team Alpha">' +
+        '</div>' +
+        '<div id="add-student-error" class="form-error" style="margin-bottom:0.75rem;"></div>' +
+        '<div id="add-student-result" style="display:none;"></div>' +
+      '</div>' +
+      '<div class="modal__footer">' +
+        '<button class="btn btn--ghost" onclick="closeModal(\'modal-add-student\')">Cancel</button>' +
+        '<button class="btn btn--primary" id="btn-do-add-student" onclick="doAddStudentToTournament(\'' + tournId + '\')">Add Student</button>' +
+      '</div>' +
+    '</div>';
+
+  window._addStudentTeams = teams;
+  window._addStudentTournId = tournId;
+  openModal('modal-add-student');
+  toggleNewTeamField();
+}
+
+function toggleNewTeamField() {
+  var sel  = document.getElementById('add-student-team');
+  var wrap = document.getElementById('add-student-newteam-wrap');
+  if (!sel || !wrap) { return; }
+  wrap.style.display = sel.value ? 'none' : 'block';
+}
+
+async function doAddStudentToTournament(tournId) {
+  var errEl    = document.getElementById('add-student-error');
+  var resultEl = document.getElementById('add-student-result');
+  if (errEl)    { errEl.textContent = ''; }
+  if (resultEl) { resultEl.style.display = 'none'; }
+
+  var name        = (document.getElementById('add-student-name').value || '').trim();
+  var email       = (document.getElementById('add-student-email').value || '').trim().toLowerCase();
+  var inst        = (document.getElementById('add-student-institution').value || '').trim();
+  var teamId      = (document.getElementById('add-student-team').value || '').trim();
+  var newTeamName = (document.getElementById('add-student-newteam').value || '').trim();
+
+  if (!name)  { if (errEl) { errEl.textContent = 'Full name is required.'; } return; }
+  if (!email) { if (errEl) { errEl.textContent = 'Email address is required.'; } return; }
+  if (!teamId && !newTeamName) { if (errEl) { errEl.textContent = 'Select an existing team or enter a new team name.'; } return; }
+
+  setLoading('btn-do-add-student', true, 'Adding...');
+
+  try {
+    // Step 1: Find or create mn_users record
+    var userId = null;
+    var isNew  = false;
+
+    var existingUser = await sbGet('mn_users', 'email=eq.' + encodeURIComponent(email) + '&limit=1');
+    if (existingUser && existingUser.length) {
+      userId = existingUser[0].id;
+    } else {
+      var placeholderId = 'ph-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+      var baseUsername  = email.split('@')[0].replace(/[^a-z0-9_]/g, '').slice(0, 20) + '_' + Math.random().toString(36).slice(2, 5);
+      var newUser = await sbPost('mn_users', {
+        id:          placeholderId,
+        name:        name,
+        email:       email,
+        institution: inst,
+        role:        'student',
+        username:    baseUsername,
+        country:     '',
+        is_admin:    false
+      });
+      if (!newUser || newUser.code) { throw new Error((newUser && newUser.message) || 'Could not create placeholder account.'); }
+      userId = placeholderId;
+      isNew  = true;
+    }
+
+    // Step 2: Get or create team
+    var finalTeam = null;
+    var finalInviteCode = '';
+
+    if (teamId) {
+      var teams = window._addStudentTeams || [];
+      for (var i = 0; i < teams.length; i++) {
+        if (teams[i].id === teamId) { finalTeam = teams[i]; break; }
+      }
+      if (!finalTeam) { throw new Error('Team not found.'); }
+
+      var members = (finalTeam.members && finalTeam.members.length) ? finalTeam.members.slice() : [];
+      for (var j = 0; j < members.length; j++) {
+        if (members[j] === userId) { throw new Error(name + ' is already a member of this team.'); }
+      }
+      if (members.length >= 5) { throw new Error('This team is full (5 members maximum).'); }
+      members.push(userId);
+      await sbPatch('teams', 'id=eq.' + teamId, { members: members });
+      finalTeam.members = members;
+      finalInviteCode = finalTeam.invite_code || '';
+    } else {
+      var inviteCode = _genInviteCode();
+      var newTeam = await sbPost('teams', {
+        name:          newTeamName,
+        tournament_id: tournId,
+        captain_id:    userId,
+        members:       [userId],
+        invite_code:   inviteCode,
+        fee_paid:      false
+      });
+      if (!newTeam || newTeam.code) { throw new Error((newTeam && newTeam.message) || 'Could not create team.'); }
+      await sbPost('economies', {
+        team_id:       newTeam.id,
+        tournament_id: tournId,
+        current:       defaultEconomy(),
+        snapshots:     [],
+        scores_history:[]
+      });
+      finalTeam = newTeam;
+      finalInviteCode = inviteCode;
+    }
+
+    // Step 3: Build result
+    var tourn = _getTournById(tournId);
+    var tournName = (tourn && tourn.name) ? tourn.name : 'the tournament';
+    var teamName  = finalTeam.name || 'the team';
+
+    var mailtoBody = 'Hi ' + name + ',\n\n' +
+      'You have been added to "' + teamName + '" in "' + tournName + '".\n\n' +
+      (isNew
+        ? 'To access the platform:\n1. Go to macronations.com\n2. Register with this email: ' + email + '\n3. Use invite code: ' + finalInviteCode
+        : 'Log in at macronations.com. Your invite code is: ' + finalInviteCode) +
+      '\n\nGood luck!\n- MacroNations';
+
+    var mailtoLink = 'mailto:' + email +
+      '?subject=' + encodeURIComponent('[MacroNations] You have been added to ' + tournName) +
+      '&body=' + encodeURIComponent(mailtoBody);
+
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML =
+        '<div class="dash-alert dash-alert--success">' +
+          '<div class="dash-alert__icon">checkmark</div>' +
+          '<div class="dash-alert__body">' +
+            '<div class="dash-alert__title">' + esc(name) + ' added to "' + esc(teamName) + '"</div>' +
+            (isNew ? '<p>Placeholder account created. They must register at macronations.com with <strong>' + esc(email) + '</strong>.</p>' : '<p>Existing account found and added.</p>') +
+            '<div style="display:flex;gap:0.625rem;align-items:center;flex-wrap:wrap;margin-top:0.5rem;">' +
+              '<span class="text-mono" style="font-size:1rem;font-weight:700;background:var(--bg-subtle);padding:0.25rem 0.75rem;border-radius:var(--radius);">Invite code: ' + esc(finalInviteCode) + '</span>' +
+              '<a href="' + mailtoLink + '" class="btn btn--primary btn--sm" target="_blank">Send Invite Email</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    _adminTeams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
+    setLoading('btn-do-add-student', false, 'Add Another');
+
+  } catch(e) {
+    if (errEl) { errEl.textContent = (e && e.message) || 'An error occurred.'; }
+    setLoading('btn-do-add-student', false, 'Add Student');
+  }
+}
+
 async function doTransferTeam(teamId, fromTournId) {
   var sel = document.getElementById('dest-' + teamId);
   if (!sel || !sel.value) { flash('Please select a destination tournament.', 'error'); return; }
@@ -8393,8 +8796,12 @@ function _tournamentActionBtns(t) {
   if (t.status === 'completed') {
     btns += '<button class="btn btn--ghost btn--sm" onclick="doSetTournamentStatus(\'' + id + '\',\'active\')">↩ Reopen</button>';
   }
-  if (_isAdmin()) {
+  // Both admin and professor can add students and manage teams
+  if (_isAdmin() || _isProfessor()) {
+    btns += '<button class="btn btn--primary btn--sm" onclick="openAddStudentModal(\'' + id + '\')" title="Add student to tournament">➕ Add Student</button>';
     btns += '<button class="btn btn--ghost btn--sm" onclick="openManageTeamsModal(\'' + id + '\')" title="Manage teams">👥 Teams</button>';
+  }
+  if (_isAdmin()) {
     btns += '<button class="btn btn--danger btn--sm" onclick="doDeleteTournament(\'' + id + '\')" title="Delete permanently">🗑</button>';
   }
   return btns || '<span class="text-muted text-sm">—</span>';
@@ -8528,6 +8935,25 @@ async function doCreateTournament() {
 }
 
 async function doSetTournamentStatus(id, status) {
+  // When starting a tournament, warn that registration closes
+  if (status === 'active') {
+    var t = _getTournById(id);
+    var teamCount = 0;
+    for (var ti = 0; ti < _adminTeams.length; ti++) {
+      if (_adminTeams[ti].tournament_id === id) { teamCount++; }
+    }
+    var warned = confirm(
+      '⚠️ Start "' + ((t && t.name) || 'this tournament') + '"?\n\n' +
+      'Currently ' + teamCount + ' team' + (teamCount !== 1 ? 's' : '') + ' registered.\n\n' +
+      'Once started:\n' +
+      '• Registration closes — new teams cannot join\n' +
+      '• Round 1 begins immediately\n' +
+      '• Students without a team will need admin assistance to be added\n\n' +
+      'Make sure all students have joined their teams before proceeding.'
+    );
+    if (!warned) { return; }
+  }
+
   try {
     var patch = { status: status };
     if (status === 'active' && _getTournById(id) && _getTournById(id).current_round === 0) {
@@ -9443,6 +9869,31 @@ async function renderAdminGlobalSeasons(el) {
         var seas = seasons[sci];
         var isCur = seas.year === curYear;
         var qCount = isCur ? qualifiers.length : '—';
+
+        // Championship schedule (from playoff_bracket.schedule)
+        var champSched = (seas.playoff_bracket && seas.playoff_bracket.schedule)
+          ? seas.playoff_bracket.schedule
+          : [
+              { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + seas.year, note: 'All paid teams in elected tournaments qualify' },
+              { label: 'Qualification cutoff', date: 'Nov 30, ' + seas.year,         note: 'Elected tournaments must complete by this date' },
+              { label: 'Quarterfinals',        date: 'Dec 7, ' + seas.year,          note: 'Top 8 teams compete' },
+              { label: 'Semifinals',           date: 'Dec 14, ' + seas.year,         note: 'Top 4 advance' },
+              { label: 'Final',               date: 'Dec 21, ' + seas.year,          note: 'Championship match' },
+              { label: 'Prize announcement',  date: 'Dec 22, ' + seas.year,          note: 'Winners announced and prize distributed' }
+            ];
+
+        // Build schedule editor rows
+        var schedEditorRows = '';
+        for (var ssi = 0; ssi < champSched.length; ssi++) {
+          var ss = champSched[ssi];
+          schedEditorRows +=
+            '<tr>' +
+              '<td><input type="text" class="form-input" style="font-size:0.8125rem;" value="' + esc(ss.label) + '" data-sched-label="' + ssi + '"></td>' +
+              '<td><input type="text" class="form-input" style="font-size:0.8125rem;" value="' + esc(ss.date) + '" data-sched-date="' + ssi + '" placeholder="e.g. Dec 7, ' + seas.year + '"></td>' +
+              '<td><input type="text" class="form-input" style="font-size:0.8125rem;" value="' + esc(ss.note || '') + '" data-sched-note="' + ssi + '" placeholder="Short description"></td>' +
+            '</tr>';
+        }
+
         seasonCards +=
           '<div class="card" style="margin-bottom:1rem;' + (isCur ? 'border:2px solid #FFD700;' : '') + '">' +
             '<div class="card__header">' +
@@ -9456,6 +9907,20 @@ async function renderAdminGlobalSeasons(el) {
                 _metricCard('🏫', String(qCount), 'Qualified Teams') +
                 _metricCard('📊', seas.status === 'active' ? 'Open' : 'Closed', 'Season Status') +
               '</div>' +
+
+              // Championship schedule editor
+              '<div style="margin-bottom:1rem;">' +
+                '<div style="font-size:0.875rem;font-weight:500;color:var(--text-900);margin-bottom:0.625rem;">🏆 Championship Schedule</div>' +
+                '<div class="table-wrap" style="border:none;box-shadow:none;padding:0;margin-bottom:0.625rem;">' +
+                  '<table class="table" style="font-size:0.8125rem;" id="sched-table-' + seas.year + '">' +
+                    '<thead><tr><th>Event</th><th>Date</th><th>Note</th></tr></thead>' +
+                    '<tbody>' + schedEditorRows + '</tbody>' +
+                  '</table>' +
+                '</div>' +
+                '<button class="btn btn--ghost btn--sm" onclick="doSaveChampionshipSchedule(' + seas.year + ')">💾 Save Schedule</button>' +
+                ' <span id="sched-saved-' + seas.year + '" style="font-size:0.8125rem;color:var(--success);display:none;">✓ Saved</span>' +
+              '</div>' +
+
               (isCur && seas.status === 'active'
                 ? '<button class="btn btn--primary btn--sm" onclick="doCreateGlobalPlayoff(' + curYear + ')">🏆 Seed Year-End Playoff (Top 8)</button> ' +
                   '<button class="btn btn--ghost btn--sm" onclick="doCloseGlobalSeason(' + curYear + ')" style="margin-left:0.5rem;">Close Season</button>'
@@ -9592,6 +10057,42 @@ async function doRemoveQualifier(qualId) {
     renderAdminGlobalSeasons(document.getElementById('admin-panel-content'));
   } catch(e) {
     flash('Error: ' + (e.message || ''), 'error');
+  }
+}
+
+async function doSaveChampionshipSchedule(year) {
+  var table = document.getElementById('sched-table-' + year);
+  if (!table) { flash('Schedule table not found.', 'error'); return; }
+
+  var newSched = [];
+  var labels = table.querySelectorAll('[data-sched-label]');
+  var dates  = table.querySelectorAll('[data-sched-date]');
+  var notes  = table.querySelectorAll('[data-sched-note]');
+
+  for (var i = 0; i < labels.length; i++) {
+    newSched.push({
+      label: (labels[i].value || '').trim(),
+      date:  (dates[i]  ? (dates[i].value  || '').trim() : ''),
+      note:  (notes[i]  ? (notes[i].value  || '').trim() : '')
+    });
+  }
+
+  try {
+    // Fetch current playoff_bracket to preserve bracket data
+    var existing = await sbGet('global_seasons', 'year=eq.' + year + '&limit=1') || [];
+    var bracket = (existing.length && existing[0].playoff_bracket) ? existing[0].playoff_bracket : {};
+    bracket.schedule = newSched;
+
+    await sbPatch('global_seasons', 'year=eq.' + year, { playoff_bracket: bracket });
+
+    var savedEl = document.getElementById('sched-saved-' + year);
+    if (savedEl) {
+      savedEl.style.display = 'inline';
+      setTimeout(function() { savedEl.style.display = 'none'; }, 2500);
+    }
+    flash('Championship schedule saved for Season ' + year + '.', 'success');
+  } catch(e) {
+    flash('Save failed: ' + (e.message || ''), 'error');
   }
 }
 
