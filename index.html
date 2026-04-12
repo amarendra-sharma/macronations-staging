@@ -3318,13 +3318,13 @@ h1, h2, h3, h4, h5 {
             <div class="lp-tier__badge lp-tier__badge--global">Global Championship</div>
             <h3 class="lp-tier__name">World Cup</h3>
             <div class="lp-tier__price">$50 <span>per team</span></div>
-            <p class="lp-tier__desc">Your professor elects your class tournament into the global season. Compete against top teams from universities worldwide for a shared prize pool.</p>
+            <p class="lp-tier__desc">Your professor elects your class tournament into the global season. Compete against top teams from universities worldwide for a shared award fund.</p>
             <ul class="lp-tier__features">
               <li>Everything in class tournament</li>
               <li>Global cross-university rankings</li>
               <li>Year-long season standings</li>
               <li>Winner &amp; runner-up certificates</li>
-              <li>Cash prize pool — 70/30 split</li>
+              <li>Cash awards — 70/30 split</li>
             </ul>
             <button class="btn btn--gold" style="margin-top:1.25rem;width:100%;" onclick="openAuthModal('register')">Join the Championship</button>
           </div>
@@ -3336,8 +3336,8 @@ h1, h2, h3, h4, h5 {
     <section class="lp-wc-section" aria-labelledby="wc-heading">
       <div class="container">
         <div class="section__eyebrow" style="color:rgba(255,215,0,0.7);margin-bottom:0.5rem;">Global Championship</div>
-        <h2 class="section__title" id="wc-heading" style="color:#fff;margin-bottom:0.625rem;">One prize pool. Two teams share it.</h2>
-        <p style="color:rgba(255,255,255,0.6);font-size:0.9375rem;line-height:1.7;max-width:520px;margin-bottom:2rem;">The MacroNations World Cup prize pool is funded by entry fees from all elected global tournaments across the season. At the end of the year, the top two finalists split it.</p>
+        <h2 class="section__title" id="wc-heading" style="color:#fff;margin-bottom:0.625rem;">One award fund. Two teams share it.</h2>
+        <p style="color:rgba(255,255,255,0.6);font-size:0.9375rem;line-height:1.7;max-width:520px;margin-bottom:2rem;">The MacroNations World Cup Award Fund rewards the top finalists from universities worldwide. It grows with every team that enters the global season. At the end of the year, the top two finalists split it.</p>
         <div class="lp-prize-row">
           <div class="lp-prize-card lp-prize-card--gold">
             <div class="lp-prize-medal">🥇</div>
@@ -3355,7 +3355,7 @@ h1, h2, h3, h4, h5 {
             <div class="lp-prize-label">Playoff qualification</div>
           </div>
         </div>
-        <p class="lp-prize-note">Prize pool grows with the number of elected teams. Estimated at 25% of total entry fees collected. Final percentage at management discretion.</p>
+        <p class="lp-prize-note">Award fund grows as more universities join the global season. Final amount confirmed at season close.</p>
       </div>
     </section>
 
@@ -3400,8 +3400,8 @@ h1, h2, h3, h4, h5 {
             <div class="step">
               <div class="step__num" aria-hidden="true">5</div>
               <div>
-                <h3 class="step__title">Win Real Prizes</h3>
-                <p class="step__desc">Winner takes 70%, runner-up takes 30% of the prize pool. Top 8 teams qualify for the playoff bracket. Certificates issued to all participants.</p>
+                <h3 class="step__title">Win Real Awards</h3>
+                <p class="step__desc">Winner takes 70%, runner-up takes 30% of the competition award fund. Top 8 teams qualify for the playoff bracket. Certificates issued to all participants.</p>
               </div>
             </div>
           </div>
@@ -3528,7 +3528,7 @@ h1, h2, h3, h4, h5 {
       <div class="container" style="padding-top:0;padding-bottom:0;">
         <div class="admin-tabs" role="tablist" style="border-bottom:none;margin-bottom:0;overflow-x:auto;">
           <button class="admin-tab active" data-legal="terms"      onclick="showLegal('terms')">Terms of Service</button>
-          <button class="admin-tab"        data-legal="prizes"     onclick="showLegal('prizes')">Prize Rules</button>
+          <button class="admin-tab"        data-legal="prizes"     onclick="showLegal('prizes')">Award Rules</button>
           <button class="admin-tab"        data-legal="privacy"    onclick="showLegal('privacy')">Privacy Policy</button>
           <button class="admin-tab"        data-legal="disclaimer" onclick="showLegal('disclaimer')">Disclaimer</button>
           <button class="admin-tab"        data-legal="copyright"  onclick="showLegal('copyright')">Copyright</button>
@@ -3730,7 +3730,7 @@ h1, h2, h3, h4, h5 {
           <div class="dash-alert__body">
             <div class="dash-alert__title">This ends the tournament immediately</div>
             If you have rounds left to play, use <strong>Advance Round</strong> instead of Complete.
-            Completing locks the final scores and triggers prize pool calculation.
+            Completing locks the final scores and triggers award fund confirmation.
           </div>
         </div>
         <p id="complete-warning-detail" style="font-size:0.9rem;color:var(--text-500);"></p>
@@ -5866,7 +5866,7 @@ async function _renderWCBanner() {
     var prizePool = Number(season.prize_pool) || 0;
     var poolHtml = prizePool > 0
       ? '<div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1.25rem;">' +
-          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Est. Prize Pool</div>' +
+          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Award Fund</div>' +
             '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#FFD700;">' + fmt$(prizePool) + '</div></div>' +
           '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">🥇 Winner</div>' +
             '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#fff;">' + fmt$(Math.round(prizePool * 0.7)) + '</div></div>' +
@@ -5901,7 +5901,7 @@ async function _renderWCBanner() {
         '<div style="padding:1.25rem 1.75rem;">' +
           poolHtml +
           '<div>' + schedRows + '</div>' +
-          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: all teams in paid elected tournaments. Prize pool estimated at 25% of entry fees. Final percentage at management discretion.</div>' +
+          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: all teams in paid elected tournaments. Award fund grows with participation. Final amount confirmed at season close.</div>' +
         '</div>' +
       '</div>';
 
@@ -6004,17 +6004,17 @@ function _buildTournamentCard(t) {
     var poolId   = 'pool-' + t.id;
     prizeHtml =
       '<div class="prize-pool-widget">' +
-        '<div class="prize-pool-widget__title">Live Prize Pool</div>' +
+        '<div class="prize-pool-widget__title">Competition Award Fund</div>' +
         '<div class="prize-pool-widget__row">' +
-          '<span class="prize-pool-widget__label">Total pool (est. 25%)</span>' +
+          '<span class="prize-pool-widget__label">Total award</span>' +
           '<span class="prize-pool-widget__val prize-pool-widget__val--total" id="' + poolId + '-total">—</span>' +
         '</div>' +
         '<div class="prize-pool-widget__row">' +
-          '<span class="prize-pool-widget__label">🥇 1st place (70%)</span>' +
+          '<span class="prize-pool-widget__label">🥇 Winner</span>' +
           '<span class="prize-pool-widget__val" id="' + poolId + '-first">—</span>' +
         '</div>' +
         '<div class="prize-pool-widget__row">' +
-          '<span class="prize-pool-widget__label">🥈 2nd place (30%)</span>' +
+          '<span class="prize-pool-widget__label">🥈 Runner-up</span>' +
           '<span class="prize-pool-widget__val" id="' + poolId + '-second">—</span>' +
         '</div>' +
       '</div>';
@@ -6995,16 +6995,16 @@ function renderDashOverview() {
     var pp = calcPrizePool(fee, _dashAllTeams.length);
     prizeHtml =
       '<div class="card" style="margin-bottom:1.5rem;">' +
-        '<div class="card__header"><span class="card__title">Live Prize Pool</span>' +
+        '<div class="card__header"><span class="card__title">Award Fund</span>' +
           '<span class="text-sm text-muted">' + _dashAllTeams.length + ' teams entered</span></div>' +
         '<div class="card__body">' +
           '<div class="prize-pool-widget" style="background:none;border:none;padding:0;">' +
             '<div class="prize-pool-widget__row" style="margin-bottom:0.625rem;">' +
-              '<span class="prize-pool-widget__label" style="font-size:0.9375rem;font-weight:600;color:var(--text-700);">Total prize pool</span>' +
+              '<span class="prize-pool-widget__label" style="font-size:0.9375rem;font-weight:600;color:var(--text-700);">Total award</span>' +
               '<span class="prize-pool-widget__val prize-pool-widget__val--total" style="font-size:1.25rem;">' + fmt$(pp.pool) + '</span>' +
             '</div>' +
-            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥇 Winner (70%)</span><span class="prize-pool-widget__val">' + fmt$(pp.winner) + '</span></div>' +
-            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥈 Runner-up (30%)</span><span class="prize-pool-widget__val">' + fmt$(pp.runner_up) + '</span></div>' +
+            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥇 Winner</span><span class="prize-pool-widget__val">' + fmt$(pp.winner) + '</span></div>' +
+            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥈 Runner-up</span><span class="prize-pool-widget__val">' + fmt$(pp.runner_up) + '</span></div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -7847,7 +7847,7 @@ function renderDashPayment() {
         '<p style="color:var(--text-500);">Your entry fee of <strong>' + fmt$(fee) + '</strong> has been received. You are fully registered and eligible to submit policy and compete for prizes.</p>' +
         '<div class="dash-alert dash-alert--success" style="margin-top:1.5rem;text-align:left;">' +
           '<div class="dash-alert__icon">🏆</div>' +
-          '<div class="dash-alert__body">Your team is contributing to the live prize pool. Good luck!</div>' +
+          '<div class="dash-alert__body">Your team is contributing to the competition award fund. Good luck!</div>' +
         '</div>' +
       '</div>';
     return;
@@ -8773,7 +8773,7 @@ function renderAdminTournaments(el) {
       '</div>' +
       '<div class="table-wrap" style="border:none;border-radius:0;box-shadow:none;">' +
         '<table class="table">' +
-          '<thead><tr><th>Tournament</th><th>Status</th><th>Teams</th><th>Round</th><th>Prize Pool</th><th>Actions</th></tr></thead>' +
+          '<thead><tr><th>Tournament</th><th>Status</th><th>Teams</th><th>Round</th><th>Award Fund</th><th>Actions</th></tr></thead>' +
           '<tbody>' + (rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-400);padding:2rem;">No tournaments yet.</td></tr>') + '</tbody>' +
         '</table>' +
       '</div>' +
@@ -9902,7 +9902,7 @@ async function renderAdminGlobalSeasons(el) {
             '</div>' +
             '<div class="card__body">' +
               '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem;">' +
-                _metricCard('💰', fmt$(seas.prize_pool || 0), 'Est. Prize Pool') +
+                _metricCard('💰', fmt$(seas.prize_pool || 0), 'Award Fund') +
                 _metricCard('📋', fmt$(seas.entry_fees_collected || 0), 'Fees Collected') +
                 _metricCard('🏫', String(qCount), 'Qualified Teams') +
                 _metricCard('📊', seas.status === 'active' ? 'Open' : 'Closed', 'Season Status') +
@@ -10852,9 +10852,9 @@ async function renderRankings() {
 
       var poolHtml = seasonPool > 0
         ? '<div style="display:flex;gap:1.5rem;padding:0.75rem 1rem;background:rgba(255,255,255,0.05);border-radius:var(--radius);margin-bottom:1rem;flex-wrap:wrap;">' +
-            '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Est. Prize Pool</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#FFD700;">' + fmt$(seasonPool) + '</div></div>' +
-            '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">🥇 Winner (70%)</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">' + fmt$(Math.round(seasonPool * 0.7)) + '</div></div>' +
-            '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">🥈 Runner-up (30%)</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">' + fmt$(Math.round(seasonPool * 0.3)) + '</div></div>' +
+            '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Award Fund</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#FFD700;">' + fmt$(seasonPool) + '</div></div>' +
+            '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">🥇 Winner</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">' + fmt$(Math.round(seasonPool * 0.7)) + '</div></div>' +
+            '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">🥈 Runner-up</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">' + fmt$(Math.round(seasonPool * 0.3)) + '</div></div>' +
             '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Qualified Teams</div><div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">' + persistedQuals.length + '</div></div>' +
           '</div>'
         : '';
@@ -10928,7 +10928,7 @@ async function renderRankings() {
       var prizeInfo = '';
       if (Number(t.entry_fee) > 0) {
         var pp = calcPrizePool(t.entry_fee, teams.length);
-        prizeInfo = ' · Prize pool: ' + fmt$(pp.pool);
+        prizeInfo = ' · Award fund: ' + fmt$(pp.pool);
       }
 
       html +=
@@ -10983,23 +10983,23 @@ var LEGAL_CONTENT = {
     ]
   },
   prizes: {
-    title: 'Prize Rules & Distribution',
+    title: 'Award Rules & Distribution',
     updated: 'January 2026',
-    highlight: 'Prize pool = est. 25% of total entry fees collected (hypothetical — final % at management discretion). Winner receives 70%, Runner-up receives 30%.',
+    highlight: 'Competition award fund — seeded from entry fees, final amount confirmed at tournament close. Winner receives 70%, Runner-up receives 30%.',
     math: [
       'Example with $50 entry fee and 14 teams:',
-      '  Total collected:  $50 × 14 = $700',
-      '  Prize pool (est. 25%): $700 × 0.25 = $175',
-      '  1st place (70%):  $175 × 0.70 = $122.50',
-      '  2nd place (30%):  $175 × 0.30 = $52.50'
+      '  Total entry fees:  $50 × 14 = $700',
+      '  Award fund:        confirmed at tournament close',
+      '  1st place (70%):   ~$122.50',
+      '  2nd place (30%):   ~$52.50'
     ],
     sections: [
-      { h: 'Prize Pool Calculation', p: 'The prize pool is estimated at 25% of all entry fees collected from paid teams in a tournament (hypothetical — the final percentage is at management discretion). For a $50 entry fee with 14 paid teams, the estimated prize pool is $175. The pool grows as more teams register.' },
-      { h: 'Winner Distribution', p: 'The team with the highest aggregate score at the conclusion of all scheduled rounds receives 70% of the prize pool. The team with the second highest score receives the remaining 30%. In the event of a tie, the tied teams share the applicable prize tranche equally.' },
-      { h: 'Eligibility for Prizes', p: 'To be eligible for prize distribution, a team must: (1) have paid the full entry fee, (2) have submitted policy decisions in at least one tournament round, and (3) not have been disqualified for any violation of these rules. Free tournaments (entry fee = $0) do not carry cash prizes.' },
-      { h: 'Payment of Prizes', p: 'Prizes are paid within 14 business days of tournament conclusion via bank transfer or PayPal. Prize recipients must provide payment details within 30 days of notification or the prize may be forfeited. MacroNations LLC is responsible for any applicable withholding or tax reporting obligations.' },
-      { h: 'Waivers and Adjustments', p: 'Teams that received a fee waiver may compete but are excluded from prize eligibility unless their waiver covered 100% of the fee. Partial waivers require the remaining balance to be paid for prize eligibility.' },
-      { h: 'Disqualification', p: 'Any team found to have violated academic integrity rules forfeits all prize claims without refund. The prize pool amount is not redistributed to the remaining teams; forfeited prizes remain with MacroNations LLC.' }
+      { h: 'Award Fund', p: 'The competition award fund is seeded from entry fees collected from paid teams. The final fund amount is confirmed by MacroNations LLC at the conclusion of the tournament and is not guaranteed to equal any specific percentage of fees collected. MacroNations LLC retains sole discretion over the final award amount, which will be communicated to participants before prizes are distributed.' },
+      { h: 'Winner Distribution', p: 'The team with the highest aggregate score at the conclusion of all scheduled rounds receives 70% of the award fund. The team with the second highest score receives the remaining 30%. In the event of a tie, the tied teams share the applicable award tranche equally.' },
+      { h: 'Eligibility for Awards', p: 'To be eligible for award distribution, a team must: (1) have paid the full entry fee, (2) have submitted policy decisions in at least one tournament round, and (3) not have been disqualified for any violation of these rules. Free tournaments (entry fee = $0) do not carry cash awards.' },
+      { h: 'Payment of Awards', p: 'Awards are paid within 14 business days of tournament conclusion via bank transfer or PayPal. Award recipients must provide payment details within 30 days of notification or the award may be forfeited. MacroNations LLC is responsible for any applicable withholding or tax reporting obligations.' },
+      { h: 'Waivers and Adjustments', p: 'Teams that received a fee waiver may compete but are excluded from award eligibility unless their waiver covered 100% of the fee. Partial waivers require the remaining balance to be paid for award eligibility.' },
+      { h: 'Disqualification', p: 'Any team found to have violated academic integrity rules forfeits all award claims without refund. The forfeited award amount is not redistributed to the remaining teams; forfeited amounts remain with MacroNations LLC.' }
     ]
   },
   privacy: {
@@ -11022,7 +11022,7 @@ var LEGAL_CONTENT = {
       { h: 'Educational Purpose', p: 'MacroNations is an educational simulation platform. The macroeconomic model used in the tournament is a simplified representation designed for pedagogical purposes. It does not constitute financial, investment, or economic advice. Results in the simulation do not predict real-world economic outcomes.' },
       { h: 'No Warranty', p: 'The MacroNations platform is provided "as is" without warranty of any kind, express or implied. MacroNations LLC makes no warranties regarding the accuracy of the simulation engine, the availability of the platform, or the fitness of the platform for any particular purpose.' },
       { h: 'Simulation Accuracy', p: 'The economic simulation engine incorporates simplified versions of real economic relationships (Okun\'s Law, Phillips Curve, Laffer Curve, Reinhart-Rogoff debt threshold, etc.). These relationships are approximations. Real economies are substantially more complex and uncertain. Participants should not rely on simulation outcomes as predictions of real-world economic behavior.' },
-      { h: 'Prize Disclaimer', p: 'Prize amounts depend on the number of paid teams in a tournament. MacroNations LLC does not guarantee any minimum prize amount. In the event of technical failure that corrupts tournament data, MacroNations LLC\'s maximum liability is limited to refund of entry fees.' },
+      { h: 'Award Disclaimer', p: 'Award amounts depend on the number of paid teams in a tournament and are confirmed at MacroNations LLC\'s discretion. MacroNations LLC does not guarantee any minimum award amount. In the event of technical failure that corrupts tournament data, MacroNations LLC\'s maximum liability is limited to refund of entry fees.' },
       { h: 'Third-Party Services', p: 'The platform integrates with third-party services including Supabase (database), Anthropic (AI advisory feature), and payment processors. MacroNations LLC is not responsible for the availability, accuracy, or privacy practices of these third-party services.' }
     ]
   },
@@ -11298,7 +11298,7 @@ function _aboutHowItWorks() {
           _step('4','Respond to Crises','Some rounds trigger an economic crisis (banking crash, pandemic, trade war, debt crisis). Go to Crisis tab first — choose your response option — then separately submit your policy. These are two independent steps. If you skip the crisis response, the full unmitigated shock applies to your economy.') +
           _step('5','Consult the AI Advisor','Use Dashboard → AI Advisor to think through trade-offs. The advisor uses the Socratic method — it raises questions about your economy but never tells you which levers to move. That judgment is yours.') +
           _step('6','Track Your Score','Your economy is scored on 5 pillars (200 points each, 1000 total): GDP Performance, Stability, Equality, Sustainability, and Innovation. Check Dashboard → Overview after each round simulation runs.') +
-          _step('7','Prizes','The top-scoring team wins 70% of the prize pool. Runner-up wins 30%. The pool is estimated at 25% of all entry fees collected (hypothetical — final % at management discretion). Example: 14 teams × $50 = $700 collected → est. $175 prize pool → ~$122.50 to winner, ~$52.50 to runner-up.') +
+          _step('7','Awards','The top-scoring team wins 70% of the award fund. Runner-up wins 30%. The fund is seeded from entry fees and grows with participation — the more universities that join, the larger the awards. Example: 14 teams → award fund of $175 → ~$122.50 to winner, ~$52.50 to runner-up.') +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -11502,7 +11502,7 @@ function _aboutLegal() {
   legalEl.style.margin = '0 auto';
 
   var sections = ['terms','prizes','privacy','disclaimer','copyright'];
-  var labels   = ['Terms of Service','Prize Rules','Privacy Policy','Disclaimer','Copyright'];
+  var labels   = ['Terms of Service','Award Rules','Privacy Policy','Disclaimer','Copyright'];
 
   var tabs = '<div class="admin-tabs" style="border-bottom:2px solid var(--border);margin-bottom:2rem;overflow-x:auto;">';
   for (var i = 0; i < sections.length; i++) {
