@@ -9072,7 +9072,7 @@ async function doMarkPaid(teamId) {
 // ─────────────────────────────────────────────────────────────────
 //  TAB 4: ROUNDS & SCHEDULE
 // ─────────────────────────────────────────────────────────────────
-function renderAdminRounds(el) {
+async function renderAdminRounds(el) {
   var activeTourneys = [];
   var completedTourneys = [];
   for (var i = 0; i < _adminTournaments.length; i++) {
@@ -9084,12 +9084,10 @@ function renderAdminRounds(el) {
   var cardsHtml = '';
 
   for (var ai = 0; ai < activeTourneys.length; ai++) {
-    var at = activeTourneys[ai];
-    cardsHtml += _buildRoundCard(at, false);
+    cardsHtml += _buildRoundCard(activeTourneys[ai], false);
   }
   for (var ci = 0; ci < completedTourneys.length; ci++) {
-    var ct = completedTourneys[ci];
-    cardsHtml += _buildRoundCard(ct, true);
+    cardsHtml += _buildRoundCard(completedTourneys[ci], true);
   }
 
   if (!cardsHtml) {
@@ -9111,6 +9109,112 @@ function renderAdminRounds(el) {
         '<button class="btn btn--ghost btn--sm" onclick="document.getElementById(\'sim-log-container\').style.display=\'none\'">Close</button></div>' +
         '<div class="card__body"><div class="sim-log" id="sim-log"></div></div></div>' +
     '</div>';
+
+  // Load scores for all active + completed tournaments
+  var allTourneys = activeTourneys.concat(completedTourneys);
+  for (var si = 0; si < allTourneys.length; si++) {
+    _loadAndRenderScores(allTourneys[si].id);
+  }
+}
+
+async function _loadAndRenderScores(tournId) {
+  var el = document.getElementById('scores-panel-' + tournId);
+  if (!el) { return; }
+
+  try {
+    // Fetch economies and teams in parallel
+    var econRows = await sbGet('economies',
+      'tournament_id=eq.' + tournId + '&select=team_id,current,scores_history,current_round&limit=200') || [];
+    var teamRows = await sbGet('teams',
+      'tournament_id=eq.' + tournId + '&limit=200') || [];
+
+    var teamMap = {};
+    for (var ti = 0; ti < teamRows.length; ti++) {
+      teamMap[teamRows[ti].id] = teamRows[ti];
+    }
+
+    // Build score entries
+    var entries = [];
+    for (var ei = 0; ei < econRows.length; ei++) {
+      var er = econRows[ei];
+      var st = (er.current && typeof er.current === 'object') ? er.current
+             : (er.current ? JSON.parse(er.current) : defaultEconomy());
+      var sc = computeScores(st);
+      var tm = teamMap[er.team_id] || {};
+      entries.push({
+        teamName:  tm.name || er.team_id,
+        round:     er.current_round || 0,
+        total:     sc.total,
+        gdp:       sc.gdp,
+        stability: sc.stability,
+        equality:  sc.equality,
+        sust:      sc.sustainability,
+        inn:       sc.innovation,
+        gdpGrowth: st.gdp_growth,
+        inflation: st.inflation,
+        debt:      st.debt,
+        feePaid:   tm.fee_paid
+      });
+    }
+
+    entries.sort(function(a, b) { return b.total - a.total; });
+
+    if (!entries.length) {
+      el.innerHTML = '<p class="text-sm text-muted" style="padding:0.75rem 0;">No economy data yet — run the simulation to generate scores.</p>';
+      return;
+    }
+
+    var rows = '';
+    for (var ri = 0; ri < entries.length; ri++) {
+      var e = entries[ri];
+      var medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : (ri + 1);
+      var barPct = Math.round(e.total / 10); // 0-100 for 0-1000
+      rows +=
+        '<tr>' +
+        '<td style="width:28px;">' + medal + '</td>' +
+        '<td><strong>' + esc(e.teamName) + '</strong>' +
+          (!e.feePaid ? ' <span class="badge badge--subtle badge--no-dot" style="font-size:0.65rem;">Unpaid</span>' : '') +
+        '</td>' +
+        '<td>' +
+          '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+            '<div style="flex:1;height:6px;background:var(--bg-subtle);border-radius:3px;min-width:60px;">' +
+              '<div style="width:' + barPct + '%;height:6px;background:var(--blue);border-radius:3px;"></div>' +
+            '</div>' +
+            '<span class="text-mono" style="font-size:0.875rem;font-weight:600;min-width:36px;">' + e.total + '</span>' +
+          '</div>' +
+        '</td>' +
+        '<td class="text-mono" style="font-size:0.75rem;color:var(--text-400);">' + e.gdp + '</td>' +
+        '<td class="text-mono" style="font-size:0.75rem;color:var(--text-400);">' + e.stability + '</td>' +
+        '<td class="text-mono" style="font-size:0.75rem;color:var(--text-400);">' + e.equality + '</td>' +
+        '<td class="text-mono" style="font-size:0.75rem;color:var(--text-400);">' + e.sust + '</td>' +
+        '<td class="text-mono" style="font-size:0.75rem;color:var(--text-400);">' + e.inn + '</td>' +
+        '<td class="text-mono" style="font-size:0.75rem;color:var(--text-500);">' +
+          (e.gdpGrowth >= 0 ? '+' : '') + e.gdpGrowth + '%' +
+        '</td>' +
+        '</tr>';
+    }
+
+    el.innerHTML =
+      '<div class="table-wrap" style="border:none;box-shadow:none;padding:0;">' +
+        '<table class="table" style="font-size:0.8125rem;">' +
+          '<thead><tr>' +
+            '<th>#</th>' +
+            '<th>Team</th>' +
+            '<th>Score / 1000</th>' +
+            '<th title="GDP Performance">GDP</th>' +
+            '<th title="Stability">Stab</th>' +
+            '<th title="Equality">Eq</th>' +
+            '<th title="Sustainability">Sust</th>' +
+            '<th title="Innovation">Inn</th>' +
+            '<th title="GDP Growth">Growth</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>';
+
+  } catch(err) {
+    el.innerHTML = '<p class="text-sm text-muted" style="padding:0.75rem 0;color:var(--danger);">Could not load scores: ' + esc((err && err.message) || '') + '</p>';
+  }
 }
 
 function _buildRoundCard(t, isCompleted) {
@@ -9155,7 +9259,10 @@ function _buildRoundCard(t, isCompleted) {
   return '<div class="card" style="margin-bottom:1.5rem;">' +
     '<div class="card__header">' +
       '<span class="card__title">' + esc(t.name || '') + '</span>' +
-      _statusBadge(t.status) +
+      '<div style="display:flex;gap:0.5rem;align-items:center;">' +
+        _statusBadge(t.status) +
+        '<button class="btn btn--ghost btn--sm" onclick="_loadAndRenderScores(\'' + t.id + '\')">↻ Refresh Scores</button>' +
+      '</div>' +
     '</div>' +
     '<div class="card__body">' +
       '<div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1rem;">' +
@@ -9164,6 +9271,12 @@ function _buildRoundCard(t, isCompleted) {
       '</div>' +
       schedHtml +
       '<div style="margin-top:1.25rem;" class="admin-action-row">' + actionHtml + '</div>' +
+      '<div style="margin-top:1.5rem;">' +
+        '<div style="font-size:0.8125rem;font-weight:600;color:var(--text-500);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.625rem;">Live Scores</div>' +
+        '<div id="scores-panel-' + t.id + '">' +
+          '<div class="empty-state" style="padding:1rem 0;"><div class="spinner" style="width:20px;height:20px;margin:0 auto;"></div></div>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -9286,7 +9399,7 @@ async function runSimulation(tournId) {
       }
 
       // ── Call simulation Edge Function (keeps engine server-side) ──
-      // Falls back to local simRound if Edge Function is unavailable
+      // Falls back to local simRound if Edge Function is unavailable or returns wrong data
       var newState, scores;
       try {
         var simRes = await fetch(SIM_EDGE_URL, {
@@ -9299,14 +9412,21 @@ async function runSimulation(tournId) {
           body: JSON.stringify({ state: state, policy: policy, crises: activeCrises })
         });
         if (!simRes.ok) {
-          var simErr = await simRes.text();
-          log('  Edge function unavailable (' + simRes.status + ') — running locally.', 'warn');
+          log('  Edge function returned ' + simRes.status + ' — running locally.', 'warn');
           newState = simRound(state, policy, activeCrises);
           scores   = computeScores(newState);
         } else {
           var simData = await simRes.json();
-          newState = simData.newState;
-          scores   = simData.scores;
+          if (simData && simData.newState && simData.scores) {
+            newState = simData.newState;
+            scores   = simData.scores;
+            log('  Edge function OK.', '');
+          } else {
+            // Edge function returned 200 but wrong payload (e.g. still the default template)
+            log('  Edge function returned unexpected data — running locally.', 'warn');
+            newState = simRound(state, policy, activeCrises);
+            scores   = computeScores(newState);
+          }
         }
       } catch(fetchErr) {
         log('  Edge function unreachable — running locally.', 'warn');
