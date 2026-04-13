@@ -9286,23 +9286,33 @@ async function runSimulation(tournId) {
       }
 
       // ── Call simulation Edge Function (keeps engine server-side) ──
-      var simRes = await fetch(SIM_EDGE_URL, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': 'Bearer ' + _authToken(),
-          'apikey':        SUPA_ANON
-        },
-        body: JSON.stringify({ state: state, policy: policy, crises: activeCrises })
-      });
-      if (!simRes.ok) {
-        var simErr = await simRes.text();
-        log('  Simulation error: ' + simErr, 'err');
-        continue;
+      // Falls back to local simRound if Edge Function is unavailable
+      var newState, scores;
+      try {
+        var simRes = await fetch(SIM_EDGE_URL, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + _authToken(),
+            'apikey':        SUPA_ANON
+          },
+          body: JSON.stringify({ state: state, policy: policy, crises: activeCrises })
+        });
+        if (!simRes.ok) {
+          var simErr = await simRes.text();
+          log('  Edge function unavailable (' + simRes.status + ') — running locally.', 'warn');
+          newState = simRound(state, policy, activeCrises);
+          scores   = computeScores(newState);
+        } else {
+          var simData = await simRes.json();
+          newState = simData.newState;
+          scores   = simData.scores;
+        }
+      } catch(fetchErr) {
+        log('  Edge function unreachable — running locally.', 'warn');
+        newState = simRound(state, policy, activeCrises);
+        scores   = computeScores(newState);
       }
-      var simData  = await simRes.json();
-      var newState = simData.newState;
-      var scores   = simData.scores;
       log('  GDP: ' + newState.gdp_growth + '% | Inflation: ' + newState.inflation + '% | Score: ' + scores.total + '/1000');
 
       // Resolve crisis
