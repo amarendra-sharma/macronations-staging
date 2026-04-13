@@ -9072,6 +9072,45 @@ async function doMarkPaid(teamId) {
 // ─────────────────────────────────────────────────────────────────
 //  TAB 4: ROUNDS & SCHEDULE
 // ─────────────────────────────────────────────────────────────────
+async function diagEconomies() {
+  var out = '=== Economy Record Diagnostic ===\n\n';
+  try {
+    var tourneys = _adminTournaments.filter(function(t) {
+      return t.status === 'active' || t.status === 'completed';
+    });
+    if (!tourneys.length) { alert('No active tournaments found.'); return; }
+
+    for (var ti = 0; ti < tourneys.length; ti++) {
+      var t = tourneys[ti];
+      out += 'Tournament: ' + t.name + ' (Round ' + t.current_round + '/' + t.rounds_total + ')\n';
+
+      var teams = await sbGet('teams', 'tournament_id=eq.' + t.id + '&limit=200') || [];
+      out += 'Teams in DB: ' + teams.length + '\n';
+
+      for (var i = 0; i < teams.length; i++) {
+        var tm = teams[i];
+        var econRows = await sbGet('economies',
+          'team_id=eq.' + tm.id + '&tournament_id=eq.' + t.id + '&limit=1') || [];
+        if (!econRows.length) {
+          out += '  [' + tm.name + '] NO ECONOMY RECORD\n';
+        } else {
+          var er = econRows[0];
+          var cur = er.current;
+          var gdp = (cur && cur.gdp_growth !== undefined) ? cur.gdp_growth : 'NULL';
+          var eRound = er.current_round || 0;
+          var snapCount = (er.snapshots && er.snapshots.length) ? er.snapshots.length : 0;
+          out += '  [' + tm.name + '] economy found — gdp_growth:' + gdp +
+            '  current_round:' + eRound + '  snapshots:' + snapCount + '\n';
+        }
+      }
+      out += '\n';
+    }
+  } catch(e) {
+    out += 'ERROR: ' + (e.message || e) + '\n';
+  }
+  alert(out);
+}
+
 async function renderAdminRounds(el) {
   var activeTourneys = [];
   var completedTourneys = [];
@@ -9101,7 +9140,11 @@ async function renderAdminRounds(el) {
       '<div class="dash-alert__icon">ℹ️</div>' +
       '<div class="dash-alert__body"><div class="dash-alert__title">How round advancement works</div>' +
       'Running simulation: applies each team\'s submitted policy (or defaults), processes crisis effects, updates economy records, ' +
-      'then advances current_round by 1. A new crisis fires with 60% probability on rounds 3, 6, and 9.</div>' +
+      'then advances current_round by 1. A new crisis fires with 60% probability on rounds 3, 6, and 9. ' +
+      'If scores do not change, check the sim log for ✗ DATABASE WRITE FAILED errors.</div>' +
+    '</div>' +
+    '<div style="margin-bottom:1rem;">' +
+      '<button class="btn btn--ghost btn--sm" onclick="diagEconomies()">🔍 Diagnose Economy Records</button>' +
     '</div>' +
     cardsHtml +
     '<div id="sim-log-container" style="display:none;">' +
@@ -9353,6 +9396,14 @@ async function runSimulation(tournId) {
       var econRecord = (econRows && econRows.length) ? econRows[0] : null;
       var state      = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
 
+      if (!econRecord) {
+        log('  ⚠ No economy record found — will create one after simulation.', 'warn');
+      } else {
+        var currentGdp = (econRecord.current && econRecord.current.gdp_growth !== undefined)
+          ? econRecord.current.gdp_growth : '?';
+        log('  Economy record found. Current GDP growth: ' + currentGdp + '%');
+      }
+
       // Load decision for this round
       var decRows = await sbGet('decisions',
         'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId +
@@ -9460,25 +9511,32 @@ async function runSimulation(tournId) {
       }
 
       // Update economy record
-      var snapshots = ((econRecord && econRecord.snapshots) ? econRecord.snapshots : []).concat([state]);
+      var snapshots  = ((econRecord && econRecord.snapshots)      ? econRecord.snapshots      : []).concat([state]);
       var scoresHist = ((econRecord && econRecord.scores_history) ? econRecord.scores_history : []).concat([{ round: round, scores: scores }]);
 
-      if (econRecord) {
-        await sbPatch('economies', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId, {
-          current:        newState,
-          snapshots:      snapshots,
-          current_round:  newRound,
-          scores_history: scoresHist
-        });
-      } else {
-        await sbPost('economies', {
-          team_id:        team.id,
-          tournament_id:  tournId,
-          current:        newState,
-          snapshots:      snapshots,
-          current_round:  newRound,
-          scores_history: scoresHist
-        });
+      try {
+        if (econRecord) {
+          var patchResult = await sbPatch('economies', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId, {
+            current:        newState,
+            snapshots:      snapshots,
+            current_round:  newRound,
+            scores_history: scoresHist
+          });
+          log('  ✓ Economy updated in database. New GDP: ' + newState.gdp_growth + '%');
+        } else {
+          var postResult = await sbPost('economies', {
+            team_id:        team.id,
+            tournament_id:  tournId,
+            current:        newState,
+            snapshots:      snapshots,
+            current_round:  newRound,
+            scores_history: scoresHist
+          });
+          log('  ✓ Economy record created in database.');
+        }
+      } catch(dbErr) {
+        log('  ✗ DATABASE WRITE FAILED: ' + (dbErr && dbErr.message ? dbErr.message : String(dbErr)), 'err');
+        log('  Check RLS policies on economies table in Supabase.', 'err');
       }
 
       // Collect member emails for notification
