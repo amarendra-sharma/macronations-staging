@@ -9289,10 +9289,27 @@ function _buildRoundCard(t, isCompleted) {
 
   var actionHtml = '';
   if (!isCompleted) {
+    // Build replay options for all completed rounds (rounds before current)
+    var replayOptions = '';
+    for (var rr = 1; rr < round; rr++) {
+      replayOptions += '<option value="' + rr + '">Round ' + rr + '</option>';
+    }
+    var replayHtml = round > 1
+      ? '<span style="display:inline-flex;align-items:center;gap:0.375rem;margin-left:0.5rem;">' +
+          '<select id="replay-round-sel-' + t.id + '" class="form-select" style="font-size:0.8125rem;padding:0.25rem 0.5rem;height:auto;">' +
+            replayOptions +
+          '</select>' +
+          '<button class="btn btn--ghost btn--sm" onclick="replayRounds(\'' + t.id + '\')" title="Re-run simulation for selected rounds using stored decisions. Does NOT advance the round counter.">' +
+            '↺ Replay' +
+          '</button>' +
+        '</span>'
+      : '';
+
     actionHtml =
       '<button class="btn btn--primary" id="btn-run-sim-' + t.id + '" onclick="runSimulation(\'' + t.id + '\')">' +
         '▶ Run Simulation &amp; Advance to Round ' + (round + 1) + '</button> ' +
-      '<button class="btn btn--ghost btn--sm" onclick="promptCompleteTournament(\'' + t.id + '\')">Mark Complete</button>';
+      '<button class="btn btn--ghost btn--sm" onclick="promptCompleteTournament(\'' + t.id + '\')">Mark Complete</button>' +
+      replayHtml;
   } else {
     actionHtml =
       '<span class="text-sm text-muted">Completed. </span>' +
@@ -9322,6 +9339,160 @@ function _buildRoundCard(t, isCompleted) {
       '</div>' +
     '</div>' +
   '</div>';
+}
+
+// ── REPLAY PAST ROUNDS ────────────────────────────────────────────
+// Re-runs simulation for rounds 1..targetRound in sequence using stored
+// decisions. Does NOT increment current_round. Safe to run on live tournaments.
+async function replayRounds(tournId) {
+  var sel = document.getElementById('replay-round-sel-' + tournId);
+  var targetRound = sel ? Number(sel.value) : 1;
+  var t = _getTournById(tournId);
+  if (!t) { flash('Tournament not found.', 'error'); return; }
+
+  var currentRound = t.current_round || 0;
+  if (targetRound >= currentRound) {
+    flash('Can only replay completed rounds (before Round ' + currentRound + ').', 'error');
+    return;
+  }
+
+  if (!confirm(
+    'Replay Rounds 1 → ' + targetRound + ' for "' + (t.name || 'tournament') + '"?\n\n' +
+    'This re-runs the simulation for each round in sequence using the decisions students actually submitted.\n' +
+    'It will OVERWRITE current economy states but will NOT advance the round counter.\n\n' +
+    'Safe to run on a live tournament.'
+  )) { return; }
+
+  var logContainer = document.getElementById('sim-log-container');
+  var logEl        = document.getElementById('sim-log');
+  if (logContainer) { logContainer.style.display = 'block'; }
+  if (logEl)        { logEl.innerHTML = ''; }
+
+  function log(msg, cls) {
+    if (!logEl) { return; }
+    var line = document.createElement('div');
+    line.className = 'sim-log-line' + (cls ? ' sim-log-line--' + cls : '');
+    line.textContent = msg;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  log('=== REPLAY: Rounds 1 → ' + targetRound + ' ===', 'head');
+  log('Tournament: ' + (t.name || tournId));
+  log('');
+
+  try {
+    var teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
+    if (!teams.length) { log('No teams found.', 'warn'); return; }
+    log('Teams found: ' + teams.length);
+
+    // For each team, replay rounds 1..targetRound in sequence
+    for (var ti = 0; ti < teams.length; ti++) {
+      var team = teams[ti];
+      log('');
+      log('--- Team: ' + (team.name || team.id) + ' ---', 'head');
+
+      // Load existing economy record
+      var econRows = await sbGet('economies',
+        'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId + '&limit=1') || [];
+      var econRecord = econRows.length ? econRows[0] : null;
+
+      // Start from default economy
+      var state = defaultEconomy();
+      var snapshots  = [];
+      var scoresHist = [];
+
+      // Replay each round sequentially
+      for (var r = 1; r <= targetRound; r++) {
+        // Load decision for this round
+        var decRows = await sbGet('decisions',
+          'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId +
+          '&round=eq.' + r + '&is_final=eq.true&limit=1') || [];
+        var decision = decRows.length ? decRows[0] : null;
+
+        var policy = {};
+        if (decision && decision.policy) {
+          policy = decision.policy;
+          log('  Round ' + r + ': using submitted policy');
+        } else {
+          for (var li = 0; li < LEVERS.length; li++) {
+            policy[LEVERS[li].key] = LEVERS[li].def;
+          }
+          log('  Round ' + r + ': no submission — using defaults', 'warn');
+        }
+
+        // Load crisis for this round
+        var crRows = await sbGet('crises_active',
+          'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId +
+          '&round=eq.' + r + '&limit=1') || [];
+        var activeCrises = [];
+        if (crRows.length) {
+          var cr = crRows[0];
+          var crDef = (CRISES && CRISES[cr.crisis_id]) ? CRISES[cr.crisis_id] : null;
+          if (crDef) {
+            var eff = 0;
+            if (cr.response) {
+              var opts = crDef.options || [];
+              for (var oi = 0; oi < opts.length; oi++) {
+                if (opts[oi].id === cr.response) { eff = opts[oi].effectiveness; break; }
+              }
+            }
+            activeCrises.push({
+              gdp_shock:            crDef.gdp_shock,
+              unemp_shock:          crDef.unemp_shock,
+              inf_shock:            crDef.inf_shock,
+              fin_shock:            crDef.fin_shock,
+              chosen_effectiveness: eff
+            });
+          }
+        }
+
+        // Save pre-round state as snapshot, then simulate
+        snapshots.push(JSON.parse(JSON.stringify(state)));
+        var newState = simRound(state, policy, activeCrises);
+        var scores   = computeScores(newState);
+        scoresHist.push({ round: r, scores: scores });
+        log('  Round ' + r + ' result → GDP: ' + newState.gdp_growth + '% | Score: ' + scores.total + '/1000');
+        state = newState;
+      }
+
+      // Write final state to database
+      try {
+        if (econRecord) {
+          await sbPatch('economies', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tournId, {
+            current:        state,
+            snapshots:      snapshots,
+            current_round:  targetRound,
+            scores_history: scoresHist
+          });
+          log('  ✓ Economy written to database (Round ' + targetRound + ' state).');
+        } else {
+          await sbPost('economies', {
+            team_id:        team.id,
+            tournament_id:  tournId,
+            current:        state,
+            snapshots:      snapshots,
+            current_round:  targetRound,
+            scores_history: scoresHist
+          });
+          log('  ✓ Economy record created in database.');
+        }
+      } catch(dbErr) {
+        log('  ✗ DB write failed: ' + (dbErr && dbErr.message ? dbErr.message : String(dbErr)), 'err');
+      }
+    }
+
+    log('');
+    log('=== Replay complete. ' + teams.length + ' teams updated to Round ' + targetRound + ' state. ===', 'head');
+    flash('Replay complete — economies updated through Round ' + targetRound + '.', 'success');
+
+    // Refresh scores panel
+    _loadAndRenderScores(tournId);
+
+  } catch(e) {
+    log('ERROR: ' + (e.message || e), 'err');
+    flash('Replay error: ' + (e.message || ''), 'error');
+  }
 }
 
 // ── SIMULATION ENGINE ─────────────────────────────────────────────
@@ -12616,5 +12787,832 @@ function _renderDashProfileTab() {
 }
 
 </script>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OPEN CHAMPIONSHIP MODULE
+     Self-contained IIFE — safe to disable via admin toggle.
+     Does not modify any existing function or variable.
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<!-- Page HTML injected by JS below -->
+
+<script>
+// ╔═══════════════════════════════════════════════════════════════════╗
+// ║  OPEN CHAMPIONSHIP MODULE  v1.0                                  ║
+// ║  Namespace: OC.*  —  zero interference with existing code        ║
+// ╚═══════════════════════════════════════════════════════════════════╝
+(function() {
+'use strict';
+
+// ── Constants ────────────────────────────────────────────────────────
+var OC_ENTRY_FEE      = 50;
+var OC_ROUNDS         = 10;
+var OC_MS_PER_ROUND   = 24 * 60 * 60 * 1000;   // 24 hours
+var OC_TOURN_TYPE     = 'open_championship';
+var OC_MODULE_KEY     = 'oc_module_enabled';
+var OC_NAV_ID         = 'nav-oc-link';
+var OC_PAGE_ID        = 'page-open-champ';
+
+// ── Helpers (use existing platform primitives) ───────────────────────
+function ocEnabled() {
+  try { return localStorage.getItem(OC_MODULE_KEY) === '1'; } catch(e) { return false; }
+}
+function ocSetEnabled(v) {
+  try { localStorage.setItem(OC_MODULE_KEY, v ? '1' : '0'); } catch(e) {}
+}
+function ocFmt$(n) { return typeof fmt$ === 'function' ? fmt$(n) : '$' + Number(n).toFixed(2); }
+function ocEsc(s) { return typeof esc === 'function' ? esc(s) : String(s).replace(/[&<>"]/g, function(c){ return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
+function ocFlash(msg, type) { if (typeof flash === 'function') { flash(msg, type); } }
+function ocLog(msg) { console.log('[OC]', msg); }
+
+// ── Inject page HTML ─────────────────────────────────────────────────
+function ocInjectPage() {
+  if (document.getElementById(OC_PAGE_ID)) { return; }
+  var div = document.createElement('div');
+  div.className = 'page';
+  div.id = OC_PAGE_ID;
+  div.style.display = 'none';
+  div.innerHTML =
+    '<div class="page-header">' +
+      '<div class="page-header__inner">' +
+        '<div>' +
+          '<h1 class="page-header__title">Open Championship</h1>' +
+          '<p class="page-header__sub">10-day global macroeconomic simulation — open to all</p>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="container" style="padding-top:0;padding-bottom:3rem;" id="oc-container">' +
+      '<div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 1rem;"></div>' +
+        '<div class="empty-state__title">Loading…</div></div>' +
+    '</div>';
+  document.body.appendChild(div);
+}
+
+// ── Nav link ─────────────────────────────────────────────────────────
+function ocInjectNav() {
+  if (document.getElementById(OC_NAV_ID)) { return; }
+  var nav = document.querySelector('.nav__links');
+  if (!nav) { return; }
+  var a = document.createElement('a');
+  a.href = '#';
+  a.className = 'nav__tab';
+  a.id = OC_NAV_ID;
+  a.setAttribute('data-page', 'open-champ');
+  a.textContent = '🏆 Open';
+  a.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (typeof showPage === 'function') { showPage('open-champ'); }
+  });
+  var divider = nav.querySelector('.nav__divider');
+  if (divider) { nav.insertBefore(a, divider); } else { nav.appendChild(a); }
+}
+
+function ocRemoveNav() {
+  var el = document.getElementById(OC_NAV_ID);
+  if (el) { el.remove(); }
+}
+
+// ── Register page loader ─────────────────────────────────────────────
+if (typeof PAGE_LOADERS !== 'undefined') {
+  PAGE_LOADERS['open-champ'] = function() { ocRenderPage(); };
+}
+
+// ── Active tournament helpers ────────────────────────────────────────
+async function ocGetActiveTournament() {
+  var year = new Date().getFullYear();
+  try {
+    var rows = await sbGetPublic('tournaments',
+      'tier=eq.' + OC_TOURN_TYPE + '&status=in.(registration,active)&order=created_at.desc&limit=1');
+    return (rows && rows.length) ? rows[0] : null;
+  } catch(e) { return null; }
+}
+
+async function ocGetOrCreateTournament() {
+  var existing = await ocGetActiveTournament();
+  if (existing) { return existing; }
+
+  // Create new open championship tournament for this year
+  var year = new Date().getFullYear();
+  var now  = new Date();
+  var schedule = [];
+  for (var r = 1; r <= OC_ROUNDS; r++) {
+    var openMs  = now.getTime() + (r - 1) * OC_MS_PER_ROUND;
+    var closeMs = openMs + OC_MS_PER_ROUND - 1;
+    schedule.push({
+      round:    r,
+      date:     new Date(openMs).toISOString(),
+      deadline: new Date(closeMs).toISOString()
+    });
+  }
+
+  try {
+    var tourn = await sbPost('tournaments', {
+      name:          'Open Championship ' + year,
+      tier:          OC_TOURN_TYPE,
+      status:        'registration',
+      season_year:   year,
+      rounds_total:  OC_ROUNDS,
+      current_round: 0,
+      entry_fee:     OC_ENTRY_FEE,
+      max_teams:     0,
+      schedule:      schedule,
+      description:   'Open global macroeconomic simulation — 10 rounds, 1 per day. Top teams qualify for the World Cup.',
+      created_by:    (currentUser && currentUser.id) || 'system',
+      is_global_elected: true,
+      payment_link:  DEFAULT_PAYMENT_LINK || ''
+    });
+    return tourn;
+  } catch(e) { ocLog('Create tournament failed: ' + e.message); return null; }
+}
+
+// ── One-per-year guard ───────────────────────────────────────────────
+async function ocCheckAlreadyRegistered(userId) {
+  var year = new Date().getFullYear();
+  try {
+    // Check if user is in any open championship team this year
+    var captained = await sbGet('teams',
+      'captain_id=eq.' + userId + '&tier=eq.' + OC_TOURN_TYPE);
+    // Filter by season year via tournament join not possible in REST — check tournament season_year
+    if (captained && captained.length) {
+      for (var i = 0; i < captained.length; i++) {
+        var tournRows = await sbGetPublic('tournaments',
+          'id=eq.' + captained[i].tournament_id + '&season_year=eq.' + year + '&limit=1');
+        if (tournRows && tournRows.length) { return captained[i]; }
+      }
+    }
+    // Also check member
+    var membered = await sbGet('teams',
+      'members=cs.{' + userId + '}&tier=eq.' + OC_TOURN_TYPE);
+    if (membered && membered.length) {
+      for (var j = 0; j < membered.length; j++) {
+        var tRows = await sbGetPublic('tournaments',
+          'id=eq.' + membered[j].tournament_id + '&season_year=eq.' + year + '&limit=1');
+        if (tRows && tRows.length) { return membered[j]; }
+      }
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+// ── Lazy round advancement ───────────────────────────────────────────
+async function ocCheckAndAdvanceRounds(tourn) {
+  if (!tourn || tourn.status !== 'active') { return tourn; }
+  var sched = tourn.schedule;
+  if (!sched || !Array.isArray(sched)) { return tourn; }
+
+  var now          = Date.now();
+  var currentRound = tourn.current_round || 0;
+  var totalRounds  = tourn.rounds_total  || OC_ROUNDS;
+  var advanced     = false;
+
+  // Find how many rounds have expired
+  var roundsToAdvance = 0;
+  for (var i = 0; i < sched.length; i++) {
+    var sr = sched[i];
+    if (sr.round <= currentRound) { continue; }
+    if (new Date(sr.deadline).getTime() < now) { roundsToAdvance++; }
+  }
+
+  if (!roundsToAdvance) { return tourn; }
+
+  ocLog('Lazy advancement: ' + roundsToAdvance + ' rounds expired, advancing...');
+
+  // Run simulation for each expired round sequentially
+  try {
+    var teams = await sbGetPublic('teams',
+      'tournament_id=eq.' + tourn.id + '&limit=200') || [];
+
+    for (var ri = 0; ri < roundsToAdvance; ri++) {
+      var targetRound = currentRound + ri + 1;
+      if (targetRound > totalRounds) { break; }
+
+      for (var ti = 0; ti < teams.length; ti++) {
+        var team = teams[ti];
+        var econRows = await sbGetPublic('economies',
+          'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id + '&limit=1') || [];
+        var econRecord = econRows.length ? econRows[0] : null;
+        var state = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
+
+        // Load decision
+        var decRows = [];
+        try {
+          decRows = await sbGet('decisions',
+            'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id +
+            '&round=eq.' + targetRound + '&is_final=eq.true&limit=1') || [];
+        } catch(e) {}
+        var decision = decRows.length ? decRows[0] : null;
+        var policy = {};
+        if (decision && decision.policy) {
+          policy = decision.policy;
+        } else {
+          for (var li = 0; li < LEVERS.length; li++) {
+            policy[LEVERS[li].key] = LEVERS[li].def;
+          }
+        }
+
+        // Run local simulation (no Edge Function dependency)
+        var newState = simRound(state, policy, []);
+        var scores   = computeScores(newState);
+        var snapshots  = ((econRecord && econRecord.snapshots)      ? econRecord.snapshots      : []).concat([state]);
+        var scoresHist = ((econRecord && econRecord.scores_history) ? econRecord.scores_history : []).concat([{ round: targetRound, scores: scores }]);
+
+        try {
+          if (econRecord) {
+            await sbPatch('economies', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id, {
+              current: newState, snapshots: snapshots,
+              current_round: targetRound, scores_history: scoresHist
+            });
+          } else {
+            await sbPost('economies', {
+              team_id: team.id, tournament_id: tourn.id,
+              current: newState, snapshots: snapshots,
+              current_round: targetRound, scores_history: scoresHist
+            });
+          }
+        } catch(dbErr) { ocLog('Economy write failed for ' + team.name + ': ' + dbErr.message); }
+
+        // Send email notification (mailto — best effort)
+        ocSendRoundEmail(team, tourn, targetRound, scores.total);
+      }
+
+      // Advance tournament round counter
+      var newRound = currentRound + ri + 1;
+      var newStatus = newRound >= totalRounds ? 'completed' : 'active';
+      await sbPatch('tournaments', 'id=eq.' + tourn.id, {
+        current_round: newRound,
+        status: newStatus
+      });
+      tourn.current_round = newRound;
+      tourn.status = newStatus;
+      ocLog('Advanced to round ' + newRound);
+
+      // If completed, register qualifiers to global season
+      if (newStatus === 'completed') {
+        try { await _registerGlobalQualifiers(tourn.id); } catch(e) {}
+      }
+    }
+    advanced = true;
+  } catch(e) { ocLog('Advancement error: ' + e.message); }
+
+  return tourn;
+}
+
+// ── Email notification ───────────────────────────────────────────────
+function ocSendRoundEmail(team, tourn, roundNum, score) {
+  // Silently builds a mailto — only fires if member IDs can be resolved
+  // In practice we store member IDs, not emails, so we collect what we have
+  var tournName = tourn.name || 'Open Championship';
+  var subject   = encodeURIComponent('[MacroNations] Round ' + roundNum + ' complete — ' + tournName);
+  var body      = encodeURIComponent(
+    'Hi ' + (team.name || 'team') + ',
+
+' +
+    'Round ' + roundNum + ' of the ' + tournName + ' has been automatically completed.
+
+' +
+    'Your score this round: ' + score + '/1000
+
+' +
+    'Log in at macronations.com to view your economy, submit your Round ' + (roundNum + 1) + ' policy, and stay ahead of the competition.
+
+' +
+    'Good luck!
+— MacroNations Team'
+  );
+  // Open mailto silently in background — browser may block but that is acceptable
+  try {
+    var link = document.createElement('a');
+    link.href = 'mailto:?subject=' + subject + '&body=' + body;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function() { link.remove(); }, 500);
+  } catch(e) {}
+}
+
+// ── Social sharing ───────────────────────────────────────────────────
+function ocSocialShareHtml(teamName, tournName) {
+  var msg  = encodeURIComponent(
+    "I'm competing in the MacroNations Open Championship — a real-time macroeconomic policy simulation. " +
+    "Join me at macronations.com and test your economic thinking against teams worldwide! #MacroNations #Economics"
+  );
+  var url  = encodeURIComponent('https://macronations.com');
+  var raw  = "I'm competing in the MacroNations Open Championship — a real-time macroeconomic policy simulation. " +
+    "Join me at macronations.com! #MacroNations #Economics";
+
+  var fbUrl  = 'https://www.facebook.com/sharer/sharer.php?u=' + url + '&quote=' + msg;
+  var twUrl  = 'https://twitter.com/intent/tweet?text=' + msg + '&url=' + url;
+  var liUrl  = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url + '&summary=' + msg;
+  var waUrl  = 'https://wa.me/?text=' + msg + '%20' + url;
+  var mailUrl = 'mailto:?subject=' + encodeURIComponent('[MacroNations] Join me in the Open Championship!') +
+    '&body=' + encodeURIComponent(raw + '
+
+https://macronations.com');
+
+  return (
+    '<div class="card" style="margin-bottom:1.5rem;border:2px solid #FFD700;">' +
+      '<div class="card__header" style="background:linear-gradient(135deg,#0D1F3C,#1a3a6b);">' +
+        '<span class="card__title" style="color:#FFD700;">🎉 You're in! Spread the word</span>' +
+      '</div>' +
+      '<div class="card__body">' +
+        '<p style="margin-bottom:1rem;color:var(--text-700);">Share your participation and help grow the competition — bigger field means a larger award fund.</p>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:0.625rem;">' +
+          '<a href="' + fbUrl + '" target="_blank" rel="noopener" class="btn btn--primary btn--sm" style="background:#1877F2;border-color:#1877F2;">📘 Facebook</a>' +
+          '<a href="' + twUrl + '" target="_blank" rel="noopener" class="btn btn--primary btn--sm" style="background:#000;border-color:#000;">𝕏 X / Twitter</a>' +
+          '<a href="' + liUrl + '" target="_blank" rel="noopener" class="btn btn--primary btn--sm" style="background:#0A66C2;border-color:#0A66C2;">💼 LinkedIn</a>' +
+          '<a href="' + waUrl + '" target="_blank" rel="noopener" class="btn btn--primary btn--sm" style="background:#25D366;border-color:#25D366;">💬 WhatsApp</a>' +
+          '<a href="' + mailUrl + '" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">📧 Email a friend</a>' +
+        '</div>' +
+        '<p style="margin-top:0.875rem;font-size:0.8125rem;color:var(--text-400);">Instagram: screenshot your score card and tag @macronations</p>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+// ── Certificate ──────────────────────────────────────────────────────
+function ocRenderCertificate(team, tourn, economy, scores) {
+  if (typeof makeCertSVG !== 'function') { return ''; }
+  var year = new Date().getFullYear();
+  var recipientName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
+  var tournName = tourn.name || 'Open Championship';
+  var svg;
+  try {
+    svg = makeCertSVG('participation', recipientName, tournName, scores.total, year,
+      'MacroNations LLC', 'Amarendra Sharma, PhD');
+  } catch(e) {
+    try { svg = makeCertSVG('participation', recipientName, tournName, scores.total, year); }
+    catch(e2) { return ''; }
+  }
+
+  var blob = new Blob([svg], { type: 'image/svg+xml' });
+  var url  = URL.createObjectURL(blob);
+  return (
+    '<div class="card" style="margin-bottom:1.5rem;">' +
+      '<div class="card__header"><span class="card__title">🎓 Your Certificate</span></div>' +
+      '<div class="card__body">' +
+        '<div id="oc-cert-preview" style="max-width:600px;margin:0 auto 1rem;">' + svg + '</div>' +
+        '<div style="display:flex;gap:0.625rem;">' +
+          '<a href="' + url + '" download="MacroNations_OpenChampionship_Certificate.svg" class="btn btn--primary btn--sm">⬇ Download SVG</a>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+// ── Main page renderer ───────────────────────────────────────────────
+async function ocRenderPage() {
+  var el = document.getElementById('oc-container');
+  if (!el) { return; }
+  el.innerHTML =
+    '<div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 1rem;"></div>' +
+    '<div class="empty-state__title">Loading Open Championship…</div></div>';
+
+  // Lazy advancement check
+  var tourn = await ocGetActiveTournament();
+  if (tourn && tourn.status === 'active') {
+    tourn = await ocCheckAndAdvanceRounds(tourn);
+  }
+
+  // Check if user already registered this year
+  var existingTeam = null;
+  if (currentUser) {
+    existingTeam = await ocCheckAlreadyRegistered(currentUser.id);
+  }
+
+  if (existingTeam) {
+    await ocRenderParticipantDashboard(el, tourn, existingTeam);
+  } else {
+    ocRenderRegistration(el, tourn);
+  }
+}
+
+// ── Registration view ────────────────────────────────────────────────
+function ocRenderRegistration(el, tourn) {
+  var year     = new Date().getFullYear();
+  var teamCount = 0;
+  var prizeEst  = 0;
+  // We'll fetch team count async and update
+  var poolId = 'oc-pool-display';
+
+  var schedHtml = '';
+  if (tourn && tourn.schedule && Array.isArray(tourn.schedule)) {
+    schedHtml = '<div class="card" style="margin-bottom:1.5rem;">' +
+      '<div class="card__header"><span class="card__title">📅 Round Schedule</span>' +
+        '<span class="text-sm text-muted">1 round per day · auto-advances at deadline</span></div>' +
+      '<div class="card__body">' +
+        '<div class="tourn-schedule-table">';
+    var now = Date.now();
+    var curRound = (tourn && tourn.current_round) ? tourn.current_round : 0;
+    for (var i = 0; i < tourn.schedule.length; i++) {
+      var sr = tourn.schedule[i];
+      var isPast    = sr.round < curRound;
+      var isCurrent = sr.round === curRound;
+      var rowStyle  = isCurrent ? 'background:var(--blue-light);font-weight:600;' : isPast ? 'color:var(--text-400);' : '';
+      var deadlineDate = new Date(sr.deadline);
+      var dateStr  = isNaN(deadlineDate) ? sr.deadline : deadlineDate.toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+      schedHtml +=
+        '<div class="tourn-schedule-row" style="' + rowStyle + '">' +
+          '<span class="tourn-schedule-round">' + (isPast ? '✓ ' : isCurrent ? '▶ ' : '') + 'Round ' + sr.round + '</span>' +
+          '<span class="tourn-schedule-dates">Deadline: ' + dateStr + '</span>' +
+        '</div>';
+    }
+    schedHtml += '</div></div></div>';
+  }
+
+  var statusBadge = tourn
+    ? (tourn.status === 'active' ? '<span class="badge badge--green badge--no-dot">Active · Round ' + tourn.current_round + '/' + OC_ROUNDS + '</span>'
+       : tourn.status === 'registration' ? '<span class="badge badge--blue badge--no-dot">Registration Open</span>'
+       : '<span class="badge badge--subtle badge--no-dot">Completed</span>')
+    : '<span class="badge badge--subtle badge--no-dot">Starting Soon</span>';
+
+  var canJoin = !tourn || tourn.status === 'registration' || tourn.status === 'active';
+
+  el.innerHTML =
+    // Hero banner
+    '<div style="background:#0D1F3C;border:2px solid #FFD700;border-radius:var(--radius-xl);padding:2rem 2rem 1.5rem;margin-bottom:1.5rem;">' +
+      '<div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#FFD700;margin-bottom:0.375rem;">MacroNations</div>' +
+      '<h2 style="font-family:'DM Serif Display',serif;font-size:1.75rem;color:#fff;margin-bottom:0.5rem;">Open Championship ' + year + '</h2>' +
+      '<p style="color:rgba(255,255,255,0.6);max-width:520px;line-height:1.7;margin-bottom:1.25rem;">A 10-day global macroeconomic simulation open to everyone. Form a team, pay the entry fee, and compete for a place in the World Cup. Rounds advance automatically every 24 hours.</p>' +
+      '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">' +
+        statusBadge +
+        '<div><span style="color:rgba(255,255,255,0.5);font-size:0.75rem;">Entry fee</span>' +
+          '<div style="font-family:'DM Mono',monospace;font-size:1.25rem;color:#FFD700;">' + ocFmt$(OC_ENTRY_FEE) + ' per team</div></div>' +
+        '<div><span style="color:rgba(255,255,255,0.5);font-size:0.75rem;">Award fund</span>' +
+          '<div style="font-family:'DM Mono',monospace;font-size:1.25rem;color:#fff;" id="' + poolId + '">—</div></div>' +
+        '<div><span style="color:rgba(255,255,255,0.5);font-size:0.75rem;">Duration</span>' +
+          '<div style="font-family:'DM Mono',monospace;font-size:1.25rem;color:#fff;">10 days</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    schedHtml +
+
+    // Registration card
+    (canJoin && currentUser
+      ? '<div class="card" style="margin-bottom:1.5rem;" id="oc-reg-card">' +
+          '<div class="card__header"><span class="card__title">Register Your Team</span>' +
+            '<span class="badge badge--subtle badge--no-dot">One entry per player per year</span></div>' +
+          '<div class="card__body">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">' +
+              '<div class="form-field" style="margin:0;">' +
+                '<label class="form-label form-label--required">Team Name</label>' +
+                '<input type="text" id="oc-team-name" class="form-input" placeholder="e.g. Team Alpha" maxlength="40">' +
+              '</div>' +
+              '<div class="form-field" style="margin:0;">' +
+                '<label class="form-label">Invite code <span style="font-weight:400;color:var(--text-400);">(or join existing)</span></label>' +
+                '<input type="text" id="oc-join-code" class="form-input" placeholder="Leave blank to create new team">' +
+              '</div>' +
+            '</div>' +
+            '<div class="dash-alert dash-alert--info" style="margin-bottom:1rem;">' +
+              '<div class="dash-alert__icon">💳</div>' +
+              '<div class="dash-alert__body">After registering, you'll be directed to pay the ' + ocFmt$(OC_ENTRY_FEE) + ' entry fee via Stripe. Your team competes once fee is confirmed by the admin.</div>' +
+            '</div>' +
+            '<div id="oc-reg-error" class="form-error" style="margin-bottom:0.5rem;"></div>' +
+            '<button class="btn btn--gold" id="btn-oc-register" onclick="OC.register()">Join Open Championship →</button>' +
+          '</div>' +
+        '</div>'
+      : !currentUser
+        ? '<div class="card" style="margin-bottom:1.5rem;"><div class="card__body" style="text-align:center;padding:2rem;">' +
+            '<p style="margin-bottom:1rem;">Sign in or register to join the Open Championship.</p>' +
+            '<button class="btn btn--primary" onclick="openAuthModal('login')">Sign In</button> ' +
+            '<button class="btn btn--ghost" onclick="openAuthModal('register')">Register Free</button>' +
+          '</div></div>'
+        : '<div class="dash-alert dash-alert--info"><div class="dash-alert__icon">⏳</div>' +
+            '<div class="dash-alert__body">No active Open Championship at the moment. Check back soon.</div></div>'
+    ) +
+
+    // Info cards
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">' +
+      _ocInfoCard('🏅', 'Top teams qualify', 'Best performers enter the MacroNations World Cup playoff bracket.') +
+      _ocInfoCard('⚡', 'Auto-advancing', 'Rounds advance every 24 hours. Miss a round and defaults apply.') +
+      _ocInfoCard('🎓', 'Certificate included', 'All participants receive a participation certificate at completion.') +
+    '</div>';
+
+  // Async: fetch team count and update prize display
+  if (tourn) {
+    sbGetPublic('teams', 'tournament_id=eq.' + tourn.id + '&fee_paid=eq.true&select=id').then(function(rows) {
+      var count = rows ? rows.length : 0;
+      var pp = typeof calcPrizePool === 'function' ? calcPrizePool(OC_ENTRY_FEE, count) : { pool: count * OC_ENTRY_FEE * 0.25 };
+      var el2 = document.getElementById(poolId);
+      if (el2) { el2.textContent = ocFmt$(pp.pool || 0); }
+    }).catch(function() {});
+  }
+}
+
+function _ocInfoCard(icon, title, desc) {
+  return '<div class="card"><div class="card__body" style="text-align:center;padding:1.25rem 1rem;">' +
+    '<div style="font-size:2rem;margin-bottom:0.5rem;">' + icon + '</div>' +
+    '<div style="font-weight:600;margin-bottom:0.375rem;">' + ocEsc(title) + '</div>' +
+    '<div style="font-size:0.8125rem;color:var(--text-500);">' + ocEsc(desc) + '</div>' +
+  '</div></div>';
+}
+
+// ── Registration handler ─────────────────────────────────────────────
+window.OC = window.OC || {};
+window.OC.register = async function() {
+  var errEl = document.getElementById('oc-reg-error');
+  if (errEl) { errEl.textContent = ''; }
+  if (!currentUser) { ocFlash('Please sign in first.', 'error'); return; }
+
+  var teamName  = (document.getElementById('oc-team-name')  || {}).value || '';
+  var joinCode  = (document.getElementById('oc-join-code')   || {}).value || '';
+  teamName = teamName.trim();
+  joinCode = joinCode.trim().toUpperCase();
+
+  // One-per-year check
+  var already = await ocCheckAlreadyRegistered(currentUser.id);
+  if (already) {
+    if (errEl) { errEl.textContent = 'You are already registered in the Open Championship for ' + new Date().getFullYear() + '.'; }
+    return;
+  }
+
+  if (!joinCode && !teamName) {
+    if (errEl) { errEl.textContent = 'Enter a team name to create a new team, or an invite code to join an existing one.'; }
+    return;
+  }
+
+  setLoading('btn-oc-register', true, 'Registering…');
+
+  try {
+    var tourn = await ocGetOrCreateTournament();
+    if (!tourn) { throw new Error('Could not find or create tournament. Please try again.'); }
+
+    var team = null;
+
+    if (joinCode) {
+      // Join existing team by invite code
+      var existing = await sbGetPublic('teams',
+        'invite_code=eq.' + encodeURIComponent(joinCode) + '&tournament_id=eq.' + tourn.id + '&limit=1');
+      if (!existing || !existing.length) { throw new Error('Invite code not found in this championship.'); }
+      team = existing[0];
+      var members = (team.members && team.members.length) ? team.members.slice() : [];
+      if (members.length >= 5) { throw new Error('That team is full (5 members maximum).'); }
+      for (var i = 0; i < members.length; i++) {
+        if (members[i] === currentUser.id) { throw new Error('You are already a member of this team.'); }
+      }
+      members.push(currentUser.id);
+      await sbPatch('teams', 'id=eq.' + team.id, { members: members });
+    } else {
+      // Create new team
+      var invCode = typeof _genInviteCode === 'function' ? _genInviteCode() : Math.random().toString(36).slice(2,10).toUpperCase();
+      team = await sbPost('teams', {
+        name:          teamName,
+        tournament_id: tourn.id,
+        captain_id:    currentUser.id,
+        members:       [currentUser.id],
+        invite_code:   invCode,
+        fee_paid:      false,
+        tier:          OC_TOURN_TYPE
+      });
+      // Create economy record
+      await sbPost('economies', {
+        team_id:        team.id,
+        tournament_id:  tourn.id,
+        current:        defaultEconomy(),
+        snapshots:      [],
+        current_round:  0,
+        scores_history: []
+      });
+    }
+
+    // Activate tournament to registration if still upcoming
+    if (tourn.status === 'upcoming') {
+      await sbPatch('tournaments', 'id=eq.' + tourn.id, { status: 'registration' });
+    }
+
+    setLoading('btn-oc-register', false, 'Join Open Championship →');
+    ocFlash('Registered! Complete payment to activate your team.', 'success');
+
+    // Show payment + social sharing
+    ocRenderPostRegistration(document.getElementById('oc-container'), team, tourn);
+
+  } catch(e) {
+    if (errEl) { errEl.textContent = e.message || 'Registration failed.'; }
+    setLoading('btn-oc-register', false, 'Join Open Championship →');
+  }
+};
+
+// ── Post-registration: payment + sharing ─────────────────────────────
+function ocRenderPostRegistration(el, team, tourn) {
+  var payLink = (tourn && tourn.payment_link) ? tourn.payment_link : (DEFAULT_PAYMENT_LINK || '#');
+  var invCode = team.invite_code || '';
+
+  el.innerHTML =
+    '<div class="dash-alert dash-alert--success" style="margin-bottom:1.5rem;">' +
+      '<div class="dash-alert__icon">✓</div>' +
+      '<div class="dash-alert__body"><div class="dash-alert__title">Team registered!</div>' +
+        (team.captain_id === (currentUser && currentUser.id)
+          ? 'Share your invite code with teammates: <strong class="text-mono">' + ocEsc(invCode) + '</strong>'
+          : 'You have joined the team.') +
+      '</div>' +
+    '</div>' +
+
+    // Payment
+    '<div class="card" style="margin-bottom:1.5rem;border:2px solid var(--blue);">' +
+      '<div class="card__header"><span class="card__title">💳 Complete Payment</span></div>' +
+      '<div class="card__body">' +
+        '<p style="margin-bottom:1rem;">Pay the <strong>' + ocFmt$(OC_ENTRY_FEE) + '</strong> entry fee to activate your team. Your team competes once payment is confirmed.</p>' +
+        '<a href="' + ocEsc(payLink) + '" target="_blank" class="btn btn--gold" style="margin-bottom:0.75rem;">Pay ' + ocFmt$(OC_ENTRY_FEE) + ' via Stripe →</a>' +
+        '<p class="text-sm text-muted">After paying, notify your tournament admin to mark your fee as paid.</p>' +
+      '</div>' +
+    '</div>' +
+
+    // Social sharing
+    ocSocialShareHtml(team.name || '', tourn.name || 'Open Championship') +
+
+    '<div style="text-align:center;margin-top:1.5rem;">' +
+      '<button class="btn btn--ghost" onclick="OC.goToDashboard()">Go to my dashboard →</button>' +
+    '</div>';
+}
+
+window.OC.goToDashboard = function() {
+  if (typeof showPage === 'function') { showPage('open-champ'); }
+};
+
+// ── Participant dashboard ─────────────────────────────────────────────
+async function ocRenderParticipantDashboard(el, tourn, team) {
+  if (!tourn) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state__title">No active championship found.</div></div>';
+    return;
+  }
+
+  // Load economy
+  var econRows = [];
+  try {
+    econRows = await sbGet('economies',
+      'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id + '&limit=1') || [];
+  } catch(e) {}
+  var econRecord = econRows.length ? econRows[0] : null;
+  var state  = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
+  var scores = typeof computeScores === 'function' ? computeScores(state) : { total: 0, gdp: 0, stability: 0, equality: 0, sustainability: 0, innovation: 0 };
+  var round  = (econRecord && econRecord.current_round) ? econRecord.current_round : (tourn.current_round || 0);
+
+  var isCompleted = tourn.status === 'completed';
+  var feePaid = team.fee_paid;
+
+  // Score bar
+  var pillars = [
+    { label: 'GDP Performance', val: scores.gdp, color: '#4a9eff' },
+    { label: 'Stability',       val: scores.stability, color: '#34d399' },
+    { label: 'Equality',        val: scores.equality, color: '#f59e0b' },
+    { label: 'Sustainability',  val: scores.sust || scores.sustainability, color: '#10b981' },
+    { label: 'Innovation',      val: scores.inn || scores.innovation, color: '#8b5cf6' }
+  ];
+  var barsHtml = pillars.map(function(p) {
+    var pct = Math.round((p.val / 200) * 100);
+    return '<div style="margin-bottom:0.75rem;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:0.8125rem;margin-bottom:3px;">' +
+        '<span>' + p.label + '</span><span class="text-mono">' + (p.val || 0) + '/200</span>' +
+      '</div>' +
+      '<div style="height:8px;background:var(--bg-subtle);border-radius:4px;">' +
+        '<div style="width:' + pct + '%;height:8px;background:' + p.color + ';border-radius:4px;transition:width 0.6s;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var certHtml = isCompleted ? ocRenderCertificate(team, tourn, state, scores) : '';
+  var shareHtml = isCompleted ? ocSocialShareHtml(team.name, tourn.name) : '';
+
+  // Countdown to next round
+  var countdownHtml = '';
+  if (!isCompleted && tourn.schedule && Array.isArray(tourn.schedule)) {
+    var nextSched = null;
+    for (var i = 0; i < tourn.schedule.length; i++) {
+      if (tourn.schedule[i].round === (round + 1)) { nextSched = tourn.schedule[i]; break; }
+    }
+    if (nextSched && nextSched.deadline) {
+      var diff = new Date(nextSched.deadline).getTime() - Date.now();
+      if (diff > 0) {
+        var hrs  = Math.floor(diff / 3600000);
+        var mins = Math.floor((diff % 3600000) / 60000);
+        countdownHtml = '<span class="countdown-chip">⏱ Next round in ' + hrs + 'h ' + mins + 'm</span> ';
+      }
+    }
+  }
+
+  el.innerHTML =
+    // Header
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem;">' +
+      '<div>' +
+        '<h2 style="font-size:1.25rem;font-weight:700;">' + ocEsc(team.name || 'My Team') + '</h2>' +
+        '<div style="font-size:0.875rem;color:var(--text-500);">' + ocEsc(tourn.name || '') + ' · Round ' + round + ' / ' + OC_ROUNDS + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">' +
+        (feePaid ? '<span class="badge badge--green badge--no-dot">Fee Paid ✓</span>' : '<span class="badge badge--red badge--no-dot">Fee Unpaid</span>') +
+        (isCompleted ? '<span class="badge badge--subtle badge--no-dot">Completed</span>' : '<span class="badge badge--green badge--no-dot">Active</span>') +
+        countdownHtml +
+      '</div>' +
+    '</div>' +
+
+    // Score card
+    '<div class="card" style="margin-bottom:1.5rem;">' +
+      '<div class="card__header">' +
+        '<span class="card__title">Score</span>' +
+        '<span class="text-mono" style="font-size:1.125rem;font-weight:700;">' + (scores.total || 0) + ' / 1000</span>' +
+      '</div>' +
+      '<div class="card__body">' + barsHtml + '</div>' +
+    '</div>' +
+
+    // Team info
+    '<div class="card" style="margin-bottom:1.5rem;">' +
+      '<div class="card__header"><span class="card__title">Team</span></div>' +
+      '<div class="card__body">' +
+        '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">' +
+          '<div><div class="stat-card__label">Members</div><div class="text-mono" style="font-size:1.125rem;">' + ((team.members && team.members.length) || 1) + ' / 5</div></div>' +
+          '<div><div class="stat-card__label">Invite Code</div><div class="text-mono" style="font-size:1.125rem;letter-spacing:0.1em;">' + ocEsc(team.invite_code || '—') + '</div></div>' +
+        '</div>' +
+        (!feePaid
+          ? '<a href="' + ocEsc((tourn.payment_link || DEFAULT_PAYMENT_LINK || '#')) + '" target="_blank" class="btn btn--gold btn--sm">💳 Pay Entry Fee →</a>'
+          : ''
+        ) +
+      '</div>' +
+    '</div>' +
+
+    // Key economy stats
+    '<div class="card" style="margin-bottom:1.5rem;">' +
+      '<div class="card__header"><span class="card__title">Economy Snapshot</span>' +
+        '<span class="text-sm text-muted">Round ' + round + '</span>' +
+      '</div>' +
+      '<div class="card__body">' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">' +
+          _ocStatBox('GDP Growth', (state.gdp_growth >= 0 ? '+' : '') + state.gdp_growth + '%') +
+          _ocStatBox('Inflation',  state.inflation + '%') +
+          _ocStatBox('Unemployment', state.unemployment + '%') +
+          _ocStatBox('Debt/GDP',   state.debt + '%') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    certHtml + shareHtml;
+}
+
+function _ocStatBox(label, val) {
+  return '<div style="text-align:center;"><div class="stat-card__label">' + label + '</div>' +
+    '<div class="text-mono" style="font-size:1.1rem;font-weight:600;margin-top:0.25rem;">' + val + '</div></div>';
+}
+
+// ── Admin toggle in admin panel ──────────────────────────────────────
+function ocInjectAdminToggle() {
+  // Inject into admin settings or create a floating toggle
+  var settingsEl = document.getElementById('admin-oc-toggle-wrap');
+  if (settingsEl) { return; } // already injected
+  // Find the admin panel content area header and append toggle there
+  var adminContent = document.getElementById('admin-panel-content');
+  if (!adminContent) { return; }
+
+  var wrap = document.createElement('div');
+  wrap.id = 'admin-oc-toggle-wrap';
+  wrap.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;';
+  wrap.innerHTML =
+    '<div style="background:var(--bg-white);border:1.5px solid var(--border);border-radius:var(--radius-xl);padding:0.75rem 1rem;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:0.75rem;">' +
+      '<span style="font-size:0.8125rem;font-weight:600;color:var(--text-700);">Open Championship</span>' +
+      '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">' +
+        '<input type="checkbox" id="oc-module-toggle" ' + (ocEnabled() ? 'checked' : '') + ' onchange="OC.toggleModule(this.checked)" style="width:16px;height:16px;">' +
+        '<span id="oc-toggle-label" style="font-size:0.8125rem;">' + (ocEnabled() ? 'ON' : 'OFF') + '</span>' +
+      '</label>' +
+    '</div>';
+  document.body.appendChild(wrap);
+}
+
+window.OC.toggleModule = function(enabled) {
+  ocSetEnabled(enabled);
+  var label = document.getElementById('oc-toggle-label');
+  if (label) { label.textContent = enabled ? 'ON' : 'OFF'; }
+  if (enabled) {
+    ocInjectNav();
+    if (!document.getElementById(OC_PAGE_ID)) { ocInjectPage(); }
+  } else {
+    ocRemoveNav();
+  }
+  ocFlash('Open Championship module ' + (enabled ? 'enabled' : 'disabled') + '.', 'success');
+};
+
+// ── Init ─────────────────────────────────────────────────────────────
+function ocInit() {
+  ocInjectPage();
+  if (ocEnabled()) { ocInjectNav(); }
+
+  // Watch for admin panel to inject toggle
+  var _ocAdminObserver = new MutationObserver(function() {
+    if (typeof _isAdmin === 'function' && _isAdmin()) {
+      var existing = document.getElementById('admin-oc-toggle-wrap');
+      if (!existing && document.getElementById('admin-panel-content')) {
+        ocInjectAdminToggle();
+      }
+    }
+  });
+  _ocAdminObserver.observe(document.body, { childList: true, subtree: true });
+}
+
+// Run after DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ocInit);
+} else {
+  ocInit();
+}
+
+})(); // end OC module IIFE
+</script>
+
 </body>
 </html>
