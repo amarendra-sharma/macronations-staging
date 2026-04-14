@@ -12942,7 +12942,6 @@ async function ocAdminCreateTournament() {
       description:       'Open global macroeconomic simulation. Teams may start anytime Jan 1 - Nov 20. 10 rounds, 1 per day. Top teams qualify for the World Cup.',
       created_by:        currentUser.id,
       is_global_elected: true,
-      payment_link:      DEFAULT_PAYMENT_LINK || ''
     });
     if (!tourn || tourn.code) {
       throw new Error((tourn && tourn.message) || 'Tournament creation failed.');
@@ -13319,7 +13318,7 @@ window.OC.register = async function() {
 // -- Post-registration -----------------------------------------------
 function ocRenderPostRegistration(el, team, tourn) {
   if (!el) { return; }
-  var payLink = (tourn && tourn.payment_link) ? tourn.payment_link : (DEFAULT_PAYMENT_LINK || '#');
+  var payLink = DEFAULT_PAYMENT_LINK || '#';
   var invCode = team.invite_code || '';
   var isCap   = team.captain_id === (currentUser && currentUser.id);
 
@@ -13472,7 +13471,7 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
           '<div class="card__header"><span class="card__title">Pay Entry Fee to Start</span></div>' +
           '<div class="card__body">' +
             '<p style="margin-bottom:1rem;">Pay the <strong>' + ocFmt$(OC_ENTRY_FEE) + '</strong> entry fee to unlock policy submission and start competing.</p>' +
-            '<a href="' + ocEsc((tourn && tourn.payment_link) || DEFAULT_PAYMENT_LINK || '#') + '" target="_blank" class="btn btn--gold">Pay ' + ocFmt$(OC_ENTRY_FEE) + ' via Stripe</a>' +
+            '<a href="' + ocEsc(DEFAULT_PAYMENT_LINK || '#') + '" target="_blank" class="btn btn--gold">Pay ' + ocFmt$(OC_ENTRY_FEE) + ' via Stripe</a>' +
           '</div>' +
         '</div>'
       : !started
