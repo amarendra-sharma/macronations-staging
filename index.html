@@ -13041,12 +13041,21 @@ async function ocAdvanceTeamRounds(team, tourn) {
     var patchData  = { oc_round: newOcRound };
     if (newOcRound >= OC_ROUNDS) {
       patchData.status = 'completed';
-      // Register as global qualifier if eligible
       if (ocIsEligible(team.started_at)) {
         try { await _registerTeamAsQualifier(team, tourn, scores); } catch(e) {}
       }
     }
-    await sbPatch('teams', 'id=eq.' + team.id, patchData);
+    try {
+      await sbPatch('teams', 'id=eq.' + team.id, patchData);
+    } catch(colErr) {
+      // oc_round column may not exist yet — patch without it
+      ocLog('oc_round patch failed (' + colErr.message + '), retrying without it');
+      var safePatch = {};
+      if (patchData.status) { safePatch.status = patchData.status; }
+      if (Object.keys(safePatch).length) {
+        try { await sbPatch('teams', 'id=eq.' + team.id, safePatch); } catch(e2) {}
+      }
+    }
     team.oc_round = newOcRound;
 
     // 1-hour warning for next round
@@ -13289,8 +13298,7 @@ window.OC.register = async function() {
         captain_id:    currentUser.id,
         members:       [currentUser.id],
         invite_code:   invCode,
-        fee_paid:      false,
-        oc_round:      0
+        fee_paid:      false
       });
       if (!team || team.code) { throw new Error((team && team.message) || 'Could not create team.'); }
       await sbPost('economies', {
