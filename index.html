@@ -3803,6 +3803,24 @@ h1, h2, h3, h4, h5 {
     </div>
   </div>
 
+  <!-- ── PAGE: OPEN CHAMPIONSHIP (module) ── -->
+  <div class="page" id="page-open-champ">
+    <div class="page-header">
+      <div class="page-header__inner">
+        <div>
+          <h1 class="page-header__title">Open Championship</h1>
+          <p class="page-header__sub">10-day global macroeconomic simulation — open to all</p>
+        </div>
+      </div>
+    </div>
+    <div class="container" style="padding-top:0;padding-bottom:3rem;" id="oc-container">
+      <div class="empty-state">
+        <div class="spinner" style="width:28px;height:28px;margin:0 auto 1rem;"></div>
+        <div class="empty-state__title">Loading…</div>
+      </div>
+    </div>
+  </div><!-- /page-open-champ -->
+
 </main><!-- /main-content -->
 
 
@@ -12828,24 +12846,8 @@ function ocLog(msg) { console.log('[OC]', msg); }
 
 // Inject page HTML 
 function ocInjectPage() {
- if (document.getElementById(OC_PAGE_ID)) { return; }
- var div = document.createElement('div');
- div.className = 'page';
- div.id = OC_PAGE_ID;
- div.innerHTML =
- '<div class="page-header">' +
- '<div class="page-header__inner">' +
- '<div>' +
- '<h1 class="page-header__title">Open Championship</h1>' +
- '<p class="page-header__sub">10-day global macroeconomic simulation open to all</p>' +
- '</div>' +
- '</div>' +
- '</div>' +
- '<div class="container" style="padding-top:0;padding-bottom:3rem;" id="oc-container">' +
- '<div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 1rem;"></div>' +
- '<div class="empty-state__title">Loading</div></div>' +
- '</div>';
- document.body.appendChild(div);
+ // Page is now in static HTML — nothing to inject
+ // This function kept for compatibility
 }
 
 // Nav link 
@@ -12929,29 +12931,24 @@ async function ocGetOrCreateTournament() {
 async function ocCheckAlreadyRegistered(userId) {
  var year = new Date().getFullYear();
  try {
- // Check if user is in any open championship team this year
- var captained = await sbGet('teams',
- 'captain_id=eq.' + userId + '&tier=eq.' + OC_TOURN_TYPE);
- // Filter by season year via tournament join not possible in REST check tournament season_year
- if (captained && captained.length) {
- for (var i = 0; i < captained.length; i++) {
- var tournRows = await sbGetPublic('tournaments',
- 'id=eq.' + captained[i].tournament_id + '&season_year=eq.' + year + '&limit=1');
- if (tournRows && tournRows.length) { return captained[i]; }
- }
- }
- // Also check member
- var membered = await sbGet('teams',
- 'members=cs.{' + userId + '}&tier=eq.' + OC_TOURN_TYPE);
- if (membered && membered.length) {
- for (var j = 0; j < membered.length; j++) {
- var tRows = await sbGetPublic('tournaments',
- 'id=eq.' + membered[j].tournament_id + '&season_year=eq.' + year + '&limit=1');
- if (tRows && tRows.length) { return membered[j]; }
- }
- }
- return null;
- } catch(e) { return null; }
+  // Get all open championship tournament IDs for this year
+  var ocTourns = await sbGetPublic('tournaments',
+   'tier=eq.' + OC_TOURN_TYPE + '&season_year=eq.' + year + '&select=id&limit=20');
+  if (!ocTourns || !ocTourns.length) { return null; }
+  var tournIds = ocTourns.map(function(t) { return t.id; });
+
+  // Check captained teams in those tournaments
+  for (var i = 0; i < tournIds.length; i++) {
+   var cap = await sbGetPublic('teams',
+    'captain_id=eq.' + userId + '&tournament_id=eq.' + tournIds[i] + '&limit=1');
+   if (cap && cap.length) { return cap[0]; }
+   // Check member
+   var mem = await sbGetPublic('teams',
+    'members=cs.{' + userId + '}&tournament_id=eq.' + tournIds[i] + '&limit=1');
+   if (mem && mem.length) { return mem[0]; }
+  }
+  return null;
+ } catch(e) { ocLog('Check already registered error: ' + e.message); return null; }
 }
 
 // Lazy round advancement 
@@ -13295,86 +13292,83 @@ function _ocInfoCard(icon, title, desc) {
 // Registration handler 
 window.OC = window.OC || {};
 window.OC.register = async function() {
- var errEl = document.getElementById('oc-reg-error');
- if (errEl) { errEl.textContent = ''; }
- if (!currentUser) { ocFlash('Please sign in first.', 'error'); return; }
+  var errEl = document.getElementById('oc-reg-error');
+  if (errEl) { errEl.textContent = ''; }
+  if (!currentUser) { ocFlash('Please sign in first.', 'error'); return; }
 
- var teamName = (document.getElementById('oc-team-name') || {}).value || '';
- var joinCode = (document.getElementById('oc-join-code') || {}).value || '';
- teamName = teamName.trim();
- joinCode = joinCode.trim().toUpperCase();
+  var teamName = (document.getElementById('oc-team-name') || {}).value || '';
+  var joinCode = (document.getElementById('oc-join-code') || {}).value || '';
+  teamName = teamName.trim();
+  joinCode = joinCode.trim().toUpperCase();
 
- // One-per-year check
- var already = await ocCheckAlreadyRegistered(currentUser.id);
- if (already) {
- if (errEl) { errEl.textContent = 'You are already registered in the Open Championship for ' + new Date().getFullYear() + '.'; }
- return;
- }
+  if (!joinCode && !teamName) {
+    if (errEl) { errEl.textContent = 'Enter a team name to create a new team, or an invite code to join an existing one.'; }
+    return;
+  }
 
- if (!joinCode && !teamName) {
- if (errEl) { errEl.textContent = 'Enter a team name to create a new team, or an invite code to join an existing one.'; }
- return;
- }
+  setLoading('btn-oc-register', true, 'Registering...');
 
- setLoading('btn-oc-register', true, 'Registering');
+  try {
+    // One-per-year check
+    var already = await ocCheckAlreadyRegistered(currentUser.id);
+    if (already) {
+      if (errEl) { errEl.textContent = 'You are already registered in the Open Championship for ' + new Date().getFullYear() + '.'; }
+      setLoading('btn-oc-register', false, 'Join Open Championship ->');
+      return;
+    }
 
- try {
- var tourn = await ocGetOrCreateTournament();
- if (!tourn) { throw new Error('Could not find or create tournament. Please try again.'); }
+    var tourn = await ocGetOrCreateTournament();
+    if (!tourn) { throw new Error('Could not find or create the Open Championship. Please try again.'); }
 
- var team = null;
+    var team = null;
 
- if (joinCode) {
- // Join existing team by invite code
- var existing = await sbGetPublic('teams',
- 'invite_code=eq.' + encodeURIComponent(joinCode) + '&tournament_id=eq.' + tourn.id + '&limit=1');
- if (!existing || !existing.length) { throw new Error('Invite code not found in this championship.'); }
- team = existing[0];
- var members = (team.members && team.members.length) ? team.members.slice() : [];
- if (members.length >= 5) { throw new Error('That team is full (5 members maximum).'); }
- for (var i = 0; i < members.length; i++) {
- if (members[i] === currentUser.id) { throw new Error('You are already a member of this team.'); }
- }
- members.push(currentUser.id);
- await sbPatch('teams', 'id=eq.' + team.id, { members: members });
- } else {
- // Create new team
- var invCode = typeof _genInviteCode === 'function' ? _genInviteCode() : Math.random().toString(36).slice(2,10).toUpperCase();
- team = await sbPost('teams', {
- name: teamName,
- tournament_id: tourn.id,
- captain_id: currentUser.id,
- members: [currentUser.id],
- invite_code: invCode,
- fee_paid: false,
- tier: OC_TOURN_TYPE
- });
- // Create economy record
- await sbPost('economies', {
- team_id: team.id,
- tournament_id: tourn.id,
- current: defaultEconomy(),
- snapshots: [],
- current_round: 0,
- scores_history: []
- });
- }
+    if (joinCode) {
+      var existingTeam = await sbGetPublic('teams',
+        'invite_code=eq.' + encodeURIComponent(joinCode) + '&tournament_id=eq.' + tourn.id + '&limit=1');
+      if (!existingTeam || !existingTeam.length) { throw new Error('Invite code not found for this championship.'); }
+      team = existingTeam[0];
+      var members = (team.members && team.members.length) ? team.members.slice() : [];
+      if (members.length >= 5) { throw new Error('That team is full (5 members maximum).'); }
+      for (var mi = 0; mi < members.length; mi++) {
+        if (members[mi] === currentUser.id) { throw new Error('You are already a member of this team.'); }
+      }
+      members.push(currentUser.id);
+      await sbPatch('teams', 'id=eq.' + team.id, { members: members });
+    } else {
+      var invCode = typeof _genInviteCode === 'function' ? _genInviteCode() : Math.random().toString(36).slice(2,10).toUpperCase();
+      team = await sbPost('teams', {
+        name:          teamName,
+        tournament_id: tourn.id,
+        captain_id:    currentUser.id,
+        members:       [currentUser.id],
+        invite_code:   invCode,
+        fee_paid:      false
+      });
+      if (!team || team.code) { throw new Error((team && team.message) || 'Could not create team.'); }
+      await sbPost('economies', {
+        team_id:        team.id,
+        tournament_id:  tourn.id,
+        current:        defaultEconomy(),
+        snapshots:      [],
+        current_round:  0,
+        scores_history: []
+      });
+    }
 
- // Activate tournament to registration if still upcoming
- if (tourn.status === 'upcoming') {
- await sbPatch('tournaments', 'id=eq.' + tourn.id, { status: 'registration' });
- }
+    if (tourn.status === 'upcoming') {
+      await sbPatch('tournaments', 'id=eq.' + tourn.id, { status: 'registration' });
+    }
 
- setLoading('btn-oc-register', false, 'Join Open Championship ->');
- ocFlash('Registered! Complete payment to activate your team.', 'success');
+    setLoading('btn-oc-register', false, 'Join Open Championship ->');
+    ocFlash('Registered! Complete payment to activate your team.', 'success');
+    ocRenderPostRegistration(document.getElementById('oc-container'), team, tourn);
 
- // Show payment + social sharing
- ocRenderPostRegistration(document.getElementById('oc-container'), team, tourn);
-
- } catch(e) {
- if (errEl) { errEl.textContent = e.message || 'Registration failed.'; }
- setLoading('btn-oc-register', false, 'Join Open Championship ->');
- }
+  } catch(e) {
+    var msg = (e && e.message) ? e.message : 'Registration failed. Please try again.';
+    if (errEl) { errEl.textContent = msg; }
+    ocFlash(msg, 'error');
+    setLoading('btn-oc-register', false, 'Join Open Championship ->');
+  }
 };
 
 // Post-registration: payment + sharing 
