@@ -8626,8 +8626,14 @@ function _renderAdminTab(id) {
   else if (id === 'notify')         { renderAdminNotify(el); }
   else if (id === 'analytics')      { renderAdminAnalytics(el); }
   else if (id === 'openchamp')      {
-    if (typeof ocRenderAdminPanel === 'function') { ocRenderAdminPanel(el); }
-    else { el.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⏳</div><div class="empty-state__title">Open Championship module loading…</div></div>'; }
+    // Call via window to ensure cross-script-block access
+    if (window.ocRenderAdminPanel) {
+      window.ocRenderAdminPanel(el);
+    } else {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⏳</div>' +
+        '<div class="empty-state__title">Open Championship module loading…</div>' +
+        '<p style="margin-top:0.5rem;"><button class="btn btn--ghost btn--sm" onclick="_renderAdminTab(\'openchamp\')">Retry</button></p></div>';
+    }
   }
 }
 
@@ -13733,6 +13739,8 @@ window.OC.createNow = async function() {
 function ocInit() {
   ocInjectPage();
   if (ocEnabled()) { ocInjectNav(); }
+  // Confirm module loaded
+  console.log('[OC] Open Championship module loaded. ocRenderAdminPanel:', typeof window.ocRenderAdminPanel);
 }
 
 // Run after DOM ready
