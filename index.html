@@ -3341,13 +3341,13 @@ h1, h2, h3, h4, h5 {
         <div class="lp-prize-row">
           <div class="lp-prize-card lp-prize-card--gold">
             <div class="lp-prize-medal">🥇</div>
-            <div class="lp-prize-pct">70%</div>
-            <div class="lp-prize-label">Winner takes</div>
+            <div class="lp-prize-pct">Winner</div>
+            <div class="lp-prize-label">Majority share</div>
           </div>
           <div class="lp-prize-card">
             <div class="lp-prize-medal">🥈</div>
-            <div class="lp-prize-pct">30%</div>
-            <div class="lp-prize-label">Runner-up takes</div>
+            <div class="lp-prize-pct">Runner-up</div>
+            <div class="lp-prize-label">Remainder share</div>
           </div>
           <div class="lp-prize-card">
             <div class="lp-prize-medal">🏫</div>
@@ -3355,7 +3355,59 @@ h1, h2, h3, h4, h5 {
             <div class="lp-prize-label">Playoff qualification</div>
           </div>
         </div>
-        <p class="lp-prize-note">Award fund grows as more universities join the global season. Final amount confirmed at season close.</p>
+        <p class="lp-prize-note">Seeded by MacroNations LLC. Grows with participation. Minimum 20 paid teams required. Final distribution at management discretion. Full terms in Award Rules.</p>
+      </div>
+    </section>
+
+    <!-- Open Championship Registration -->
+    <section class="section" id="open-championship" aria-labelledby="oc-landing-heading">
+      <div class="container">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;">
+          <div>
+            <span class="section__eyebrow">Open to Everyone</span>
+            <h2 class="section__title" id="oc-landing-heading">Open Championship</h2>
+            <p class="section__desc" style="text-align:left;max-width:none;">No professor required. Register your team, pay the entry fee, and compete in a 10-day rolling simulation. Your personal clock starts when you submit your first round — start any time before November 21.</p>
+            <ul style="list-style:none;padding:0;margin:1.5rem 0;display:flex;flex-direction:column;gap:0.75rem;">
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">1</span><span><strong>Register your team</strong> — up to 5 members, $50 entry fee per team</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">2</span><span><strong>Submit Round 1</strong> — your personal 10-day clock starts</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">3</span><span><strong>Complete 10 rounds</strong> — one every 24 hours, auto-advancing</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">4</span><span><strong>Qualify for the World Cup</strong> — finish by Nov 30 to enter the playoff bracket</span></li>
+            </ul>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+              <button class="btn btn--gold" onclick="ocLandingRegister()">Register for Open Championship</button>
+              <span style="align-self:center;font-size:0.875rem;color:var(--text-400);">Jan 1 – before Nov 21</span>
+            </div>
+          </div>
+          <div>
+            <div style="background:#0D1F3C;border:1.5px solid rgba(255,215,0,0.4);border-radius:var(--radius-xl);padding:1.75rem;">
+              <div style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,215,0,0.6);margin-bottom:0.875rem;">Season 2026 · Open Now</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+                <div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Entry fee</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:1.375rem;color:#FFD700;font-weight:600;">$50</div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);">per team</div>
+                </div>
+                <div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Rounds</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:1.375rem;color:#fff;font-weight:600;">10</div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);">1 per day</div>
+                </div>
+                <div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Register by</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:1.125rem;color:#fff;">Before Nov 21, 2026</div>
+                </div>
+                <div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Complete by</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:1.125rem;color:#fff;">Nov 30, 2026</div>
+                </div>
+              </div>
+              <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1rem;margin-top:0.25rem;">
+                <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:0.375rem;">Competition award fund</div>
+                <div style="font-size:0.8125rem;color:rgba(255,255,255,0.6);line-height:1.6;">Seeded by MacroNations LLC. Grows with participation. Minimum 20 paid teams required for distribution. Full terms in <a href="#" onclick="showPage(\'about\');setTimeout(function(){showLegal(\'prizes\');},200);return false;" style="color:rgba(255,215,0,0.7);">Award Rules</a>.</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -3373,7 +3425,7 @@ h1, h2, h3, h4, h5 {
               <div class="step__num" aria-hidden="true">1</div>
               <div>
                 <h3 class="step__title">Register Your Team</h3>
-                <p class="step__desc">Form a team of up to 5 students using your university email. Join your professor's class tournament for free, or elect into the Global Championship.</p>
+                <p class="step__desc">Form a team of up to 5 players using any valid email. No university affiliation required for the Open Championship. Professors selecting professor access need a .edu address.</p>
               </div>
             </div>
             <div class="step">
@@ -3394,14 +3446,14 @@ h1, h2, h3, h4, h5 {
               <div class="step__num" aria-hidden="true">4</div>
               <div>
                 <h3 class="step__title">Climb the Leaderboard</h3>
-                <p class="step__desc">Scores update after each round. The top 8 teams enter the playoff bracket. Prize pool is hypothetical — final percentage at management discretion.</p>
+                <p class="step__desc">Scores update after each round. The top 8 teams enter the playoff bracket and compete for a share of the competition award fund.</p>
               </div>
             </div>
             <div class="step">
               <div class="step__num" aria-hidden="true">5</div>
               <div>
                 <h3 class="step__title">Win Real Awards</h3>
-                <p class="step__desc">Winner takes 70%, runner-up takes 30% of the competition award fund. Top 8 teams qualify for the playoff bracket. Certificates issued to all participants.</p>
+                <p class="step__desc">Top finalists share the competition award fund. Top 8 teams qualify for the playoff bracket. Certificates issued to all participants. Minimum 20 paid teams required for award distribution.</p>
               </div>
             </div>
           </div>
@@ -3877,9 +3929,9 @@ h1, h2, h3, h4, h5 {
           </div>
         </div>
         <div class="form-field">
-          <label class="form-label form-label--required" for="reg-email">University Email</label>
-          <input type="email" id="reg-email" class="form-input" placeholder="jsmith@university.edu" autocomplete="email">
-          <div class="form-hint">Must be a .edu address (e.g. <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0b617866627f634b7e65627d6e7978627f72256e6f7e">[email&#160;protected]</a>)</div>
+          <label class="form-label form-label--required" for="reg-email">Email Address</label>
+          <input type="email" id="reg-email" class="form-input" placeholder="you@email.com" autocomplete="email">
+          <div class="form-hint">Use any valid email. Professors selecting the professor role need a .edu address to access professor features.</div>
         </div>
         <div class="form-field">
           <label class="form-label form-label--required" for="reg-institution">Institution</label>
@@ -4773,9 +4825,13 @@ async function doRegister() {
   if (pass.length < 8)  { _setFormErr('register-error','Password must be at least 8 characters.'); return; }
   if (username.length < 3) { _setFormErr('register-error','Username must be at least 3 characters.'); return; }
   if (!/^[a-z0-9_]+$/.test(username)) { _setFormErr('register-error','Username may only contain letters, numbers, and underscores.'); return; }
-  if (!email.match(/^[^\s@]+@[^\s@]+\.edu$/i) && !email.match(/^[^\s@]+@[^\s@]+\.edu\.[a-z]{2}$/i)) {
-    _setFormErr('register-error','MacroNations requires a university email address ending in .edu (e.g. you@university.edu). Please use your institutional email.');
-    return;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { _setFormErr('register-error','Please enter a valid email address.'); return; }
+  // Professor role requires .edu — auto-downgrade to student if not .edu
+  if (role === 'professor') {
+    if (!email.match(/^[^\s@]+@[^\s@]+\.edu$/i) && !email.match(/^[^\s@]+@[^\s@]+\.edu\.[a-z]{2}$/i)) {
+      role = 'student';
+      flash('Professor access requires a .edu email. You have been registered as a student. Contact support to upgrade.', 'info');
+    }
   }
 
   setLoading('btn-do-register', true, 'Creating account…');
@@ -5687,13 +5743,26 @@ var CRISES = {
 // How It Works step 7, and the legal math example strings (5 locations total).
 // The 70%/30% winner/runner-up split is also hardcoded here AND separately in legal text.
 function calcPrizePool(entryFee, numTeams) {
-  entryFee  = Number(entryFee)  || 0;
-  numTeams  = Number(numTeams)  || 0;
-  var total      = entryFee * numTeams;
-  var pool       = _round2(total * 0.25);         // 25% of total fees (hypothetical — final % at management discretion)
-  var winner     = _round2(pool  * 0.70);         // 70% to winner
-  var runner_up  = _round2(pool  * 0.30);         // 30% to runner-up
-  return { total_collected: total, pool: pool, winner: winner, runner_up: runner_up };
+  entryFee = Number(entryFee) || 0;
+  numTeams = Number(numTeams) || 0;
+  var SEED      = 1000;   // MacroNations LLC seed contribution
+  var CAP       = 10000;  // Maximum award fund
+  var MIN_TEAMS = 20;     // Minimum paid teams for awards to be distributed
+  var FEE_PCT   = 0.20;   // 20% of entry fees added to fund
+  var feesTotal = entryFee * numTeams;
+  var pool      = Math.min(_round2(SEED + feesTotal * FEE_PCT), CAP);
+  var eligible  = numTeams >= MIN_TEAMS;
+  var winner    = eligible ? _round2(pool * 0.70) : 0;
+  var runner_up = eligible ? _round2(pool * 0.30) : 0;
+  return {
+    total_collected: feesTotal,
+    pool:            pool,
+    winner:          winner,
+    runner_up:       runner_up,
+    eligible:        eligible,
+    min_teams:       MIN_TEAMS,
+    seed:            SEED
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -5880,16 +5949,28 @@ async function _renderWCBanner() {
           { label: 'Prize announcement',  date: 'Dec 22, ' + curYear,           note: 'Winners announced and prize distributed' }
         ];
 
-    // Prize pool
-    var prizePool = Number(season.prize_pool) || 0;
+    // Prize pool — seed + paid teams in global elected tournaments only
+    var prizePool = 1000; // seed minimum
+    try {
+      var globalTournRows = await sbGetPublic('tournaments',
+        'is_global_elected=eq.true&status=in.(active,completed,registration)&season_year=eq.' + curYear + '&select=id&limit=100') || [];
+      var globalPaidCount = 0;
+      for (var gti = 0; gti < globalTournRows.length; gti++) {
+        var gtPaid = await sbGetPublic('teams',
+          'tournament_id=eq.' + globalTournRows[gti].id + '&fee_paid=eq.true&select=id&limit=500') || [];
+        globalPaidCount += gtPaid.length;
+      }
+      var pp = (typeof calcPrizePool === 'function')
+        ? calcPrizePool(50, globalPaidCount)
+        : { pool: Math.min(1000 + globalPaidCount * 50 * 0.20, 10000) };
+      prizePool = pp.pool || 1000;
+    } catch(pe) { prizePool = 1000; }
     var poolHtml = prizePool > 0
       ? '<div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1.25rem;">' +
           '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Award Fund</div>' +
             '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#FFD700;">' + fmt$(prizePool) + '</div></div>' +
-          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">🥇 Winner</div>' +
-            '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#fff;">' + fmt$(Math.round(prizePool * 0.7)) + '</div></div>' +
-          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">🥈 Runner-up</div>' +
-            '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#fff;">' + fmt$(Math.round(prizePool * 0.3)) + '</div></div>' +
+          '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Seeded by MacroNations LLC</div>' +
+            '<div style="font-family:\'DM Mono\',monospace;font-size:1rem;color:rgba(255,255,255,0.6);">Grows with participation · Cap $10,000</div></div>' +
         '</div>'
       : '';
 
@@ -5919,7 +6000,7 @@ async function _renderWCBanner() {
         '<div style="padding:1.25rem 1.75rem;">' +
           poolHtml +
           '<div>' + schedRows + '</div>' +
-          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: all teams in paid elected tournaments. Award fund grows with participation. Final amount confirmed at season close.</div>' +
+          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: all teams in paid elected tournaments. Seeded by MacroNations LLC. Grows with participation. Minimum 20 paid teams required for distribution. Final amount at management discretion.</div>' +
         '</div>' +
       '</div>';
 
@@ -6024,7 +6105,7 @@ function _buildTournamentCard(t) {
       '<div class="prize-pool-widget">' +
         '<div class="prize-pool-widget__title">Competition Award Fund</div>' +
         '<div class="prize-pool-widget__row">' +
-          '<span class="prize-pool-widget__label">Total award</span>' +
+          '<span class="prize-pool-widget__label">Est. fund (20+ teams to unlock)</span>' +
           '<span class="prize-pool-widget__val prize-pool-widget__val--total" id="' + poolId + '-total">—</span>' +
         '</div>' +
         '<div class="prize-pool-widget__row">' +
@@ -7021,8 +7102,8 @@ function renderDashOverview() {
               '<span class="prize-pool-widget__label" style="font-size:0.9375rem;font-weight:600;color:var(--text-700);">Total award</span>' +
               '<span class="prize-pool-widget__val prize-pool-widget__val--total" style="font-size:1.25rem;">' + fmt$(pp.pool) + '</span>' +
             '</div>' +
-            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥇 Winner</span><span class="prize-pool-widget__val">' + fmt$(pp.winner) + '</span></div>' +
-            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥈 Runner-up</span><span class="prize-pool-widget__val">' + fmt$(pp.runner_up) + '</span></div>' +
+            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥇 Winner</span><span class="prize-pool-widget__val">' + (pp.eligible ? fmt$(pp.winner) : 'Unlocks at 20 teams') + '</span></div>' +
+            '<div class="prize-pool-widget__row"><span class="prize-pool-widget__label">🥈 Runner-up</span><span class="prize-pool-widget__val">' + (pp.eligible ? fmt$(pp.runner_up) : 'Unlocks at 20 teams') + '</span></div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -8955,7 +9036,57 @@ async function doCreateTournament() {
     }
     _adminTournaments.unshift(newTourn);
     closeModal('modal-create-tournament');
-    flash('Tournament "' + name + '" created!', 'success');
+
+    // Show post-creation instructions to professor
+    var profDomain  = (currentUser && currentUser.email) ? currentUser.email.split('@')[1] : '';
+    var isDotEdu    = profDomain && profDomain.toLowerCase().endsWith('.edu');
+    var emailNote   = isDotEdu
+      ? 'Important: This tournament is linked to your ' + profDomain + ' domain. ' +
+        'Ask your students to register on MacroNations using their @' + profDomain + ' email address. ' +
+        'Students who register with a personal email (Gmail, Outlook, etc.) will not be able to join this tournament.'
+      : 'Students can join this tournament using any valid email address.';
+
+    var instrModal = document.createElement('div');
+    instrModal.className = 'modal-backdrop open';
+    instrModal.setAttribute('role', 'dialog');
+    instrModal.innerHTML =
+      '<div class="modal">' +
+        '<div class="modal__header">' +
+          '<div><h2 class="modal__title">Tournament Created!</h2>' +
+            '<p class="modal__subtitle">' + esc(name) + ' is ready for registration.</p></div>' +
+          '<button class="modal__close" onclick="this.closest(\'.modal-backdrop\').remove();">&#x2715;</button>' +
+        '</div>' +
+        '<div class="modal__body">' +
+          '<div class="dash-alert dash-alert--success" style="margin-bottom:1.25rem;">' +
+            '<div class="dash-alert__icon">&#10003;</div>' +
+            '<div class="dash-alert__body"><div class="dash-alert__title">Next steps for your students</div></div>' +
+          '</div>' +
+          '<ol style="padding-left:1.25rem;line-height:2;color:var(--text-700);margin-bottom:1.25rem;">' +
+            '<li>Go to <strong>macronations.com</strong> and click <strong>Join Free</strong> to create an account</li>' +
+            '<li>Navigate to <strong>Tournaments</strong> and find <strong>' + esc(name) + '</strong></li>' +
+            '<li>One student per team clicks <strong>Join</strong> to create the team and gets an invite code</li>' +
+            '<li>Teammates enter the 8-character invite code to join the team</li>' +
+          '</ol>' +
+          (isDotEdu
+            ? '<div class="dash-alert dash-alert--info">' +
+                '<div class="dash-alert__icon">&#9432;</div>' +
+                '<div class="dash-alert__body"><div class="dash-alert__title">Email address requirement</div>' +
+                'Students must register with their <strong>@' + esc(profDomain) + '</strong> institutional email. ' +
+                'Students using Gmail, Outlook, or other personal email addresses will not be able to join this tournament. ' +
+                'Share this instruction with your class before they register.</div>' +
+              '</div>'
+            : '<div class="dash-alert dash-alert--info">' +
+                '<div class="dash-alert__icon">&#9432;</div>' +
+                '<div class="dash-alert__body">Students can join using any valid email address.</div>' +
+              '</div>'
+          ) +
+        '</div>' +
+        '<div class="modal__footer">' +
+          '<button class="btn btn--primary" onclick="this.closest(\'.modal-backdrop\').remove();">Got it</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(instrModal);
+
     renderAdminTournaments(document.getElementById('admin-panel-content'));
   } catch(e) {
     _setFormErr('ct-error', e.message || 'Error');
@@ -11196,20 +11327,19 @@ async function renderRankings() {
       }
       globalEntries.sort(function(a, b) { return b.score - a.score; });
 
-      // Get prize pool from global_seasons record
+      // Calculate award fund using calcPrizePool (includes $1000 seed)
       var seasonPool = 0;
       try {
-        var seasonRows = await sbGetPublic('global_seasons', 'year=eq.' + curYear + '&limit=1') || [];
-        if (seasonRows.length) { seasonPool = Number(seasonRows[0].prize_pool) || 0; }
-      } catch(se) {}
-      // Fallback estimate
-      if (!seasonPool) {
+        var totalPaidTeams = 0;
         for (var fgi = 0; fgi < globalTourns.length; fgi++) {
-          var fee = Number(globalTourns[fgi].entry_fee) || 0;
-          var gTf = await sbGetPublic('teams', 'tournament_id=eq.' + globalTourns[fgi].id + '&select=id&limit=200') || [];
-          seasonPool += Math.round(fee * gTf.length * 0.25);
+          var gTf = await sbGetPublic('teams', 'tournament_id=eq.' + globalTourns[fgi].id + '&fee_paid=eq.true&select=id&limit=200') || [];
+          totalPaidTeams += gTf.length;
         }
-      }
+        var seasonPp = (typeof calcPrizePool === 'function')
+          ? calcPrizePool(50, totalPaidTeams)
+          : { pool: Math.min(1000 + totalPaidTeams * 50 * 0.20, 10000) };
+        seasonPool = seasonPp.pool || 0;
+      } catch(se) { seasonPool = 1000; }
 
       // Build rows
       var globalRows = '';
@@ -11372,22 +11502,29 @@ var LEGAL_CONTENT = {
   },
   prizes: {
     title: 'Award Rules & Distribution',
-    updated: 'January 2026',
-    highlight: 'Competition award fund — seeded from entry fees, final amount confirmed at tournament close. Winner receives 70%, Runner-up receives 30%.',
+    updated: 'April 2026',
+    highlight: 'Competition award fund — seeded by MacroNations LLC, supplemented by entry fees, subject to a maximum cap. Distribution percentages, timing, and eligibility are determined solely by MacroNations LLC. Minimum participation threshold applies.',
     math: [
-      'Example with $50 entry fee and 14 teams:',
-      '  Total entry fees:  $50 × 14 = $700',
-      '  Award fund:        confirmed at tournament close',
-      '  1st place (70%):   ~$122.50',
-      '  2nd place (30%):   ~$52.50'
+      'Award Fund Structure:',
+      '  Seed contribution:   $1,000 (MacroNations LLC)',
+      '  Entry fee portion:   20% of fees collected',
+      '  Maximum fund cap:    $10,000',
+      '  Minimum threshold:   20 paid teams required for any distribution',
+      '  Example (20 teams x $50): $1,000 + (20 x $50 x 20%) = $1,200 fund',
+      '  Distribution:        at percentages determined by MacroNations LLC'
     ],
     sections: [
-      { h: 'Award Fund', p: 'The competition award fund is seeded from entry fees collected from paid teams. The final fund amount is confirmed by MacroNations LLC at the conclusion of the tournament and is not guaranteed to equal any specific percentage of fees collected. MacroNations LLC retains sole discretion over the final award amount, which will be communicated to participants before prizes are distributed.' },
-      { h: 'Winner Distribution', p: 'The team with the highest aggregate score at the conclusion of all scheduled rounds receives 70% of the award fund. The team with the second highest score receives the remaining 30%. In the event of a tie, the tied teams share the applicable award tranche equally.' },
-      { h: 'Eligibility for Awards', p: 'To be eligible for award distribution, a team must: (1) have paid the full entry fee, (2) have submitted policy decisions in at least one tournament round, and (3) not have been disqualified for any violation of these rules. Free tournaments (entry fee = $0) do not carry cash awards.' },
-      { h: 'Payment of Awards', p: 'Awards are paid within 14 business days of tournament conclusion via bank transfer or PayPal. Award recipients must provide payment details within 30 days of notification or the award may be forfeited. MacroNations LLC is responsible for any applicable withholding or tax reporting obligations.' },
-      { h: 'Waivers and Adjustments', p: 'Teams that received a fee waiver may compete but are excluded from award eligibility unless their waiver covered 100% of the fee. Partial waivers require the remaining balance to be paid for award eligibility.' },
-      { h: 'Disqualification', p: 'Any team found to have violated academic integrity rules forfeits all award claims without refund. The forfeited award amount is not redistributed to the remaining teams; forfeited amounts remain with MacroNations LLC.' }
+      { h: 'Award Fund Composition', p: 'The competition award fund consists of (1) a seed contribution provided by MacroNations LLC in its sole discretion, and (2) a portion of entry fees collected from paid teams as determined by MacroNations LLC. The award fund is subject to a maximum cap established by MacroNations LLC. Entry fees collected in excess of the cap, if any, are retained by MacroNations LLC to cover platform operations, development, and administrative costs. MacroNations LLC makes no representation that any specific dollar amount, percentage of fees, or fund size will be made available for distribution.' },
+      { h: 'Minimum Participation Threshold', p: 'No award distribution of any kind shall occur unless a minimum of twenty (20) teams have paid the full entry fee for that tournament season. If fewer than twenty paid teams participate, the award fund is not distributed and is retained by MacroNations LLC. Participants who paid entry fees in a season that does not meet the minimum threshold are not entitled to a refund of their entry fee, as the entry fee covers platform access and participation rights regardless of award distribution.' },
+      { h: 'Distribution of Awards', p: 'When the minimum participation threshold is met, the award fund is distributed among the top-finishing teams at percentages determined solely by MacroNations LLC. The specific distribution percentages, recipient ranks, and amounts are confirmed by MacroNations LLC after tournament conclusion and communicated to eligible recipients prior to disbursement. MacroNations LLC reserves the right to adjust distribution percentages, the number of recipients, and award amounts at any time before disbursement, including in response to participation levels, operational costs, or regulatory requirements.' },
+      { h: 'Eligibility Requirements', p: 'To be eligible for award consideration, a team must: (1) have all participating members pay the full entry fee with no outstanding balance; (2) have submitted valid policy decisions in at least fifty percent (50%) of scheduled tournament rounds; (3) not be under investigation for or found to have committed any violation of these rules or the Terms of Service; and (4) provide complete and accurate payment details within thirty (30) days of notification. Free-entry tournaments carry no cash awards under any circumstances.' },
+      { h: 'Entry Fee Policy and No-Refund Rule', p: 'Entry fees paid by participants are non-refundable under any circumstances, including but not limited to: (a) failure to meet the minimum participation threshold; (b) disqualification of the team; (c) withdrawal from the tournament; (d) technical failures on the part of the participant; (e) dissatisfaction with the simulation outcome or scoring; or (f) any other reason. Entry fees compensate MacroNations LLC for platform access, hosting, simulation processing, scoring services, and certificate issuance, all of which are provided regardless of award distribution outcome.' },
+      { h: 'Payment of Awards', p: 'Awards are paid within thirty (30) business days of tournament conclusion and final verification. Payment is made via bank transfer, digital payment, or other method at MacroNations LLC discretion. Award recipients must provide valid payment details within thirty (30) days of notification or the award is forfeited and retained by MacroNations LLC. Recipients are solely responsible for any applicable income taxes, withholding obligations, or reporting requirements arising from receipt of awards in their jurisdiction. MacroNations LLC may withhold amounts required by applicable law.' },
+      { h: 'Waivers and Partial Payments', p: 'Teams that received any fee waiver, scholarship, or discount may compete but are ineligible for award distribution unless the full published entry fee has been paid in cash. MacroNations LLC retains sole discretion to grant or deny fee waivers and to determine their effect on award eligibility.' },
+      { h: 'Disqualification and Forfeiture', p: 'Any team found by MacroNations LLC, in its sole discretion, to have violated these rules, the Terms of Service, or academic integrity standards is immediately disqualified. Disqualified teams forfeit all award claims without refund. Forfeited award amounts are not redistributed to other teams and are retained by MacroNations LLC. Disqualification decisions are final and not subject to appeal.' },
+      { h: 'MacroNations LLC Discretion', p: 'MacroNations LLC retains absolute and final discretion over all aspects of award administration, including: the size of the seed contribution; the percentage of entry fees allocated to the award fund; the maximum fund cap; the minimum participation threshold; distribution percentages among recipients; the number of recipients; timing of payment; and resolution of any disputes. Participation in a paid tournament constitutes unconditional acceptance of MacroNations LLC authority over these matters.' },
+      { h: 'Limitation of Liability', p: 'MacroNations LLC total liability to any participant arising from these Award Rules, the competition, or any award-related matter is strictly limited to a refund of the applicable entry fee. In no event shall MacroNations LLC be liable for indirect, consequential, punitive, or special damages. Any claim arising under these Award Rules must be brought within ninety (90) days of the claimed event, after which all claims are waived.' },
+      { h: 'Governing Law and Dispute Resolution', p: 'These Award Rules are governed by the laws of the State of New York without regard to conflict-of-law principles. Any dispute arising from these rules shall be resolved by binding arbitration under the rules of the American Arbitration Association in New York County, New York. The parties waive any right to a jury trial. Class action claims are expressly waived — all disputes must be brought on an individual basis.' }
     ]
   },
   privacy: {
@@ -11410,7 +11547,7 @@ var LEGAL_CONTENT = {
       { h: 'Educational Purpose', p: 'MacroNations is an educational simulation platform. The macroeconomic model used in the tournament is a simplified representation designed for pedagogical purposes. It does not constitute financial, investment, or economic advice. Results in the simulation do not predict real-world economic outcomes.' },
       { h: 'No Warranty', p: 'The MacroNations platform is provided "as is" without warranty of any kind, express or implied. MacroNations LLC makes no warranties regarding the accuracy of the simulation engine, the availability of the platform, or the fitness of the platform for any particular purpose.' },
       { h: 'Simulation Accuracy', p: 'The economic simulation engine incorporates simplified versions of real economic relationships (Okun\'s Law, Phillips Curve, Laffer Curve, Reinhart-Rogoff debt threshold, etc.). These relationships are approximations. Real economies are substantially more complex and uncertain. Participants should not rely on simulation outcomes as predictions of real-world economic behavior.' },
-      { h: 'Award Disclaimer', p: 'Award amounts depend on the number of paid teams in a tournament and are confirmed at MacroNations LLC\'s discretion. MacroNations LLC does not guarantee any minimum award amount. In the event of technical failure that corrupts tournament data, MacroNations LLC\'s maximum liability is limited to refund of entry fees.' },
+      { h: 'Award Disclaimer', p: 'Entry fees are non-refundable. Award distribution requires a minimum of 20 paid teams and is subject to MacroNations LLC sole discretion regarding fund size, distribution percentages, and timing. No award is guaranteed. MacroNations LLC maximum liability in all circumstances is limited to a refund of the applicable entry fee. See Award Rules for complete terms.' },
       { h: 'Third-Party Services', p: 'The platform integrates with third-party services including Supabase (database), Anthropic (AI advisory feature), and payment processors. MacroNations LLC is not responsible for the availability, accuracy, or privacy practices of these third-party services.' }
     ]
   },
@@ -11680,13 +11817,13 @@ function _aboutHowItWorks() {
       '<div class="card__header"><span class="card__title">🎓 For Students</span></div>' +
       '<div class="card__body">' +
         '<div class="steps">' +
-          _step('1','Register & Join','Create a free account with your university email. Go to Tournaments, find a competition open for registration, and either create a new team or join an existing one with an 8-character invite code. Each team can have up to 5 members.') +
+          _step('1','Register & Join','Create a free account with any valid email. Professors use their .edu address to create class tournaments. Students can use any email. Go to Tournaments, find a competition open for registration, and either create a new team or join an existing one with an 8-character invite code. Each team can have up to 5 members.') +
           _step('2','Pay the Entry Fee (if applicable)','For paid tournaments ($50/team), go to Dashboard → Payment. Pay via the Stripe link or email support@macronations.com. Your policy submissions are locked until payment is confirmed by the admin.') +
           _step('3','Set Your 10 Policy Levers','Every round, go to Dashboard → Policy. Adjust your 10 macroeconomic levers: Interest Rate, Government Spending, Tax Rate, Trade Openness, R&D Investment, Green Energy Mix, Welfare Spending, Regulation, Foreign Aid, and Infrastructure. Write a brief rationale and hit Submit Final Decision before the round deadline.') +
           _step('4','Respond to Crises','Some rounds trigger an economic crisis (banking crash, pandemic, trade war, debt crisis). Go to Crisis tab first — choose your response option — then separately submit your policy. These are two independent steps. If you skip the crisis response, the full unmitigated shock applies to your economy.') +
           _step('5','Consult the AI Advisor','Use Dashboard → AI Advisor to think through trade-offs. The advisor uses the Socratic method — it raises questions about your economy but never tells you which levers to move. That judgment is yours.') +
           _step('6','Track Your Score','Your economy is scored on 5 pillars (200 points each, 1000 total): GDP Performance, Stability, Equality, Sustainability, and Innovation. Check Dashboard → Overview after each round simulation runs.') +
-          _step('7','Awards','The top-scoring team wins 70% of the award fund. Runner-up wins 30%. The fund is seeded from entry fees and grows with participation — the more universities that join, the larger the awards. Example: 14 teams → award fund of $175 → ~$122.50 to winner, ~$52.50 to runner-up.') +
+          _step('7','Awards','The top finalists share the competition award fund at percentages determined by MacroNations LLC. The fund starts with a seed contribution and grows as more teams participate, subject to a maximum cap. A minimum number of paid teams must participate for awards to be distributed. Full details in the Award Rules.') +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -12871,6 +13008,11 @@ function ocIsEligible(startedAt) {
   return new Date(startedAt) <= ocSeasonCutoff(year);
 }
 
+function ocLandingRegister() {
+  if (!currentUser) { openAuthModal('register'); return; }
+  showPage('open-champ');
+}
+
 // -- Nav -------------------------------------------------------------
 function ocInjectPage() { /* page is in static HTML */ }
 
@@ -12939,7 +13081,7 @@ async function ocAdminCreateTournament() {
       entry_fee:         OC_ENTRY_FEE,
       max_teams:         0,
       schedule:          schedule,
-      description:       'Open global macroeconomic simulation. Teams may start anytime Jan 1 - Nov 20. 10 rounds, 1 per day. Top teams qualify for the World Cup.',
+      description:       'Open global macroeconomic simulation. Teams may start anytime Jan 1 - before Nov 21. 10 rounds, 1 per day. Top teams qualify for the World Cup.',
       created_by:        currentUser.id,
       is_global_elected: true,
     });
@@ -13154,7 +13296,7 @@ function ocRenderRegistration(el, tourn) {
       '<div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#FFD700;margin-bottom:0.375rem;">MacroNations</div>' +
       '<h2 style="font-family:\'DM Serif Display\',serif;font-size:1.75rem;color:#fff;margin-bottom:0.5rem;">Open Championship ' + year + '</h2>' +
       '<p style="color:rgba(255,255,255,0.6);max-width:560px;line-height:1.7;margin-bottom:1.25rem;">' +
-        'Open to everyone. Register any time before Nov 20. Once you submit your first round policy, your personal 10-day clock starts. Complete all 10 rounds by Nov 30 to qualify for the World Cup.' +
+        'Open to everyone. Register any time before Nov 21. Once you submit your first round policy, your personal 10-day clock starts. Complete all 10 rounds by Nov 30 to qualify for the World Cup.' +
       '</p>' +
       '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">' +
         (tourn
@@ -13167,7 +13309,7 @@ function ocRenderRegistration(el, tourn) {
         '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">Award fund</div>' +
           '<div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;" id="' + poolId + '">—</div></div>' +
         '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">Register by</div>' +
-          '<div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">Nov 20, ' + year + '</div></div>' +
+          '<div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">Before Nov 21, ' + year + '</div></div>' +
         '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">Complete by</div>' +
           '<div style="font-family:\'DM Mono\',monospace;font-size:1.25rem;color:#fff;">Nov 30, ' + year + '</div></div>' +
       '</div>' +
@@ -13219,7 +13361,7 @@ function ocRenderRegistration(el, tourn) {
               'The Open Championship for ' + year + ' has not been created yet. Check back soon.</div></div>'
           : '<div class="dash-alert dash-alert--info"><div class="dash-alert__icon">i</div>' +
               '<div class="dash-alert__body"><div class="dash-alert__title">Registration closed</div>' +
-              'The registration window for the ' + year + ' Open Championship has passed (cutoff: Nov 20).</div></div>'
+              'The registration window for the ' + year + ' Open Championship has passed (cutoff: Nov 21).</div></div>'
     );
 
   // Async prize pool update
@@ -13259,7 +13401,7 @@ window.OC.register = async function() {
   // Eligibility: must register before Nov 20
   var year = new Date().getFullYear();
   if (new Date() > ocSeasonCutoff(year)) {
-    if (errEl) { errEl.textContent = 'Registration is closed. Teams must register by November 20 to qualify.'; }
+    if (errEl) { errEl.textContent = 'Registration is closed. Teams must register before November 21 to qualify.'; }
     return;
   }
 
@@ -13584,7 +13726,7 @@ window.ocRenderAdminPanel = async function(el) {
         '<span class="badge badge--' + (enabled ? 'green' : 'subtle') + ' badge--no-dot">' + (enabled ? 'ENABLED' : 'DISABLED') + '</span>' +
       '</div>' +
       '<div class="card__body">' +
-        '<p style="margin-bottom:1rem;color:var(--text-700);">When enabled, an <strong>Open</strong> link appears in the nav. Teams register themselves, pay the $50 entry fee, and compete on their own 10-day schedule. Season window: Jan 1 – Nov 30. Teams must start by Nov 20 to qualify.</p>' +
+        '<p style="margin-bottom:1rem;color:var(--text-700);">When enabled, an <strong>Open</strong> link appears in the nav. Teams register themselves, pay the $50 entry fee, and compete on their own 10-day schedule. Season window: Jan 1 – Nov 30. Teams must start before Nov 21 to qualify.</p>' +
         '<div style="display:flex;gap:0.75rem;align-items:center;">' +
           '<button class="btn btn--' + (enabled ? 'danger' : 'primary') + '" onclick="OC.toggleModule(' + (!enabled) + ')">' +
             (enabled ? 'Disable Module' : 'Enable Module') +
