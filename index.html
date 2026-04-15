@@ -5933,12 +5933,10 @@ async function _renderWCBanner() {
   try {
     var curYear = new Date().getFullYear();
     var seasons = await sbGetPublic('global_seasons', 'year=eq.' + curYear + '&limit=1') || [];
-    if (!seasons.length) { banner.style.display = 'none'; return; }
-    var season = seasons[0];
+    var season  = seasons.length ? seasons[0] : null;
 
-    // Default 2026 schedule — stored in playoff_bracket.schedule
-    // Admin can edit via Global Season panel
-    var sched = (season.playoff_bracket && season.playoff_bracket.schedule)
+    // Default 2026 schedule
+    var sched = (season && season.playoff_bracket && season.playoff_bracket.schedule)
       ? season.playoff_bracket.schedule
       : [
           { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + curYear,  note: 'All paid teams in elected tournaments qualify' },
