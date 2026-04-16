@@ -5287,6 +5287,26 @@ async function dbSetupDefaults() {
     }
   }
 
+  // Load current season entry fee and award seed — overrides hardcoded defaults
+  try {
+    var feeSeasonRows = await sbGetPublic('global_seasons',
+      'year=eq.' + new Date().getFullYear() + '&select=entry_fee,award_seed&limit=1') || [];
+    if (feeSeasonRows.length) {
+      var feeRow = feeSeasonRows[0];
+      if (feeRow.entry_fee != null) {
+        var liveFee = Number(feeRow.entry_fee);
+        if (liveFee >= 0) {
+          WORLD_CUP_ENTRY_FEE = liveFee;
+          if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = liveFee; }
+        }
+      }
+      if (feeRow.award_seed != null) {
+        var liveSeed = Number(feeRow.award_seed);
+        if (liveSeed >= 0) { AWARD_SEED = liveSeed; }
+      }
+    }
+  } catch(feeErr) { /* keep hardcoded defaults */ }
+
   showPage('home');
 })();
 
@@ -5745,7 +5765,7 @@ var CRISES = {
 function calcPrizePool(entryFee, numTeams) {
   entryFee = Number(entryFee) || 0;
   numTeams = Number(numTeams) || 0;
-  var SEED      = 1000;   // MacroNations LLC seed contribution
+  var SEED      = (typeof AWARD_SEED !== 'undefined' ? AWARD_SEED : 1000);
   var CAP       = 10000;  // Maximum award fund
   var MIN_TEAMS = 20;     // Minimum paid teams for awards to be distributed
   var FEE_PCT   = 0.20;   // 20% of entry fees added to fund
@@ -7916,6 +7936,7 @@ var STRIPE_PAYMENT_LINKS = {};
 // Default Stripe payment link for all paid tournaments
 var DEFAULT_PAYMENT_LINK = 'https://buy.stripe.com/dRmeV6afb8c475313Q5ZC02';
 var WORLD_CUP_ENTRY_FEE  = 50;
+var AWARD_SEED           = 1000;  // Seed contribution — overridden by global_seasons.award_seed
 
 function renderDashPayment() {
   var el = document.getElementById('dash-panel-payment');
@@ -10234,11 +10255,13 @@ async function _ensureGlobalSeason(year) {
     if (existing && existing.length) { return existing[0]; }
     // Create new season record
     var newSeason = await sbPost('global_seasons', {
-      year:   year,
-      status: 'active',
-      prize_pool: 0,
+      year:                 year,
+      status:               'active',
+      prize_pool:           0,
+      entry_fee:            WORLD_CUP_ENTRY_FEE || 50,
+      award_seed:           AWARD_SEED || 1000,
       entry_fees_collected: 0,
-      playoff_bracket: {}
+      playoff_bracket:      {}
     });
     return newSeason;
   } catch(e) {
@@ -10425,6 +10448,33 @@ async function renderAdminGlobalSeasons(el) {
                 _metricCard('📊', seas.status === 'active' ? 'Open' : 'Closed', 'Season Status') +
               '</div>' +
 
+              '<div style="margin-bottom:1.25rem;padding:1rem;background:var(--bg-subtle);border-radius:var(--radius-lg);border:1px solid var(--border);">' +
+                '<div style="font-size:0.875rem;font-weight:600;color:var(--text-900);margin-bottom:0.625rem;">Season Award Settings</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.75rem;">' +
+                  '<div>' +
+                    '<label style="font-size:0.8125rem;color:var(--text-600);display:block;margin-bottom:0.25rem;">Entry Fee (USD)</label>' +
+                    '<div style="display:flex;align-items:center;gap:0.375rem;">' +
+                      '<span style="font-size:0.9375rem;color:var(--text-600);">$</span>' +
+                      '<input type="number" id="season-fee-' + seas.year + '" class="form-input" style="width:100px;" ' +
+                        'value="' + (seas.entry_fee != null ? seas.entry_fee : 50) + '" min="0" max="500" step="5">' +
+                    '</div>' +
+                  '</div>' +
+                  '<div>' +
+                    '<label style="font-size:0.8125rem;color:var(--text-600);display:block;margin-bottom:0.25rem;">Award Seed (USD)</label>' +
+                    '<div style="display:flex;align-items:center;gap:0.375rem;">' +
+                      '<span style="font-size:0.9375rem;color:var(--text-600);">$</span>' +
+                      '<input type="number" id="season-seed-' + seas.year + '" class="form-input" style="width:120px;" ' +
+                        'value="' + (seas.award_seed != null ? seas.award_seed : 1000) + '" min="0" max="10000" step="100">' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">' +
+                  '<button class="btn btn--primary btn--sm" onclick="doSaveSeasonSettings(' + seas.year + ')">Save Settings</button>' +
+                  '<span id="fee-saved-' + seas.year + '" style="font-size:0.8125rem;color:var(--success);display:none;">&#10003; Saved</span>' +
+                '</div>' +
+                '<div style="font-size:0.8125rem;color:var(--text-400);margin-top:0.5rem;">Award fund = Seed + 20% of entry fees, capped at $10,000. Requires 20 paid teams.</div>' +
+              '</div>' +
+
               // Championship schedule editor
               '<div style="margin-bottom:1rem;">' +
                 '<div style="font-size:0.875rem;font-weight:500;color:var(--text-900);margin-bottom:0.625rem;">🏆 Championship Schedule</div>' +
@@ -10576,6 +10626,36 @@ async function doRemoveQualifier(qualId) {
     flash('Error: ' + (e.message || ''), 'error');
   }
 }
+
+async function doSaveSeasonSettings(year) {
+  var feeInput  = document.getElementById('season-fee-'  + year);
+  var seedInput = document.getElementById('season-seed-' + year);
+  if (!feeInput || !seedInput) { flash('Inputs not found.', 'error'); return; }
+  var fee  = Math.max(0, Math.min(500,   Number(feeInput.value)  || 0));
+  var seed = Math.max(0, Math.min(10000, Number(seedInput.value) || 0));
+  feeInput.value  = fee;
+  seedInput.value = seed;
+  try {
+    await sbPatch('global_seasons', 'year=eq.' + year, { entry_fee: fee, award_seed: seed });
+    if (year === new Date().getFullYear()) {
+      WORLD_CUP_ENTRY_FEE = fee;
+      AWARD_SEED = seed;
+      if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = fee; }
+    }
+    var savedEl = document.getElementById('fee-saved-' + year);
+    if (savedEl) {
+      savedEl.style.display = 'inline';
+      setTimeout(function() { savedEl.style.display = 'none'; }, 3000);
+    }
+    flash('Season ' + year + ' settings saved — fee: $' + fee + ', seed: $' + seed + '.', 'success');
+  } catch(e) {
+    flash('Save failed: ' + (e.message || ''), 'error');
+  }
+}
+
+// Keep old name as alias for compatibility
+var doSaveSeasonEntryFee = doSaveSeasonSettings;
+
 
 async function doSaveChampionshipSchedule(year) {
   var table = document.getElementById('sched-table-' + year);
