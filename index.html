@@ -3317,7 +3317,7 @@ h1, h2, h3, h4, h5 {
           <div class="lp-tier lp-tier--gold">
             <div class="lp-tier__badge lp-tier__badge--global">Global Championship</div>
             <h3 class="lp-tier__name">World Cup</h3>
-            <div class="lp-tier__price">$50 <span>per team</span></div>
+            <div class="lp-tier__price"><span id="lp-fee-wc">$50</span> <span>per team</span></div>
             <p class="lp-tier__desc">Your professor elects your class tournament into the global season. Compete against top teams from universities worldwide for a shared award fund.</p>
             <ul class="lp-tier__features">
               <li>Everything in class tournament</li>
@@ -3368,7 +3368,7 @@ h1, h2, h3, h4, h5 {
             <h2 class="section__title" id="oc-landing-heading">Open Championship</h2>
             <p class="section__desc" style="text-align:left;max-width:none;">No professor required. Register your team, pay the entry fee, and compete in a 10-day rolling simulation. Your personal clock starts when you submit your first round — start any time before November 21.</p>
             <ul style="list-style:none;padding:0;margin:1.5rem 0;display:flex;flex-direction:column;gap:0.75rem;">
-              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">1</span><span><strong>Register your team</strong> — up to 5 members, $50 entry fee per team</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">1</span><span><strong>Register your team</strong> — up to 5 members, <span id="lp-fee-oc-step">$50</span> entry fee per team</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">2</span><span><strong>Submit Round 1</strong> — your personal 10-day clock starts</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">3</span><span><strong>Complete 10 rounds</strong> — one every 24 hours, auto-advancing</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">4</span><span><strong>Qualify for the World Cup</strong> — finish by Nov 30 to enter the playoff bracket</span></li>
@@ -3384,7 +3384,7 @@ h1, h2, h3, h4, h5 {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
                 <div>
                   <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Entry fee</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:1.375rem;color:#FFD700;font-weight:600;">$50</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:1.375rem;color:#FFD700;font-weight:600;" id="lp-fee-oc-card">$50</div>
                   <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);">per team</div>
                 </div>
                 <div>
@@ -5251,6 +5251,28 @@ async function dbSetupDefaults() {
 // ═══════════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════════
+function _updateFeeDisplays() {
+  var feeStr = '$' + WORLD_CUP_ENTRY_FEE;
+  // Static HTML spans on landing page
+  var ids = ['lp-fee-wc', 'lp-fee-oc-step', 'lp-fee-oc-card'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) { el.textContent = feeStr; }
+  }
+  // Re-render WC banner so award fund recalculates with new seed + fee
+  if (typeof _renderWCBanner === 'function') { _renderWCBanner(); }
+  // Re-render OC page pool display if visible
+  var ocPoolEl = document.getElementById('oc-pool-display');
+  if (ocPoolEl && typeof calcPrizePool === 'function') {
+    sbGetPublic('teams', 'tournament_id=eq.ignored&fee_paid=eq.true&select=id&limit=1').catch(function(){});
+    // Trigger via OC render if on that page
+    if (typeof ocRenderPage === 'function' && document.getElementById('page-open-champ') &&
+        document.getElementById('page-open-champ').classList.contains('on')) {
+      ocRenderPage();
+    }
+  }
+}
+
 (async function init() {
   var sess = _loadSession();
   var user = _loadUser();
@@ -5306,6 +5328,7 @@ async function dbSetupDefaults() {
       }
     }
   } catch(feeErr) { /* keep hardcoded defaults */ }
+  _updateFeeDisplays();
 
   showPage('home');
 })();
@@ -5979,8 +6002,8 @@ async function _renderWCBanner() {
         globalPaidCount += gtPaid.length;
       }
       var pp = (typeof calcPrizePool === 'function')
-        ? calcPrizePool(50, globalPaidCount)
-        : { pool: Math.min(1000 + globalPaidCount * 50 * 0.20, 10000) };
+        ? calcPrizePool(WORLD_CUP_ENTRY_FEE, globalPaidCount)
+        : { pool: Math.min((AWARD_SEED||1000) + globalPaidCount * (WORLD_CUP_ENTRY_FEE||50) * 0.20, 10000) };
       prizePool = pp.pool || 1000;
     } catch(pe) { prizePool = 1000; }
     var poolHtml = prizePool > 0
@@ -10643,6 +10666,7 @@ async function doSaveSeasonSettings(year) {
       WORLD_CUP_ENTRY_FEE = fee;
       AWARD_SEED = seed;
       if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = fee; }
+      _updateFeeDisplays();
     }
     var savedEl = document.getElementById('fee-saved-' + year);
     if (savedEl) {
@@ -11416,8 +11440,8 @@ async function renderRankings() {
           totalPaidTeams += gTf.length;
         }
         var seasonPp = (typeof calcPrizePool === 'function')
-          ? calcPrizePool(50, totalPaidTeams)
-          : { pool: Math.min(1000 + totalPaidTeams * 50 * 0.20, 10000) };
+          ? calcPrizePool(WORLD_CUP_ENTRY_FEE, totalPaidTeams)
+          : { pool: Math.min((AWARD_SEED||1000) + totalPaidTeams * (WORLD_CUP_ENTRY_FEE||50) * 0.20, 10000) };
         seasonPool = seasonPp.pool || 0;
       } catch(se) { seasonPool = 1000; }
 
@@ -13397,7 +13421,7 @@ function ocRenderRegistration(el, tourn) {
 
     // How it works strip
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">' +
-      _ocInfoCard('1', 'Register & Pay', 'Create your team and pay the $50 entry fee.') +
+      _ocInfoCard('1', 'Register & Pay', 'Create your team and pay the ' + ocFmt$(OC_ENTRY_FEE) + ' entry fee.') +
       _ocInfoCard('2', 'Submit Round 1', 'Your 10-day clock starts the moment you submit your first policy.') +
       _ocInfoCard('3', 'Play 10 Rounds', 'One round every 24 hours. Miss a round and defaults apply.') +
       _ocInfoCard('4', 'Qualify', 'Finish by Nov 30 to enter the World Cup playoff bracket.') +
@@ -13806,7 +13830,7 @@ window.ocRenderAdminPanel = async function(el) {
         '<span class="badge badge--' + (enabled ? 'green' : 'subtle') + ' badge--no-dot">' + (enabled ? 'ENABLED' : 'DISABLED') + '</span>' +
       '</div>' +
       '<div class="card__body">' +
-        '<p style="margin-bottom:1rem;color:var(--text-700);">When enabled, an <strong>Open</strong> link appears in the nav. Teams register themselves, pay the $50 entry fee, and compete on their own 10-day schedule. Season window: Jan 1 – Nov 30. Teams must start before Nov 21 to qualify.</p>' +
+        '<p style="margin-bottom:1rem;color:var(--text-700);">When enabled, an <strong>Open</strong> link appears in the nav. Teams register themselves, pay the ' + ocFmt$(OC_ENTRY_FEE) + ' entry fee, and compete on their own 10-day schedule. Season window: Jan 1 – Nov 30. Teams must start before Nov 21 to qualify.</p>' +
         '<div style="display:flex;gap:0.75rem;align-items:center;">' +
           '<button class="btn btn--' + (enabled ? 'danger' : 'primary') + '" onclick="OC.toggleModule(' + (!enabled) + ')">' +
             (enabled ? 'Disable Module' : 'Enable Module') +
