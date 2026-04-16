@@ -11690,7 +11690,23 @@ function showLegal(section) {
     html += '<div class="legal-highlight">' + esc(data.highlight) + '</div>';
   }
   if (data.math && data.math.length) {
-    html += '<div class="legal-math">' + data.math.map(function(l) { return esc(l); }).join('<br>') + '</div>';
+    // For prizes section, regenerate math with live fee/seed values
+    var mathLines = data.math;
+    if (section === 'prizes') {
+      var liveFee  = (typeof WORLD_CUP_ENTRY_FEE !== 'undefined') ? WORLD_CUP_ENTRY_FEE : 50;
+      var liveSeed = (typeof AWARD_SEED !== 'undefined') ? AWARD_SEED : 1000;
+      var examplePool = Math.min(liveSeed + 20 * liveFee * 0.20, 10000);
+      mathLines = [
+        'Award Fund Structure:',
+        '  Seed contribution:   $' + liveSeed.toLocaleString() + ' (MacroNations LLC)',
+        '  Entry fee portion:   20% of fees collected',
+        '  Maximum fund cap:    $10,000',
+        '  Minimum threshold:   20 paid teams required for any distribution',
+        '  Example (20 teams x $' + liveFee + '): $' + liveSeed.toLocaleString() + ' + (20 x $' + liveFee + ' x 20%) = $' + examplePool.toLocaleString() + ' fund',
+        '  Distribution:        at percentages determined by MacroNations LLC'
+      ];
+    }
+    html += '<div class="legal-math">' + mathLines.map(function(l) { return esc(l); }).join('<br>') + '</div>';
   }
 
   var secs = data.sections || [];
