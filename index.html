@@ -5287,23 +5287,21 @@ async function dbSetupDefaults() {
     }
   }
 
-  // Load current season entry fee and award seed — overrides hardcoded defaults
+  // Load current season entry fee and award seed from playoff_bracket JSON
   try {
     var feeSeasonRows = await sbGetPublic('global_seasons',
-      'year=eq.' + new Date().getFullYear() + '&select=entry_fee,playoff_bracket&limit=1') || [];
-    if (feeSeasonRows.length) {
-      var feeRow = feeSeasonRows[0];
-      if (feeRow.entry_fee != null) {
-        var liveFee = Number(feeRow.entry_fee);
+      'year=eq.' + new Date().getFullYear() + '&select=playoff_bracket&limit=1') || [];
+    if (feeSeasonRows.length && feeSeasonRows[0].playoff_bracket) {
+      var pb = feeSeasonRows[0].playoff_bracket;
+      if (pb.entry_fee != null) {
+        var liveFee = Number(pb.entry_fee);
         if (liveFee >= 0) {
           WORLD_CUP_ENTRY_FEE = liveFee;
           if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = liveFee; }
         }
       }
-      // award_seed stored inside playoff_bracket JSON
-      var liveSeedVal = feeRow.playoff_bracket && feeRow.playoff_bracket.award_seed;
-      if (liveSeedVal != null) {
-        var liveSeed = Number(liveSeedVal);
+      if (pb.award_seed != null) {
+        var liveSeed = Number(pb.award_seed);
         if (liveSeed >= 0) { AWARD_SEED = liveSeed; }
       }
     }
@@ -10260,9 +10258,8 @@ async function _ensureGlobalSeason(year) {
       year:                 year,
       status:               'active',
       prize_pool:           0,
-      entry_fee:            WORLD_CUP_ENTRY_FEE || 50,
       entry_fees_collected: 0,
-      playoff_bracket:      { award_seed: AWARD_SEED || 1000 }
+      playoff_bracket:      { entry_fee: WORLD_CUP_ENTRY_FEE || 50, award_seed: AWARD_SEED || 1000 }
     });
     return newSeason;
   } catch(e) {
@@ -10457,7 +10454,7 @@ async function renderAdminGlobalSeasons(el) {
                     '<div style="display:flex;align-items:center;gap:0.375rem;">' +
                       '<span style="font-size:0.9375rem;color:var(--text-600);">$</span>' +
                       '<input type="number" id="season-fee-' + seas.year + '" class="form-input" style="width:100px;" ' +
-                        'value="' + (seas.entry_fee != null ? seas.entry_fee : 50) + '" min="0" max="500" step="5">' +
+                        'value="' + ((seas.playoff_bracket && seas.playoff_bracket.entry_fee != null) ? seas.playoff_bracket.entry_fee : (seas.entry_fee != null ? seas.entry_fee : 50)) + '" min="0" max="500" step="5">' +
                     '</div>' +
                   '</div>' +
                   '<div>' +
@@ -10637,15 +10634,11 @@ async function doSaveSeasonSettings(year) {
   feeInput.value  = fee;
   seedInput.value = seed;
   try {
-    // Save entry_fee to its own column
-    await sbPatch('global_seasons', 'year=eq.' + year, { entry_fee: fee });
-
-    // Store award_seed inside playoff_bracket JSON — avoids schema cache issues
     var existing = await sbGet('global_seasons', 'year=eq.' + year + '&limit=1') || [];
     var bracket  = (existing.length && existing[0].playoff_bracket) ? existing[0].playoff_bracket : {};
+    bracket.entry_fee  = fee;
     bracket.award_seed = seed;
     await sbPatch('global_seasons', 'year=eq.' + year, { playoff_bracket: bracket });
-
     if (year === new Date().getFullYear()) {
       WORLD_CUP_ENTRY_FEE = fee;
       AWARD_SEED = seed;
