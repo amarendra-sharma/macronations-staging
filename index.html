@@ -11609,13 +11609,10 @@ var LEGAL_CONTENT = {
     updated: 'April 2026',
     highlight: 'Competition award fund — seeded by MacroNations LLC, supplemented by entry fees, subject to a maximum cap. Distribution percentages, timing, and eligibility are determined solely by MacroNations LLC. Minimum participation threshold applies.',
     math: [
-      'Award Fund Structure:',
-      '  Seed contribution:   $1,000 (MacroNations LLC)',
-      '  Entry fee portion:   20% of fees collected',
-      '  Maximum fund cap:    $10,000',
-      '  Minimum threshold:   20 paid teams required for any distribution',
-      '  Example (20 teams x $50): $1,000 + (20 x $50 x 20%) = $1,200 fund',
-      '  Distribution:        at percentages determined by MacroNations LLC'
+      'Award Fund = MacroNations LLC seed + 20% of entry fees collected',
+      'Maximum cap: $10,000 · Minimum 20 paid teams to unlock distribution',
+      'Seed amount and entry fee are set each season at management discretion.',
+      'Distribution percentages determined by MacroNations LLC after tournament close.'
     ],
     sections: [
       { h: 'Award Fund Composition', p: 'The competition award fund consists of (1) a seed contribution provided by MacroNations LLC in its sole discretion, and (2) a portion of entry fees collected from paid teams as determined by MacroNations LLC. The award fund is subject to a maximum cap established by MacroNations LLC. Entry fees collected in excess of the cap, if any, are retained by MacroNations LLC to cover platform operations, development, and administrative costs. MacroNations LLC makes no representation that any specific dollar amount, percentage of fees, or fund size will be made available for distribution.' },
@@ -11938,7 +11935,7 @@ function _aboutHowItWorks() {
       '<div class="card__body">' +
         '<div class="steps">' +
           _step('1','Register & Join','Create a free account with any valid email. Professors use their .edu address to create class tournaments. Students can use any email. Go to Tournaments, find a competition open for registration, and either create a new team or join an existing one with an 8-character invite code. Each team can have up to 5 members.') +
-          _step('2','Pay the Entry Fee (if applicable)','For paid tournaments ($50/team), go to Dashboard → Payment. Pay via the Stripe link or email support@macronations.com. Your policy submissions are locked until payment is confirmed by the admin.') +
+          _step('2','Pay the Entry Fee (if applicable)','For paid tournaments, go to Dashboard → Payment to pay the entry fee via Stripe. Your policy submissions are locked until payment is confirmed by the admin.') +
           _step('3','Set Your 10 Policy Levers','Every round, go to Dashboard → Policy. Adjust your 10 macroeconomic levers: Interest Rate, Government Spending, Tax Rate, Trade Openness, R&D Investment, Green Energy Mix, Welfare Spending, Regulation, Foreign Aid, and Infrastructure. Write a brief rationale and hit Submit Final Decision before the round deadline.') +
           _step('4','Respond to Crises','Some rounds trigger an economic crisis (banking crash, pandemic, trade war, debt crisis). Go to Crisis tab first — choose your response option — then separately submit your policy. These are two independent steps. If you skip the crisis response, the full unmitigated shock applies to your economy.') +
           _step('5','Consult the AI Advisor','Use Dashboard → AI Advisor to think through trade-offs. The advisor uses the Socratic method — it raises questions about your economy but never tells you which levers to move. That judgment is yours.') +
@@ -13098,7 +13095,8 @@ function _renderDashProfileTab() {
 // ===================================================================
 
 // -- Constants -------------------------------------------------------
-var OC_ENTRY_FEE     = 50;
+// OC_ENTRY_FEE is set by init() from global_seasons; fallback to WORLD_CUP_ENTRY_FEE or 50
+if (typeof OC_ENTRY_FEE === 'undefined' || OC_ENTRY_FEE === 50) { OC_ENTRY_FEE = WORLD_CUP_ENTRY_FEE || 50; }
 var OC_ROUNDS        = 10;
 var OC_MS_PER_ROUND  = 24 * 60 * 60 * 1000;
 var OC_TOURN_TYPE    = 'open_championship';
