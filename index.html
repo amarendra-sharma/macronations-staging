@@ -9950,18 +9950,37 @@ async function runSimulation(tournId) {
   }
 }
 
-function _openRoundNotificationEmail(tourn, newRound, teamData) {
+async function _openRoundNotificationEmail(tourn, newRound, teamData) {
   var tournName = (tourn && tourn.name) ? tourn.name : 'Tournament';
-  var subject = encodeURIComponent('[MacroNations] Round ' + newRound + ' Results — ' + tournName);
-  var scores  = teamData.map(function(td) { return '  ' + td.teamName + ': ' + td.score + '/1000'; }).join('\n');
-  var body    = encodeURIComponent(
+  var subject   = encodeURIComponent('[MacroNations] Round ' + newRound + ' Results - ' + tournName);
+  var scores    = teamData.map(function(td) { return '  ' + td.teamName + ': ' + td.score + '/1000'; }).join('\n');
+  var body      = encodeURIComponent(
     'Hello MacroNations participants,\n\n' +
     'Round ' + newRound + ' results are in for ' + tournName + '.\n\n' +
     'Score summary:\n' + scores + '\n\n' +
     'Log in at macronations.com to view your economy, set your next policy, and respond to any active crises.\n\n' +
-    'Good luck!\n— MacroNations Team\nsupport@macronations.com'
+    'Good luck!\n- MacroNations Team\nsupport@macronations.com'
   );
-  window.open('mailto:?subject=' + subject + '&body=' + body, '_blank');
+
+  // Collect all unique member IDs across all teams
+  var allIds = [];
+  for (var i = 0; i < teamData.length; i++) {
+    var mids = teamData[i].memberIds || [];
+    for (var j = 0; j < mids.length; j++) {
+      if (mids[j] && allIds.indexOf(mids[j]) === -1) { allIds.push(mids[j]); }
+    }
+  }
+
+  // Fetch emails
+  var toEmails = '';
+  if (allIds.length) {
+    try {
+      var users = await sbGet('mn_users', 'id=in.(' + allIds.join(',') + ')&select=email&limit=500') || [];
+      toEmails = users.map(function(u) { return u.email || ''; }).filter(Boolean).join(',');
+    } catch(e) {}
+  }
+
+  window.open('mailto:' + toEmails + '?subject=' + subject + '&body=' + body, '_blank');
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -10240,27 +10259,67 @@ function renderAdminNotify(el) {
     '</div>';
 }
 
-function sendNotifyEmail(type) {
+async function sendNotifyEmail(type) {
   var tournId = document.getElementById('notify-tournament').value;
   var t = _getTournById(tournId);
-  var name = (t && t.name) ? t.name : 'MacroNations Tournament';
+  var name  = (t && t.name) ? t.name : 'MacroNations Tournament';
   var round = (t && t.current_round) ? t.current_round : '?';
   var templates = {
-    round_open:     { sub: '[MacroNations] Round ' + round + ' is now open — ' + name, body: 'Round ' + round + ' is now open for ' + name + '.\n\nLog in at macronations.com to:\n• Set your 10 policy levers\n• Respond to any active crises\n• View your economy\n\nDeadline: [INSERT DEADLINE]\n\nGood luck!\n— MacroNations' },
-    round_reminder: { sub: '[MacroNations] ⏰ Deadline reminder — Round ' + round, body: 'Just a reminder: the deadline for Round ' + round + ' in ' + name + ' is approaching.\n\nIf you haven\'t submitted your policy yet, log in now at macronations.com.\n\n— MacroNations' },
-    crisis:         { sub: '[MacroNations] ⚡ Crisis alert — ' + name, body: 'A new economic crisis has hit in Round ' + round + ' of ' + name + '.\n\nLog in to macronations.com to view the crisis details and choose your response. Remember: crisis response and policy submission are two separate steps.\n\n— MacroNations' },
-    results:        { sub: '[MacroNations] Round ' + round + ' results — ' + name, body: 'Round ' + round + ' results are now available for ' + name + '.\n\nLog in at macronations.com to see your economy update, scores, and leaderboard position.\n\nRound ' + (Number(round)+1) + ' opens shortly.\n\n— MacroNations' },
-    welcome:        { sub: '[MacroNations] Welcome to ' + name + '!', body: 'Welcome to ' + name + '!\n\nYour team has been successfully registered. Here\'s what happens next:\n\n1. Log in at macronations.com\n2. Go to your Dashboard\n3. Set your 10 policy levers before the round deadline\n\nIf your tournament has an entry fee, visit the Payment tab in your dashboard.\n\nInvite Code: [YOUR TEAM CODE]\n\nGood luck!\n— MacroNations Team\nsupport@macronations.com' }
+    round_open:     { sub: '[MacroNations] Round ' + round + ' is now open — ' + name, body: 'Round ' + round + ' is now open for ' + name + '.\n\nLog in at macronations.com to:\n- Set your 10 policy levers\n- Respond to any active crises\n- View your economy\n\nDeadline: [INSERT DEADLINE]\n\nGood luck!\n- MacroNations' },
+    round_reminder: { sub: '[MacroNations] Deadline reminder - Round ' + round, body: 'Just a reminder: the deadline for Round ' + round + ' in ' + name + ' is approaching.\n\nIf you have not submitted your policy yet, log in now at macronations.com.\n\n- MacroNations' },
+    crisis:         { sub: '[MacroNations] Crisis alert - ' + name, body: 'A new economic crisis has hit in Round ' + round + ' of ' + name + '.\n\nLog in to macronations.com to view the crisis details and choose your response. Remember: crisis response and policy submission are two separate steps.\n\n- MacroNations' },
+    results:        { sub: '[MacroNations] Round ' + round + ' results - ' + name, body: 'Round ' + round + ' results are now available for ' + name + '.\n\nLog in at macronations.com to see your economy update, scores, and leaderboard position.\n\nRound ' + (Number(round)+1) + ' opens shortly.\n\n- MacroNations' },
+    welcome:        { sub: '[MacroNations] Welcome to ' + name + '!', body: 'Welcome to ' + name + '!\n\nYour team has been successfully registered. Here is what happens next:\n\n1. Log in at macronations.com\n2. Go to your Dashboard\n3. Set your 10 policy levers before the round deadline\n\nIf your tournament has an entry fee, visit the Payment tab in your dashboard.\n\nGood luck!\n- MacroNations Team\nsupport@macronations.com' }
   };
   var tmpl = templates[type];
   if (!tmpl) { return; }
-  window.open('mailto:?subject=' + encodeURIComponent(tmpl.sub) + '&body=' + encodeURIComponent(tmpl.body), '_blank');
+
+  // Fetch all team member emails for this tournament
+  var toEmails = '';
+  if (tournId) {
+    try {
+      var teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
+      var allUserIds = [];
+      for (var ti = 0; ti < teams.length; ti++) {
+        var mems = teams[ti].members || [];
+        for (var mi = 0; mi < mems.length; mi++) {
+          if (mems[mi] && allUserIds.indexOf(mems[mi]) === -1) { allUserIds.push(mems[mi]); }
+        }
+      }
+      if (allUserIds.length) {
+        var users = await sbGet('mn_users', 'id=in.(' + allUserIds.join(',') + ')&select=email&limit=500') || [];
+        toEmails = users.map(function(u) { return u.email || ''; }).filter(Boolean).join(',');
+      }
+    } catch(e) { /* proceed without to: if fetch fails */ }
+  }
+
+  window.open('mailto:' + toEmails + '?subject=' + encodeURIComponent(tmpl.sub) + '&body=' + encodeURIComponent(tmpl.body), '_blank');
 }
 
-function sendCustomEmail() {
+async function sendCustomEmail() {
   var subject = document.getElementById('notify-subject').value || '[MacroNations] Message';
   var body    = document.getElementById('notify-body').value    || '';
-  window.open('mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body), '_blank');
+  var tournId = document.getElementById('notify-tournament').value;
+
+  var toEmails = '';
+  if (tournId) {
+    try {
+      var teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
+      var allUserIds = [];
+      for (var ti = 0; ti < teams.length; ti++) {
+        var mems = teams[ti].members || [];
+        for (var mi = 0; mi < mems.length; mi++) {
+          if (mems[mi] && allUserIds.indexOf(mems[mi]) === -1) { allUserIds.push(mems[mi]); }
+        }
+      }
+      if (allUserIds.length) {
+        var users = await sbGet('mn_users', 'id=in.(' + allUserIds.join(',') + ')&select=email&limit=500') || [];
+        toEmails = users.map(function(u) { return u.email || ''; }).filter(Boolean).join(',');
+      }
+    } catch(e) {}
+  }
+
+  window.open('mailto:' + toEmails + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body), '_blank');
 }
 
 // ─────────────────────────────────────────────────────────────────
