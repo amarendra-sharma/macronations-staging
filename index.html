@@ -10335,58 +10335,91 @@ var GRADE_WEIGHTS = {
   rank:         0.10   // rank bonus within tournament
 };
 
-// AI rubric prompt for rationale scoring
-function _rationalePrompt(rationale, leverSummary, round) {
-  return 'You are grading a student\'s macroeconomic policy rationale for Round ' + round + ' of a simulation.\n\n' +
-    'Their policy choices: ' + leverSummary + '\n\n' +
-    'Their written rationale: "' + rationale + '"\n\n' +
-    'Score this rationale on three dimensions, each 0-10:\n' +
-    '1. Economic concept usage (0-10): Does it reference real economic concepts (e.g. Phillips Curve, multiplier effect, crowding out, comparative advantage, Laffer Curve, output gap, monetary transmission, etc.)?\n' +
-    '2. Trade-off acknowledgment (0-10): Does it acknowledge the costs or risks of the chosen policy, or tensions between goals?\n' +
-    '3. Internal consistency (0-10): Are the stated reasons logically consistent with the actual lever values chosen?\n\n' +
-    'If the rationale is empty, very short (under 10 words), or purely descriptive ("we raised spending"), score all dimensions 0-2.\n\n' +
-    'Respond ONLY with valid JSON, no markdown, no explanation:\n' +
-    '{"concept":7,"tradeoff":5,"consistency":8,"comment":"One sentence of feedback for the student."}';
-}
+// Economic concepts library for rationale scoring
+var ECON_CONCEPTS = [
+  'gdp','inflation','unemployment','interest rate','monetary','fiscal','deficit','surplus',
+  'debt','multiplier','crowding out','phillips curve','okun','laffer','aggregate demand',
+  'supply','trade','tariff','exchange rate','currency','comparative advantage','productivity',
+  'investment','capital','expenditure','tax','revenue','output gap','recession','growth',
+  'stimulus','austerity','quantitative','central bank','federal reserve','bond','yield',
+  'equilibrium','elasticity','incentive','externality','welfare','inequality','gini',
+  'sustainability','green','infrastructure','innovation','r&d','research','technology',
+  'supply chain','trade balance','current account','balance of payments','devaluation',
+  'appreciation','depreciation','stagflation','hyperinflation','deflation','liquidity',
+  'solvency','regulation','deregulation','privatization','nationalization','subsidy'
+];
 
-function _leverSummary(policy) {
-  if (!policy) { return 'No policy data'; }
-  var parts = [];
-  if (policy.interest_rate_target !== undefined) { parts.push('IR=' + policy.interest_rate_target + '%'); }
-  if (policy.gov_spending_pct !== undefined)     { parts.push('Spending=' + policy.gov_spending_pct + '%'); }
-  if (policy.tax_rate !== undefined)             { parts.push('Tax=' + policy.tax_rate + '%'); }
-  if (policy.trade_openness !== undefined)       { parts.push('Trade=' + policy.trade_openness); }
-  if (policy.rd_investment !== undefined)        { parts.push('R&D=' + policy.rd_investment + '%'); }
-  if (policy.green_energy !== undefined)         { parts.push('Green=' + policy.green_energy + '%'); }
-  return parts.join(', ') || 'Default policy';
-}
+var TRADEOFF_WORDS = [
+  'however','although','but','trade-off','tradeoff','risk','cost','despite','while',
+  'on the other hand','at the expense','offset','balance','tension','conflict',
+  'may reduce','could lower','might increase','downside','drawback','concern',
+  'short-term','long-term','temporary','permanent','unintended'
+];
 
-async function _scoreRationale(rationale, policy, round) {
+function _scoreRationaleLocal(rationale, policy, round) {
   if (!rationale || rationale.trim().length < 5) {
     return { concept: 0, tradeoff: 0, consistency: 0, comment: 'No rationale submitted.' };
   }
-  try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{ role: 'user', content: _rationalePrompt(rationale, _leverSummary(policy), round) }]
-      })
-    });
-    var data = await resp.json();
-    var text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '{}';
-    var parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    return {
-      concept:     Math.min(10, Math.max(0, Number(parsed.concept)     || 0)),
-      tradeoff:    Math.min(10, Math.max(0, Number(parsed.tradeoff)    || 0)),
-      consistency: Math.min(10, Math.max(0, Number(parsed.consistency) || 0)),
-      comment:     String(parsed.comment || '')
-    };
-  } catch(e) {
-    return { concept: 0, tradeoff: 0, consistency: 0, comment: 'Scoring error.' };
+
+  var text = rationale.toLowerCase();
+  var words = text.split(/\s+/).length;
+
+  // 1. Economic concept score (0-10)
+  var conceptHits = 0;
+  for (var i = 0; i < ECON_CONCEPTS.length; i++) {
+    if (text.indexOf(ECON_CONCEPTS[i]) !== -1) { conceptHits++; }
   }
+  var conceptScore = Math.min(10, words < 10 ? 1 : conceptHits >= 4 ? 10 : conceptHits >= 3 ? 8 : conceptHits >= 2 ? 6 : conceptHits === 1 ? 4 : 2);
+
+  // 2. Trade-off acknowledgment score (0-10)
+  var tradeoffHits = 0;
+  for (var j = 0; j < TRADEOFF_WORDS.length; j++) {
+    if (text.indexOf(TRADEOFF_WORDS[j]) !== -1) { tradeoffHits++; }
+  }
+  var tradeoffScore = Math.min(10, words < 10 ? 1 : tradeoffHits >= 3 ? 10 : tradeoffHits >= 2 ? 7 : tradeoffHits === 1 ? 5 : 2);
+
+  // 3. Internal consistency (0-10) — checks if levers mentioned match policy
+  var consistencyScore = 5; // default neutral
+  if (policy) {
+    var leverMentions = 0;
+    var leverChecks = [
+      { key: 'interest_rate_target', words: ['interest rate','rate','monetary','central bank'] },
+      { key: 'gov_spending_pct',     words: ['spending','expenditure','fiscal','stimulus','austerity'] },
+      { key: 'tax_rate',             words: ['tax','revenue','laffer'] },
+      { key: 'trade_openness',       words: ['trade','tariff','import','export','open'] },
+      { key: 'rd_investment',        words: ['r&d','research','innovation','technology'] },
+      { key: 'green_energy',         words: ['green','energy','sustainable','climate','environment'] }
+    ];
+    for (var k = 0; k < leverChecks.length; k++) {
+      var lc = leverChecks[k];
+      if (policy[lc.key] !== undefined) {
+        for (var l = 0; l < lc.words.length; l++) {
+          if (text.indexOf(lc.words[l]) !== -1) { leverMentions++; break; }
+        }
+      }
+    }
+    consistencyScore = Math.min(10, words < 10 ? 2 : leverMentions >= 3 ? 10 : leverMentions >= 2 ? 8 : leverMentions === 1 ? 5 : 3);
+  }
+
+  // Generate comment
+  var comment = '';
+  if (words < 10)          { comment = 'Very brief — more detail would strengthen the analysis.'; }
+  else if (conceptHits === 0) { comment = 'Good effort — try referencing specific economic concepts (e.g. Phillips Curve, multiplier effect).'; }
+  else if (tradeoffHits === 0){ comment = 'Solid reasoning — consider acknowledging the trade-offs or risks of this policy mix.'; }
+  else if (leverMentions === 0){ comment = 'Good economic reasoning — try linking your rationale more directly to the specific levers you adjusted.'; }
+  else                     { comment = 'Strong rationale with economic grounding and policy reasoning.'; }
+
+  return {
+    concept:     conceptScore,
+    tradeoff:    tradeoffScore,
+    consistency: consistencyScore,
+    comment:     comment
+  };
+}
+
+async function _scoreRationale(rationale, policy, round) {
+  // Use local rule-based scoring — works on any host without API calls
+  return _scoreRationaleLocal(rationale, policy, round);
 }
 
 async function doGenerateGrades(tournId) {
@@ -10476,7 +10509,7 @@ async function doGenerateGrades(tournId) {
     for (var ri = 0; ri < teamScores.length; ri++) { rankMap[teamScores[ri].id] = ri + 1; }
 
     // Score rationales with AI
-    setProgress(40, 'AI scoring rationales (this takes ~' + Math.ceil(teams.length * totalRounds / 3) + 's)...');
+    setProgress(40, 'Scoring rationales (' + teams.length + ' teams x ' + totalRounds + ' rounds)...');
 
     var gradeRows = []; // will hold per-team grade data
     var processed = 0;
