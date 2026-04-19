@@ -6440,12 +6440,12 @@ function _switchTeamTab(which) {
 // ── ONE-TEAM-PER-SEASON CHECK ─────────────────────────────────────
 // Returns the conflicting team object if user is already in any tournament
 // with the same season_year, otherwise returns null.
-async function _checkSeasonConflict(seasonYear) {
+async function _checkSeasonConflict(seasonYear, excludeTier) {
   if (!currentUser || !seasonYear) { return null; }
-  // Get all tournaments with this season_year
-  var sameSeason = await sbGet('tournaments',
-    'season_year=eq.' + encodeURIComponent(seasonYear) + '&select=id'
-  );
+  // Get all tournaments with this season_year, optionally excluding a tier
+  var query = 'season_year=eq.' + encodeURIComponent(seasonYear) + '&select=id,tier';
+  if (excludeTier) { query += '&tier=neq.' + encodeURIComponent(excludeTier); }
+  var sameSeason = await sbGet('tournaments', query);
   if (!sameSeason || !sameSeason.length) { return null; }
   var ids = [];
   for (var i = 0; i < sameSeason.length; i++) { ids.push(sameSeason[i].id); }
@@ -6502,7 +6502,8 @@ async function doCreateTeam() {
     if (!tourn) { _setFormErr('create-team-error','Tournament not found.'); setLoading('btn-do-create-team',false,'Create Team'); return; }
 
     // Block joining if tournament has already started (round > 0)
-    if (Number(tourn.current_round) > 0) {
+    // Exception: Open Championship is always open during the season window
+    if (Number(tourn.current_round) > 0 && tourn.tier !== 'open_championship') {
       _setFormErr('create-team-error','This tournament has already started (Round ' + tourn.current_round + '). New teams cannot join after Round 1 has begun.');
       setLoading('btn-do-create-team',false,'Create Team');
       return;
@@ -6527,8 +6528,8 @@ async function doCreateTeam() {
       }
     }
 
-    // One-team-per-season check
-    var conflict = await _checkSeasonConflict(tourn.season_year);
+    // One-team-per-season check (OC has its own guard — exclude it from cross-tournament conflict)
+    var conflict = await _checkSeasonConflict(tourn.season_year, tourn.tier === 'open_championship' ? 'open_championship' : null);
     if (conflict) {
       _setFormErr('create-team-error',
         'You are already on team "' + ((conflict && conflict.name) || 'another team') +
@@ -6708,10 +6709,11 @@ async function doJoinTeam() {
       }
     }
 
-    // One-team-per-season check
+    // One-team-per-season check (OC has its own guard)
     var seasonYear = (tourn && tourn.season_year) ? tourn.season_year : null;
     if (seasonYear) {
-      var conflict = await _checkSeasonConflict(seasonYear);
+      var excludeTierJoin = (tourn && tourn.tier === 'open_championship') ? 'open_championship' : null;
+      var conflict = await _checkSeasonConflict(seasonYear, excludeTierJoin);
       if (conflict && conflict.id !== team.id) {
         _setFormErr('join-team-error',
           'You are already on team "' + ((conflict && conflict.name) || 'another team') +
@@ -12276,24 +12278,51 @@ function _aboutCurriculum() {
         '<p style="margin-bottom:1rem;">MacroNations is designed to work as a graded assignment with zero extra class time. Here is how to use it across different course formats.</p>' +
 
         '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">What the platform captures automatically</div>' +
-        '<p style="margin-bottom:1rem;">Every student team\'s final score (0–1000) across five pillars, their policy decisions for every round (all 10 lever values), their written rationale for each round\'s decisions, the round timestamp and whether they submitted before the deadline, and the full leaderboard ranking within your class. All of this is exportable from Admin → Analytics → Export Grades (CSV) — one file, ready for your gradebook.</p>' +
+        '<p style="margin-bottom:1rem;">Every student team\'s final score (0–1000) across five pillars, their policy decisions for every round (all 10 lever values), their written rationale for each round\'s decisions, the round timestamp and whether they submitted before the deadline, and the full leaderboard ranking within your class. All of this is exportable directly from each tournament.</p>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">How to export grades</div>' +
+        '<p style="margin-bottom:0.5rem;">Go to <strong>Admin → Tournaments</strong> and click the <strong>📊 Grades</strong> button on any tournament row. The platform automatically scores every team and downloads two files:</p>' +
+        '<ul style="margin:0 0 1rem 1.25rem;line-height:2;">' +
+          '<li><strong>Full report</strong> — one row per team, all pillar scores, rank, grade components, letter grade, and every round\'s rationale text with AI rubric scores and feedback comments</li>' +
+          '<li><strong>LMS-import ready</strong> — one row per student (not per team), ready to upload directly to Canvas, Brightspace, or Moodle using the student email address as the match key</li>' +
+        '</ul>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Uploading to your LMS</div>' +
+        '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">' +
+            '<div><div style="font-weight:500;margin-bottom:0.25rem;font-size:0.875rem;">Canvas</div><p style="font-size:0.8125rem;color:var(--text-500);">Grades → Import → upload the LMS file → map by SIS Login ID (email). Assign the "Final Grade (0-100)" column to your assignment.</p></div>' +
+            '<div><div style="font-weight:500;margin-bottom:0.25rem;font-size:0.875rem;">Brightspace</div><p style="font-size:0.8125rem;color:var(--text-500);">Grades → Import → upload the LMS file → match by Username or email. The grade column imports directly as a numeric grade.</p></div>' +
+            '<div><div style="font-weight:500;margin-bottom:0.25rem;font-size:0.875rem;">Moodle</div><p style="font-size:0.8125rem;color:var(--text-500);">Grades → Import CSV → upload the LMS file → match by Email address. Map "Final Grade" to your gradebook item.</p></div>' +
+          '</div>' +
+          '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.75rem;margin-bottom:0;">The student email in MacroNations must match the email in your LMS. If they differ, you can manually adjust the email column in the CSV before importing.</p>' +
+        '</div>' +
+
+        '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">How the composite grade is calculated</div>' +
+        '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;font-family:\'DM Mono\',monospace;font-size:0.8125rem;line-height:2;">' +
+          'Final Grade (0–100) =<br>' +
+          '&nbsp;&nbsp;Simulation Score / 1000 &times; 40 &nbsp;&nbsp;(0–40 pts)<br>' +
+          '&nbsp;&nbsp;Avg Rationale Score / 10 &times; 30 &nbsp;&nbsp;(0–30 pts)<br>' +
+          '&nbsp;&nbsp;Rounds Submitted / Total &times; 20 &nbsp;&nbsp;(0–20 pts)<br>' +
+          '&nbsp;&nbsp;Rank bonus: top 25%=10, top 50%=5 &nbsp;&nbsp;(0–10 pts)' +
+        '</div>' +
+        '<p style="margin-bottom:1rem;">The rationale component is scored automatically using a keyword rubric across three dimensions: economic concept usage, trade-off acknowledgment, and internal consistency with the levers chosen. The CSV shows each dimension score and a feedback comment so you can review or override the grade in your LMS.</p>' +
 
         '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Suggested grading approaches</div>' +
 
         '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:0.875rem;">' +
-          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 1 — Outcome-based (simplest)</div>' +
-          '<p>Grade entirely on final score. Assign letter grades by score band — for example A = 700+, B = 550–699, C = 400–549, D = 250–399. This requires no manual review and takes five minutes to enter in your gradebook after the tournament ends. Works well for extra credit or short assignments.</p>' +
+          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 1 — Use the composite grade directly (simplest)</div>' +
+          '<p>Click 📊 Grades, download, upload the LMS file to your gradebook. The composite grade (0–100) is ready to import as-is. Total time: under 5 minutes. Works well for extra credit or short assignments.</p>' +
         '</div>' +
 
         '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:0.875rem;">' +
-          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 2 — Process + outcome (recommended)</div>' +
-          '<p style="margin-bottom:0.5rem;">Split the grade 50/50: half on final score, half on the quality of written rationale submitted each round. Students write up to 500 characters explaining why they set their levers the way they did. The Export Grades CSV includes every rationale in a dedicated column — open it in Excel and read across each team\'s reasoning round by round.</p>' +
+          '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 2 — Review rationale scores (recommended)</div>' +
+          '<p style="margin-bottom:0.5rem;">Open the full report CSV in Excel. Review the per-round rationale text and AI feedback comments. Adjust any rationale scores that need human judgment. Recalculate the grade using the formula above, then import the LMS file to your gradebook.</p>' +
           '<p>Rubric for rationale: <strong>Full marks</strong> — references at least one economic concept (e.g. "We held rates low to stimulate demand given our output gap"), explains the trade-off acknowledged, and is internally consistent with the levers chosen. <strong>Partial marks</strong> — explains the decision without economic framing. <strong>Minimal marks</strong> — empty or purely descriptive ("we raised spending").</p>' +
         '</div>' +
 
         '<div style="background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">' +
           '<div style="font-weight:500;color:var(--text-900);margin-bottom:0.25rem;">Approach 3 — Full analytical assessment</div>' +
-          '<p>Treat the tournament as a policy memo assignment. After the tournament ends, ask each team to submit a 2-page reflection covering: what strategy they chose, which trade-offs they faced, how their economy responded, what they would do differently, and what real-world policy parallel their approach resembles. Grade the memo on analytical depth. The tournament score and round-by-round decisions in the CSV give you the factual record to verify their claims.</p>' +
+          '<p>Treat the tournament as a policy memo assignment. After the tournament ends, ask each team to submit a 2-page reflection covering: what strategy they chose, which trade-offs they faced, how their economy responded, what they would do differently, and what real-world policy parallel their approach resembles. Grade the memo on analytical depth. The tournament score and round-by-round decisions in the full report CSV give you the factual record to verify their claims.</p>' +
         '</div>' +
 
         '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.375rem;">Pillar scores as a diagnostic tool</div>' +
@@ -12434,9 +12463,9 @@ function _aboutHowItWorks() {
           _step('1','Register as Professor','When registering, select the Professor role. After email confirmation, you gain access to the Admin tab in your navigation.') +
           _step('2','Create a Class Tournament','Admin → Tournaments → New Tournament. Set Tier = Class Tournament, Entry Fee = 0 (free for students), enter your class size as Max Teams. Set a start date and choose days between rounds (7 days is recommended for weekly assignments). Click Create.') +
           _step('3','Open Registration','After creating, click "Open Registration" on your tournament. Share the tournament name with students so they can find and join it. Students create teams and share their invite code with teammates.') +
-          _step('4','Advance Rounds','When ready for the next round: Admin → Rounds → Run Simulation & Advance. The simulation engine applies each team\'s submitted policies, processes crises, updates all economies, and advances the round counter. You will be prompted to send an email notification to all participants.') +
-          _step('5','Monitor & Grade','Use Admin → Teams to see all teams and their payment status. Admin → Analytics exports full data as CSV or JSON for grading. The AI Advisor\'s Socratic questioning encourages genuine economic reasoning rather than guess-and-check.') +
-          _step('6','Complete & Crown Champion','When all rounds are done, Admin → Tournaments → Complete. The system automatically records the champion in the Hall of Champions. Use Admin → Rounds to advance if you have rounds remaining.') +
+          _step('4','Advance Rounds','When ready for the next round: Admin → Rounds → Run Simulation & Advance. The simulation engine applies each team\'s submitted policies, processes crises, updates all economies, and advances the round counter. You will be prompted to send an email notification to all participants — the platform automatically populates all team members\' email addresses.') +
+          _step('5','Export Grades & Upload to LMS','Admin → Tournaments → click the 📊 Grades button on your tournament. The platform scores every submission using a composite formula (40% simulation performance, 30% rationale quality, 20% participation, 10% rank bonus) and downloads two CSV files: a full report with per-round rationale scores and AI feedback, and an LMS-import ready file with one row per student matched by email. Upload the LMS file directly to Canvas, Brightspace, or Moodle gradebooks.') +
+          _step('6','Complete & Crown Champion','When all rounds are done, Admin → Tournaments → Complete. The system automatically records the champion in the Hall of Champions. Elected global tournaments feed their top qualifiers into the World Cup season standings.') +
         '</div>' +
       '</div>' +
     '</div>' +
