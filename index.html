@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MacroNations — Global Economic Strategy Tournament</title>
-  <meta name="description" content="The premier macroeconomic policy simulation tournament for university students worldwide.">
+  <meta name="description" content="The premier macroeconomic policy simulation tournament worldwide.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -3165,7 +3165,7 @@ h1, h2, h3, h4, h5 {
           </h1>
           <p class="hero__sub">
             MacroNations is the premier macroeconomic policy simulation tournament
-            for university students. Compete across 5 pillars, manage crises, and
+            for university teams and open competitors worldwide. Compete across 5 pillars, manage crises, and
             prove your team has what it takes to run a country.
           </p>
           <div class="hero__actions">
@@ -3323,8 +3323,8 @@ h1, h2, h3, h4, h5 {
               <li>Everything in class tournament</li>
               <li>Global cross-university rankings</li>
               <li>Year-long season standings</li>
-              <li>Winner &amp; runner-up certificates</li>
-              <li>Cash awards — 70/30 split</li>
+              <li>Participation certificates for all · Winner certificate for champion</li>
+              <li>Cash awards — top finalists share the fund</li>
             </ul>
             <button class="btn btn--gold" style="margin-top:1.25rem;width:100%;" onclick="openAuthModal('register')">Join the Championship</button>
           </div>
@@ -3337,7 +3337,7 @@ h1, h2, h3, h4, h5 {
       <div class="container">
         <div class="section__eyebrow" style="color:rgba(255,215,0,0.7);margin-bottom:0.5rem;">Global Championship</div>
         <h2 class="section__title" id="wc-heading" style="color:#fff;margin-bottom:0.625rem;">One award fund. Two teams share it.</h2>
-        <p style="color:rgba(255,255,255,0.6);font-size:0.9375rem;line-height:1.7;max-width:520px;margin-bottom:2rem;">The MacroNations World Cup Award Fund rewards the top finalists from universities worldwide. It grows with every team that enters the global season. At the end of the year, the top two finalists split it.</p>
+        <p style="color:rgba(255,255,255,0.6);font-size:0.9375rem;line-height:1.7;max-width:520px;margin-bottom:2rem;">The MacroNations World Cup Award Fund rewards the top finalists from both university tournaments and the Open Championship worldwide. It grows with every team that enters the global season. At the end of the year, the top finalists share it — distributed at management discretion per the Award Rules.</p>
         <div class="lp-prize-row">
           <div class="lp-prize-card lp-prize-card--gold">
             <div class="lp-prize-medal">🥇</div>
@@ -3369,13 +3369,13 @@ h1, h2, h3, h4, h5 {
             <p class="section__desc" style="text-align:left;max-width:none;">No professor required. Register your team, pay the entry fee, and compete in a 10-day rolling simulation. Your personal clock starts when you submit your first round — start any time before November 21.</p>
             <ul style="list-style:none;padding:0;margin:1.5rem 0;display:flex;flex-direction:column;gap:0.75rem;">
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">1</span><span><strong>Register your team</strong> — up to 5 members, <span id="lp-fee-oc-step">$50</span> entry fee per team</span></li>
-              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">2</span><span><strong>Submit Round 1</strong> — your personal 10-day clock starts</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">2</span><span><strong>Submit Round 1</strong> — once fee is confirmed, your 10-day clock starts on first submission</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">3</span><span><strong>Complete 10 rounds</strong> — one every 24 hours, auto-advancing</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">4</span><span><strong>Qualify for the World Cup</strong> — finish by Nov 30 to enter the playoff bracket</span></li>
             </ul>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
               <button class="btn btn--gold" onclick="ocLandingRegister()">Register for Open Championship</button>
-              <span style="align-self:center;font-size:0.875rem;color:var(--text-400);">Jan 1 – before Nov 21</span>
+              <span style="align-self:center;font-size:0.875rem;color:var(--text-400);">Open Jan 1 – Nov 20 · Must finish by Nov 30</span>
             </div>
           </div>
           <div>
@@ -3468,7 +3468,7 @@ h1, h2, h3, h4, h5 {
           <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;" aria-hidden="true"></div>
           <div style="position:relative;">
             <h2 style="font-family:'DM Serif Display',serif;font-size:2.25rem;color:#fff;margin-bottom:0.875rem;letter-spacing:-0.02em;">Ready to Govern?</h2>
-            <p style="font-size:1rem;color:rgba(255,255,255,0.6);max-width:480px;margin-inline:auto;margin-bottom:2rem;line-height:1.7;">Join university teams from around the world competing in the world's most rigorous economic policy simulation.</p>
+            <p style="font-size:1rem;color:rgba(255,255,255,0.6);max-width:480px;margin-inline:auto;margin-bottom:2rem;line-height:1.7;">Join teams from around the world competing in the world's most rigorous macroeconomic policy simulation. Universities, independent players, and open competitors welcome.</p>
             <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
               <button class="btn btn--gold btn--xl" onclick="openAuthModal('register')">Register Your Team</button>
               <button class="btn btn--ghost btn--xl" style="color:rgba(255,255,255,0.8);border-color:rgba(255,255,255,0.25);" onclick="showPage('about')">Learn More</button>
@@ -4093,7 +4093,7 @@ h1, h2, h3, h4, h5 {
         <span class="wordmark__text"><em>Macro</em>Nations</span>
       </a>
       <p class="footer__brand-desc">
-        The premier macroeconomic policy simulation tournament for university students worldwide.
+        The premier macroeconomic policy simulation tournament — open to university teams and independent players worldwide.
       </p>
     </div>
 
@@ -5982,7 +5982,7 @@ async function _renderWCBanner() {
     var sched = (season && season.playoff_bracket && season.playoff_bracket.schedule)
       ? season.playoff_bracket.schedule
       : [
-          { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + curYear,  note: 'All paid teams in elected tournaments qualify' },
+          { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + curYear,  note: 'Paid teams in elected tournaments and Open Championship qualifiers' },
           { label: 'Qualification cutoff', date: 'Nov 30, ' + curYear,          note: 'Elected tournaments must complete by this date' },
           { label: 'Quarterfinals',        date: 'Dec 7, ' + curYear,           note: 'Top 8 teams compete' },
           { label: 'Semifinals',           date: 'Dec 14, ' + curYear,          note: 'Top 4 advance' },
@@ -12415,7 +12415,7 @@ function _aboutHowItWorks() {
       '<div class="card__header"><span class="card__title">🎓 For Students</span></div>' +
       '<div class="card__body">' +
         '<div class="steps">' +
-          _step('1','Register & Join','Create a free account with any valid email. Professors use their .edu address to create class tournaments. Students can use any email. Go to Tournaments, find a competition open for registration, and either create a new team or join an existing one with an 8-character invite code. Each team can have up to 5 members.') +
+          _step('1','Register & Join','Create a free account with any valid email. Professors who want to create class tournaments need a .edu address. Open Championship participants need no affiliation. Go to Tournaments, find a competition open for registration, and create or join a team with an 8-character invite code. Teams have up to 5 members.') +
           _step('2','Pay the Entry Fee (if applicable)','For paid tournaments, go to Dashboard → Payment to pay the entry fee via Stripe. Your policy submissions are locked until payment is confirmed by the admin.') +
           _step('3','Set Your 10 Policy Levers','Every round, go to Dashboard → Policy. Adjust your 10 macroeconomic levers: Interest Rate, Government Spending, Tax Rate, Trade Openness, R&D Investment, Green Energy Mix, Welfare Spending, Regulation, Foreign Aid, and Infrastructure. Write a brief rationale and hit Submit Final Decision before the round deadline.') +
           _step('4','Respond to Crises','Some rounds trigger an economic crisis (banking crash, pandemic, trade war, debt crisis). Go to Crisis tab first — choose your response option — then separately submit your policy. These are two independent steps. If you skip the crisis response, the full unmitigated shock applies to your economy.') +
