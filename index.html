@@ -3355,7 +3355,7 @@ h1, h2, h3, h4, h5 {
             <div class="lp-prize-label">Playoff qualification</div>
           </div>
         </div>
-        <p class="lp-prize-note">Seeded by MacroNations LLC. Grows with participation. Minimum 20 paid teams required. Final distribution at management discretion. Full terms in Award Rules.</p>
+        <p class="lp-prize-note">Seeded by MacroNations LLC. Supplemented by entry fees at management discretion. Minimum 20 paid teams required. Final amount confirmed at season close. Full terms in Award Rules.</p>
       </div>
     </section>
 
@@ -3403,7 +3403,7 @@ h1, h2, h3, h4, h5 {
               </div>
               <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1rem;margin-top:0.25rem;">
                 <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:0.375rem;">Competition award fund</div>
-                <div style="font-size:0.8125rem;color:rgba(255,255,255,0.6);line-height:1.6;">Seeded by MacroNations LLC. Grows with participation. Minimum 20 paid teams required for distribution. Full terms in <a href="#" onclick="showPage(\'about\');setTimeout(function(){showLegal(\'prizes\');},200);return false;" style="color:rgba(255,215,0,0.7);">Award Rules</a>.</div>
+                <div style="font-size:0.8125rem;color:rgba(255,255,255,0.6);line-height:1.6;">Seeded by MacroNations LLC. Supplemented by entry fees at management discretion. Minimum 20 paid teams required. Full terms in <a href="#" onclick="showPage(\'about\');setTimeout(function(){showLegal(\'prizes\');},200);return false;" style="color:rgba(255,215,0,0.7);">Award Rules</a>.</div>
               </div>
             </div>
           </div>
@@ -4146,7 +4146,8 @@ h1, h2, h3, h4, h5 {
 // ═══════════════════════════════════════════════════════════════════
 var SUPA_URL  = 'https://rtaiivegcqqmdchpguzn.supabase.co';
 var SUPA_ANON = 'sb_publishable_KCPCMiKYQoEUgG45DVF5uA_ke-UxQKm';
-var SIM_EDGE_URL = SUPA_URL + '/functions/v1/simulate';
+var SIM_EDGE_URL      = SUPA_URL + '/functions/v1/simulate';
+var CHECKOUT_EDGE_URL = SUPA_URL + '/functions/v1/create-checkout';
 
 // ⚠️ DEPENDENCY WARNING: _authToken() is called by every authenticated DB operation (sbGet x57, sbPatch x12, sbPost x12).
 // It MUST check currentSession before localStorage — reversing breaks password reset and profile upload.
@@ -5791,7 +5792,7 @@ function calcPrizePool(entryFee, numTeams) {
   var SEED      = (typeof AWARD_SEED !== 'undefined' ? AWARD_SEED : 1000);
   var CAP       = 10000;  // Maximum award fund
   var MIN_TEAMS = 20;     // Minimum paid teams for awards to be distributed
-  var FEE_PCT   = 0.20;   // 20% of entry fees added to fund
+  var FEE_PCT   = 0.20;   // internal — not disclosed publicly
   var feesTotal = entryFee * numTeams;
   var pool      = Math.min(_round2(SEED + feesTotal * FEE_PCT), CAP);
   var eligible  = numTeams >= MIN_TEAMS;
@@ -5833,6 +5834,22 @@ function buildSchedule(startDate, rounds, intervalDays) {
     });
   }
   return schedule;
+}
+
+// Pick 3 evenly-spaced crisis rounds, randomised within thirds
+function _pickCrisisRounds(totalRounds) {
+  totalRounds = Number(totalRounds) || 10;
+  // Divide tournament into 3 equal thirds, pick one random round in each
+  var third = Math.floor(totalRounds / 3);
+  var rounds = [];
+  // Third 1: rounds 1..third
+  rounds.push(Math.floor(Math.random() * third) + 1);
+  // Third 2: rounds third+1..2*third
+  rounds.push(Math.floor(Math.random() * third) + third + 1);
+  // Third 3: rounds 2*third+1..totalRounds
+  var t3len = totalRounds - 2 * third;
+  rounds.push(Math.floor(Math.random() * t3len) + 2 * third + 1);
+  return rounds; // e.g. [2, 5, 9] for a 10-round tournament
 }
 
 function _fmtDate(d) {
@@ -6003,7 +6020,7 @@ async function _renderWCBanner() {
       }
       var pp = (typeof calcPrizePool === 'function')
         ? calcPrizePool(WORLD_CUP_ENTRY_FEE, globalPaidCount)
-        : { pool: Math.min((AWARD_SEED||1000) + globalPaidCount * (WORLD_CUP_ENTRY_FEE||50) * 0.20, 10000) };
+        : { pool: Math.min((AWARD_SEED||1000) + globalPaidCount * (WORLD_CUP_ENTRY_FEE||50) * FEE_PCT, 10000) };
       prizePool = pp.pool || 1000;
     } catch(pe) { prizePool = 1000; }
     var poolHtml = prizePool > 0
@@ -6011,7 +6028,7 @@ async function _renderWCBanner() {
           '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Award Fund</div>' +
             '<div style="font-family:\'DM Mono\',monospace;font-size:1.5rem;color:#FFD700;">' + fmt$(prizePool) + '</div></div>' +
           '<div><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Seeded by MacroNations LLC</div>' +
-            '<div style="font-family:\'DM Mono\',monospace;font-size:1rem;color:rgba(255,255,255,0.6);">Grows with participation · Cap $10,000</div></div>' +
+            '<div style="font-family:\'DM Mono\',monospace;font-size:1rem;color:rgba(255,255,255,0.6);">Supplemented by entry fees at management discretion</div></div>' +
         '</div>'
       : '';
 
@@ -6041,7 +6058,7 @@ async function _renderWCBanner() {
         '<div style="padding:1.25rem 1.75rem;">' +
           poolHtml +
           '<div>' + schedRows + '</div>' +
-          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: all teams in paid elected tournaments. Seeded by MacroNations LLC. Grows with participation. Minimum 20 paid teams required for distribution. Final amount at management discretion.</div>' +
+          '<div style="margin-top:1rem;font-size:0.8125rem;color:rgba(255,255,255,0.35);">Eligibility: paid teams in elected tournaments and Open Championship. Seeded by MacroNations LLC. Supplemented by entry fees at management discretion. Minimum 20 paid teams required. Final amount confirmed at season close.</div>' +
         '</div>' +
       '</div>';
 
@@ -6162,9 +6179,9 @@ function _buildTournamentCard(t) {
     _fetchPrizePool(t.id, fee, poolId);
   }
 
-  // Round progress pips
+  // Round progress pips — hidden for Open Championship (per-team rolling schedule)
   var pipsHtml = '';
-  if (totRound > 0) {
+  if (totRound > 0 && t.tier !== 'open_championship') {
     pipsHtml = '<div class="round-schedule" aria-label="Round progress">';
     for (var r = 1; r <= totRound; r++) {
       var dotCls = 'round-pip__dot';
@@ -6177,6 +6194,19 @@ function _buildTournamentCard(t) {
         '</div>';
     }
     pipsHtml += '</div>';
+  } else if (t.tier === 'open_championship') {
+    // Show rolling schedule info instead
+    var userOcTeam = _userTeams && _userTeams[t.id];
+    var userOcRound = userOcTeam ? (userOcTeam.oc_round || 0) : null;
+    pipsHtml =
+      '<div style="margin-top:0.75rem;padding:0.625rem 0.875rem;background:var(--bg-subtle);border-radius:var(--radius);font-size:0.8125rem;color:var(--text-500);">' +
+        '<span style="color:var(--blue);font-weight:600;">Rolling schedule</span> — ' +
+        (userOcTeam
+          ? (userOcRound >= 10
+              ? 'Your team has completed all 10 rounds.'
+              : 'Your team is on Round ' + userOcRound + ' of 10. Clock started ' + (userOcTeam.started_at ? new Date(userOcTeam.started_at).toLocaleDateString() : 'not yet') + '.')
+          : 'Register to start your own 10-day clock. Each team plays independently.') +
+      '</div>';
   }
 
   // ── Dates from schedule ──────────────────────────────────────────
@@ -6185,7 +6215,16 @@ function _buildTournamentCard(t) {
   var endDateStr   = '';
   var schedHtml    = '';
 
-  if (sched && Array.isArray(sched) && sched.length) {
+  if (t.tier === 'open_championship') {
+    // OC uses per-team rolling schedule — show season window instead
+    var ocStart = new Date().getFullYear() + '-01-01';
+    var ocEnd   = new Date().getFullYear() + '-11-30';
+    if (sched && sched.length && sched[0].date) { ocStart = sched[0].date; }
+    if (sched && sched.length && sched[0].deadline) { ocEnd = sched[0].deadline; }
+    startDateStr = ocStart;
+    endDateStr   = ocEnd;
+    schedHtml = '';  // no per-round table for OC
+  } else if (sched && Array.isArray(sched) && sched.length) {
     // Start = first round open date, End = last round deadline
     var firstRound = sched[0];
     var lastRound  = sched[sched.length - 1];
@@ -6196,6 +6235,7 @@ function _buildTournamentCard(t) {
     schedHtml = '<div class="tourn-schedule-table">';
     for (var si2 = 0; si2 < sched.length; si2++) {
       var sr = sched[si2];
+      if (!sr.round) { continue; } // skip non-round entries (e.g. OC season record)
       var isPast    = sr.round < curRound;
       var isCurrent = sr.round === curRound;
       var rowStyle  = isCurrent
@@ -6268,7 +6308,9 @@ function _buildTournamentCard(t) {
         (t.description ? '<p class="tournament-card__desc">' + esc(t.description) + '</p>' : '') +
         '<div class="tournament-card__meta">' +
           (seaYear ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">📆</span>Season ' + esc(seaYear) + '</span>' : '') +
-          '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🔄</span>' + esc(String(totRound)) + ' Rounds</span>' +
+          (t.tier === 'open_championship'
+            ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🔄</span>10 rounds · rolling</span>'
+            : '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🔄</span>' + esc(String(totRound)) + ' Rounds</span>') +
           (maxTeams ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">👥</span>' + esc(String(maxTeams)) + ' Teams Max</span>' : '') +
           (startDateStr ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🗓</span>Starts ' + esc(startDateStr) + '</span>' : '') +
           (endDateStr   ? '<span class="tournament-card__meta-item"><span class="tournament-card__meta-icon">🏁</span>Ends ' + esc(endDateStr) + '</span>' : '') +
@@ -6585,6 +6627,18 @@ async function doCreateTeam() {
     _userTeams[_teamModalTournId] = team;
 
     closeModal('modal-team');
+
+    // For Open Championship — show payment + social sharing screen
+    if (tourn.tier === 'open_championship') {
+      showPage('open-champ');
+      setTimeout(function() {
+        var container = document.getElementById('oc-container');
+        if (container && typeof ocRenderPostRegistration === 'function') {
+          ocRenderPostRegistration(container, team, tourn);
+        }
+      }, 200);
+      return;
+    }
 
     // Show invite code in a toast + refresh grid
     flash('Team "' + teamName + '" created! Invite code: ' + inviteCode, 'success');
@@ -7959,7 +8013,43 @@ async function renderDashRankings() {
 // Falls back to email if not configured
 var STRIPE_PAYMENT_LINKS = {};
 // Default Stripe payment link for all paid tournaments
-var DEFAULT_PAYMENT_LINK = 'https://buy.stripe.com/dRmeV6afb8c475313Q5ZC02';
+var DEFAULT_PAYMENT_LINK = 'https://buy.stripe.com/8x2cMYbjfcsk2ON7se5ZC01';
+
+// Dynamic Stripe Checkout — creates a session with team metadata so webhook can auto-mark paid
+async function doStripeCheckout(teamId, tournamentId, amountDollars, teamName) {
+  if (!teamId) { flash('Team not found — cannot initiate payment.', 'error'); return; }
+  try {
+    var btn = document.getElementById('pay-btn-' + teamId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Opening Stripe...'; }
+
+    var res = await fetch(CHECKOUT_EDGE_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON },
+      body: JSON.stringify({
+        team_id:       teamId,
+        user_id:       currentUser ? currentUser.id : '',
+        tournament_id: tournamentId || '',
+        amount_cents:  Math.round((amountDollars || 50) * 100),
+        team_name:     teamName || '',
+        success_url:   window.location.origin || 'https://macronations.com',
+        cancel_url:    window.location.origin || 'https://macronations.com',
+      })
+    });
+
+    var data = await res.json();
+    if (data.url) {
+      window.location.href = data.url; // redirect to Stripe Checkout
+    } else {
+      throw new Error(data.error || 'Could not create checkout session');
+    }
+  } catch(e) {
+    // Fallback to static payment link if edge function not deployed yet
+    flash('Dynamic checkout unavailable — opening payment link. Ask admin to confirm payment.', 'info');
+    window.open(DEFAULT_PAYMENT_LINK, '_blank');
+    var btn2 = document.getElementById('pay-btn-' + teamId);
+    if (btn2) { btn2.disabled = false; btn2.textContent = 'Pay Entry Fee'; }
+  }
+}
 var WORLD_CUP_ENTRY_FEE  = 50;
 var AWARD_SEED           = 1000;  // Seed contribution — overridden by global_seasons.award_seed
 
@@ -8005,25 +8095,22 @@ function renderDashPayment() {
   if (!stripeLink) { stripeLink = (STRIPE_PAYMENT_LINKS[tourn.id]) || DEFAULT_PAYMENT_LINK || ''; }
 
   var payBtn = '';
-  if (stripeLink) {
-    // Pre-fill Stripe with team name and email via URL params where supported
-    var stripeUrl = stripeLink;
-    if (currentUser && currentUser.email) {
-      stripeUrl += (stripeUrl.indexOf('?') === -1 ? '?' : '&') +
-        'prefilled_email=' + encodeURIComponent(currentUser.email);
-    }
+  if (fee > 0 && _dashTeam) {
+    var teamIdPay = _dashTeam.id;
+    var tournIdPay = (tourn && tourn.id) ? tourn.id : '';
+    var teamNamePay = (_dashTeam.name || '').replace(/'/g, "\\'");
     payBtn =
-      '<a href="' + esc(stripeUrl) + '" target="_blank" rel="noopener" ' +
-        'class="btn btn--gold btn--xl btn--full" style="margin-bottom:0.875rem;text-decoration:none;">' +
-        '💳 Pay ' + fmt$(fee) + ' — Secure Payment' +
-      '</a>' +
+      '<button id="pay-btn-' + teamIdPay + '" class="btn btn--gold btn--xl btn--full" style="margin-bottom:0.875rem;" ' +
+        'onclick="doStripeCheckout(\'' + teamIdPay + '\',\'' + tournIdPay + '\',' + fee + ',\'' + teamNamePay + '\')">' +
+        '&#x1F4B3; Pay ' + fmt$(fee) + ' — Secure Checkout via Stripe' +
+      '</button>' +
       '<p style="font-size:0.8125rem;color:var(--text-400);margin-bottom:1rem;text-align:center;">' +
-        'Click to pay securely. After completing payment, email support@macronations.com with your team name and receipt so we can activate your account.' +
+        'Processed securely by Stripe. Your team is automatically activated once payment is confirmed.' +
       '</p>';
   } else {
     payBtn =
       '<button class="btn btn--gold btn--xl btn--full" style="margin-bottom:0.875rem;opacity:0.6;cursor:default;">' +
-        '💳 Card Payment (Link not yet set by admin)' +
+        '&#x1F4B3; Card Payment (not available)' +
       '</button>';
   }
 
@@ -8179,7 +8266,173 @@ async function renderAdmin() {
 
 PAGE_LOADERS['admin'] = renderAdmin;
 
-// ── Super-admin: Delete tournament ────────────────────────────────
+// ── Set/override crisis rounds for a tournament ──────────────────────
+async function doSetCrisisRounds(tournId) {
+  var t = _getTournById(tournId);
+  if (!t) { flash('Tournament not found.', 'error'); return; }
+
+  var totalRounds = t.rounds_total || 10;
+  var current = (t.schedule && t.schedule._crisis_rounds)
+    ? t.schedule._crisis_rounds.join(', ')
+    : '3, 6, 9';
+
+  var input = prompt(
+    'Set crisis rounds for "' + (t.name || tournId) + '" (' + totalRounds + ' rounds total).\n\n' +
+    'Enter exactly 3 round numbers separated by commas.\n' +
+    'Current: ' + current,
+    current
+  );
+  if (!input) { return; }
+
+  var parts = input.split(',').map(function(s) { return parseInt(s.trim(), 10); });
+  if (parts.length !== 3 || parts.some(function(n) { return isNaN(n) || n < 1 || n > totalRounds; })) {
+    flash('Invalid input. Enter exactly 3 round numbers between 1 and ' + totalRounds + '.', 'error');
+    return;
+  }
+  // Sort ascending
+  parts.sort(function(a, b) { return a - b; });
+  // Check no duplicates
+  if (parts[0] === parts[1] || parts[1] === parts[2]) {
+    flash('Round numbers must be distinct.', 'error');
+    return;
+  }
+
+  try {
+    var sched = (t.schedule && typeof t.schedule === 'object') ? JSON.parse(JSON.stringify(t.schedule)) : {};
+    sched._crisis_rounds = parts;
+    await sbPatch('tournaments', 'id=eq.' + tournId, { schedule: sched });
+    // Update local cache
+    for (var i = 0; i < _adminTournaments.length; i++) {
+      if (_adminTournaments[i].id === tournId) {
+        _adminTournaments[i].schedule = sched;
+        break;
+      }
+    }
+    flash('Crisis rounds for "' + (t.name || '') + '" set to rounds ' + parts.join(', ') + '.', 'success');
+    renderAdminTournaments(document.getElementById('admin-panel-content'));
+  } catch(e) {
+    flash('Failed to save crisis rounds: ' + (e.message || ''), 'error');
+  }
+}
+
+// ── Individual crisis assignment (admin — for legacy tournaments) ─────
+async function doAssignCrisisToTeam() {
+  var tournId  = document.getElementById('icris-tourn').value;
+  var teamId   = document.getElementById('icris-team').value;
+  var crisisId = document.getElementById('icris-type').value;
+  var round    = parseInt(document.getElementById('icris-round').value, 10);
+
+  if (!tournId || !teamId || !crisisId || !round) {
+    flash('Please fill in all fields.', 'error'); return;
+  }
+  var crDef = CRISES && CRISES[crisisId];
+  if (!crDef) { flash('Unknown crisis type.', 'error'); return; }
+
+  try {
+    var existing = await sbGet('crises_active',
+      'team_id=eq.' + teamId + '&tournament_id=eq.' + tournId + '&round=eq.' + round + '&resolved=eq.false&limit=1') || [];
+    if (existing.length) {
+      if (!confirm('This team already has an active ' + existing[0].name + ' in Round ' + round + '. Replace it?')) { return; }
+      await sbPatch('crises_active', 'id=eq.' + existing[0].id, { resolved: true });
+    }
+    await sbPost('crises_active', {
+      team_id:       teamId,
+      tournament_id: tournId,
+      crisis_id:     crisisId,
+      name:          crDef.name,
+      round:         round,
+      resolved:      false
+    });
+    flash('Crisis "' + crDef.name + '" assigned for Round ' + round + '.', 'success');
+    _loadIndividualCrisisTeams(tournId, round);
+  } catch(e) {
+    flash('Error: ' + (e.message || ''), 'error');
+  }
+}
+
+async function _loadIndividualCrisisTeams(tournId, round) {
+  var teamSel = document.getElementById('icris-team');
+  if (!teamSel) { return; }
+  teamSel.innerHTML = '<option value="">Loading...</option>';
+  try {
+    var teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&order=name.asc&limit=200') || [];
+    var crises = [];
+    if (round) {
+      crises = await sbGet('crises_active',
+        'tournament_id=eq.' + tournId + '&round=eq.' + round + '&resolved=eq.false&limit=200') || [];
+    }
+    var crisisTeamMap = {};
+    for (var ci = 0; ci < crises.length; ci++) {
+      crisisTeamMap[crises[ci].team_id] = crises[ci].name;
+    }
+    teamSel.innerHTML = '<option value="">— Select team —</option>';
+    for (var ti = 0; ti < teams.length; ti++) {
+      var tm = teams[ti];
+      var tag = crisisTeamMap[tm.id] ? ' [⚡ ' + crisisTeamMap[tm.id] + ']' : '';
+      teamSel.innerHTML += '<option value="' + tm.id + '">' + esc(tm.name || tm.id) + tag + '</option>';
+    }
+  } catch(e) {
+    teamSel.innerHTML = '<option value="">Error loading</option>';
+  }
+}
+
+function openIndividualCrisisModal(tournId) {
+  var tourn = _getTournById(tournId);
+  if (!tourn) { flash('Tournament not found.', 'error'); return; }
+  var existing = document.getElementById('modal-individual-crisis');
+  if (existing) { existing.remove(); }
+
+  var crisisOptions = Object.keys(CRISES || {}).map(function(k) {
+    return '<option value="' + k + '">' + esc(CRISES[k].name) + '</option>';
+  }).join('');
+
+  var totalRounds = tourn.rounds_total || 10;
+  var roundOptions = '';
+  for (var r = 1; r <= totalRounds; r++) {
+    roundOptions += '<option value="' + r + '"' + (r === (tourn.current_round || 1) ? ' selected' : '') + '>Round ' + r + '</option>';
+  }
+
+  var modal = document.createElement('div');
+  modal.className = 'modal-backdrop open';
+  modal.id = 'modal-individual-crisis';
+  modal.innerHTML =
+    '<div class="modal" style="max-width:520px;">' +
+      '<div class="modal__header">' +
+        '<div><h2 class="modal__title">Assign Crisis to Team</h2>' +
+          '<p class="modal__subtitle">' + esc(tourn.name || '') + '</p></div>' +
+        '<button class="modal__close" onclick="document.getElementById(\'modal-individual-crisis\').remove();">&#x2715;</button>' +
+      '</div>' +
+      '<div class="modal__body">' +
+        '<div class="dash-alert dash-alert--info" style="margin-bottom:1.25rem;">' +
+          '<div class="dash-alert__icon">i</div>' +
+          '<div class="dash-alert__body">Assign a crisis to a specific team for a specific round. Teams already tagged show [⚡ Crisis name]. Use this to equalise teams that were missed in earlier rounds.</div>' +
+        '</div>' +
+        '<input type="hidden" id="icris-tourn" value="' + tournId + '">' +
+        '<div class="form-field">' +
+          '<label class="form-label form-label--required">Round</label>' +
+          '<div class="form-select-wrap"><select id="icris-round" class="form-select" ' +
+            'onchange="_loadIndividualCrisisTeams(document.getElementById(\'icris-tourn\').value, parseInt(this.value,10))">' +
+            roundOptions + '</select></div>' +
+        '</div>' +
+        '<div class="form-field">' +
+          '<label class="form-label form-label--required">Team</label>' +
+          '<div class="form-select-wrap"><select id="icris-team" class="form-select"><option value="">Loading...</option></select></div>' +
+        '</div>' +
+        '<div class="form-field">' +
+          '<label class="form-label form-label--required">Crisis Type</label>' +
+          '<div class="form-select-wrap"><select id="icris-type" class="form-select">' + crisisOptions + '</select></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal__footer">' +
+        '<button class="btn btn--ghost" onclick="document.getElementById(\'modal-individual-crisis\').remove();">Cancel</button>' +
+        '<button class="btn btn--primary" onclick="doAssignCrisisToTeam()">Assign Crisis</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  _loadIndividualCrisisTeams(tournId, tourn.current_round || 1);
+}
+
 async function doDeleteTournament(tournId) {
   var t = _getTournById(tournId);
   var name = (t && t.name) ? t.name : 'this tournament';
@@ -8911,7 +9164,11 @@ function renderAdminTournaments(el) {
     rows +=
       '<tr>' +
       '<td><strong>' + esc(t.name || '') + '</strong><br>' +
-        '<span style="font-size:0.75rem;color:var(--text-400);">' + esc(t.tier || '') + ' · Season ' + esc(String(t.season_year || '')) + '</span></td>' +
+        '<span style="font-size:0.75rem;color:var(--text-400);">' + esc(t.tier || '') + ' · Season ' + esc(String(t.season_year || '')) + '</span>' +
+        (t.schedule && t.schedule._crisis_rounds
+          ? '<br><span style="font-size:0.75rem;color:var(--warning);">⚡ Crisis rounds: ' + t.schedule._crisis_rounds.join(', ') + '</span>'
+          : '<br><span style="font-size:0.75rem;color:var(--text-300);">⚡ Crisis: rounds 3, 6, 9 (legacy)</span>') +
+        '</td>' +
       '<td>' + _statusBadge(t.status) + '</td>' +
       '<td class="text-mono">' + teamCount + (t.max_teams ? '/' + t.max_teams : '') + '</td>' +
       '<td class="text-mono">R' + (t.current_round || 0) + '/' + (t.rounds_total || '?') + '</td>' +
@@ -8957,6 +9214,8 @@ function _tournamentActionBtns(t) {
     btns += '<button class="btn btn--ghost btn--sm" onclick="doGenerateGrades(\'' + id + '\')" title="Generate AI-graded report">📊 Grades</button>';
   }
   if (_isAdmin()) {
+    btns += '<button class="btn btn--ghost btn--sm" onclick="openIndividualCrisisModal(\'' + id + '\')" title="Assign crisis to individual team">⚡ Assign Crisis</button>';
+    btns += '<button class="btn btn--ghost btn--sm" onclick="doSetCrisisRounds(\'' + id + '\')" title="Set crisis rounds">⚡ Crisis Rounds</button>';
     btns += '<button class="btn btn--danger btn--sm" onclick="doDeleteTournament(\'' + id + '\')" title="Delete permanently">🗑</button>';
   }
   return btns || '<span class="text-muted text-sm">—</span>';
@@ -9058,6 +9317,9 @@ async function doCreateTournament() {
   setLoading('btn-do-create-tournament', true, 'Creating…');
   try {
     var schedule = buildSchedule(startDate, rounds, interval);
+    // Draw 3 guaranteed crisis rounds, evenly spaced across the tournament
+    var crisisRounds = _pickCrisisRounds(rounds);
+    schedule._crisis_rounds = crisisRounds; // store on the object
     var newTourn = await sbPost('tournaments', {
       name:             name,
       tier:             tier,
@@ -9345,7 +9607,7 @@ async function renderAdminRounds(el) {
       '<div class="dash-alert__icon">ℹ️</div>' +
       '<div class="dash-alert__body"><div class="dash-alert__title">How round advancement works</div>' +
       'Running simulation: applies each team\'s submitted policy (or defaults), processes crisis effects, updates economy records, ' +
-      'then advances current_round by 1. A new crisis fires with 60% probability on rounds 3, 6, and 9. ' +
+      'then advances current_round by 1. A crisis hits ALL teams simultaneously on 3 randomly drawn rounds per tournament (shown in the tournament card). ' +
       'If scores do not change, check the sim log for ✗ DATABASE WRITE FAILED errors.</div>' +
     '</div>' +
     '<div style="margin-bottom:1rem;">' +
@@ -9761,6 +10023,24 @@ async function runSimulation(tournId) {
 
     var notifyEmails = [];
 
+    // Determine if this is a crisis round — same result for all teams
+    // Check tournament's stored crisis rounds first, fall back to classic rounds 3/6/9
+    var _crisisRoundsArr = [];
+    if (t && t.schedule && t.schedule._crisis_rounds && Array.isArray(t.schedule._crisis_rounds)) {
+      _crisisRoundsArr = t.schedule._crisis_rounds;
+    } else {
+      // Legacy fallback for tournaments created before this feature
+      _crisisRoundsArr = [3, 6, 9];
+    }
+    var _isCrisisRound = (_crisisRoundsArr.indexOf(newRound) !== -1);
+    // Pick one crisis type for the whole tournament this round
+    var _tournCrisisThisRound = null;
+    if (_isCrisisRound) {
+      var _crisisKeys = ['banking', 'pandemic', 'trade_war', 'debt_crisis'];
+      _tournCrisisThisRound = _crisisKeys[Math.floor(Math.random() * _crisisKeys.length)];
+      log('⚡ Crisis round ' + newRound + ': ' + _tournCrisisThisRound + ' will hit ALL teams', 'warn');
+    }
+
     for (var ti = 0; ti < teams.length; ti++) {
       var team = teams[ti];
       log('');
@@ -9867,22 +10147,20 @@ async function runSimulation(tournId) {
         await sbPatch('crises_active', 'id=eq.' + cr.id, { resolved: true, response: (cr.response || null), effectiveness: (cr.effectiveness || 0) });
       }
 
-      // Fire new crisis (rounds 3, 6, 9 with 60% probability)
-      var isCrisisRound = (newRound === 3 || newRound === 6 || newRound === 9);
-      if (isCrisisRound && Math.random() < 0.60) {
-        var crisisKeys = ['banking', 'pandemic', 'trade_war', 'debt_crisis'];
-        var chosenKey  = crisisKeys[Math.floor(Math.random() * crisisKeys.length)];
-        var newCrDef   = (CRISES && CRISES[chosenKey]) ? CRISES[chosenKey] : null;
-        if (newCrDef) {
+      // Fire crisis — guaranteed for all teams on drawn crisis rounds
+      // Crisis type chosen ONCE per tournament-round (before the team loop) and reused
+      if (_tournCrisisThisRound) {
+        var newCrDefG = (CRISES && CRISES[_tournCrisisThisRound]) ? CRISES[_tournCrisisThisRound] : null;
+        if (newCrDefG) {
           await sbPost('crises_active', {
             team_id:       team.id,
             tournament_id: tournId,
-            crisis_id:     chosenKey,
-            name:          newCrDef.name,
+            crisis_id:     _tournCrisisThisRound,
+            name:          newCrDefG.name,
             round:         newRound,
             resolved:      false
           });
-          log('  ⚡ New crisis fired: ' + newCrDef.name, 'warn');
+          log('  ⚡ Crisis fired: ' + newCrDefG.name + ' (tournament-wide)', 'warn');
         }
       }
 
@@ -10976,7 +11254,7 @@ async function renderAdminGlobalSeasons(el) {
                   '<button class="btn btn--primary btn--sm" onclick="doSaveSeasonSettings(' + seas.year + ')">Save Settings</button>' +
                   '<span id="fee-saved-' + seas.year + '" style="font-size:0.8125rem;color:var(--success);display:none;">&#10003; Saved</span>' +
                 '</div>' +
-                '<div style="font-size:0.8125rem;color:var(--text-400);margin-top:0.5rem;">Award fund = Seed + 20% of entry fees, capped at $10,000. Requires 20 paid teams.</div>' +
+                '<div style="font-size:0.8125rem;color:var(--text-400);margin-top:0.5rem;">Award fund = Seed contribution + portion of entry fees at management discretion. Requires 20 paid teams to unlock.</div>' +
               '</div>' +
 
               // Championship schedule editor
@@ -11924,7 +12202,7 @@ async function renderRankings() {
         }
         var seasonPp = (typeof calcPrizePool === 'function')
           ? calcPrizePool(WORLD_CUP_ENTRY_FEE, totalPaidTeams)
-          : { pool: Math.min((AWARD_SEED||1000) + totalPaidTeams * (WORLD_CUP_ENTRY_FEE||50) * 0.20, 10000) };
+          : { pool: Math.min((AWARD_SEED||1000) + totalPaidTeams * (WORLD_CUP_ENTRY_FEE||50) * FEE_PCT, 10000) };
         seasonPool = seasonPp.pool || 0;
       } catch(se) { seasonPool = 1000; }
 
@@ -12092,8 +12370,8 @@ var LEGAL_CONTENT = {
     updated: 'April 2026',
     highlight: 'Competition award fund — seeded by MacroNations LLC, supplemented by entry fees, subject to a maximum cap. Distribution percentages, timing, and eligibility are determined solely by MacroNations LLC. Minimum participation threshold applies.',
     math: [
-      'Award Fund = MacroNations LLC seed + 20% of entry fees collected',
-      'Maximum cap: $10,000 · Minimum 20 paid teams to unlock distribution',
+      'Award Fund = MacroNations LLC seed + portion of entry fees, at management discretion',
+      'Minimum 20 paid teams required to unlock any distribution',
       'Seed amount and entry fee are set each season at management discretion.',
       'Distribution percentages determined by MacroNations LLC after tournament close.'
     ],
@@ -12175,14 +12453,14 @@ function showLegal(section) {
     if (section === 'prizes') {
       var liveFee  = (typeof WORLD_CUP_ENTRY_FEE !== 'undefined') ? WORLD_CUP_ENTRY_FEE : 50;
       var liveSeed = (typeof AWARD_SEED !== 'undefined') ? AWARD_SEED : 1000;
-      var examplePool = Math.min(liveSeed + 20 * liveFee * 0.20, 10000);
+      var examplePool = 0; // amount not disclosed
       mathLines = [
         'Award Fund Structure:',
         '  Seed contribution:   $' + liveSeed.toLocaleString() + ' (MacroNations LLC)',
-        '  Entry fee portion:   20% of fees collected',
-        '  Maximum fund cap:    $10,000',
+        '  Entry fee portion:   determined by MacroNations LLC at management discretion',
+        '  Award fund is subject to a cap established at management discretion',
         '  Minimum threshold:   20 paid teams required for any distribution',
-        '  Example (20 teams x $' + liveFee + '): $' + liveSeed.toLocaleString() + ' + (20 x $' + liveFee + ' x 20%) = $' + examplePool.toLocaleString() + ' fund',
+        '  Example amount: confirmed at tournament conclusion by MacroNations LLC',
         '  Distribution:        at percentages determined by MacroNations LLC'
       ];
     }
@@ -12678,14 +12956,14 @@ function _aboutLegal() {
       if (sections[pi] === 'prizes') {
         var liveFee2  = (typeof WORLD_CUP_ENTRY_FEE !== 'undefined') ? WORLD_CUP_ENTRY_FEE : 50;
         var liveSeed2 = (typeof AWARD_SEED !== 'undefined') ? AWARD_SEED : 1000;
-        var exPool2   = Math.min(liveSeed2 + 20 * liveFee2 * 0.20, 10000);
+        var exPool2   = 0; // amount not disclosed
         mathLines = [
           'Award Fund Structure:',
           '  Seed contribution:   $' + liveSeed2.toLocaleString() + ' (MacroNations LLC)',
-          '  Entry fee portion:   20% of fees collected',
-          '  Maximum fund cap:    $10,000',
+          '  Entry fee portion:   determined by MacroNations LLC at management discretion',
+          '  Award fund is subject to a cap established at management discretion',
           '  Minimum threshold:   20 paid teams required for any distribution',
-          '  Example (20 teams x $' + liveFee2 + '): $' + liveSeed2.toLocaleString() + ' + (20 x $' + liveFee2 + ' x 20%) = $' + exPool2.toLocaleString() + ' fund',
+          '  Example amount: confirmed at tournament conclusion by MacroNations LLC',
           '  Distribution:        at percentages determined by MacroNations LLC'
         ];
       }
@@ -13762,9 +14040,24 @@ async function ocAdvanceTeamRounds(team, tourn) {
   if (!team || !team.started_at) { return team; }
   var expectedRound = ocTeamCurrentRound(team.started_at);
   var storedRound   = team.oc_round || 0;
-  if (expectedRound <= storedRound) { return team; } // nothing to advance
+  if (expectedRound <= storedRound) { return team; }
 
   ocLog('Advancing team ' + team.name + ' from round ' + storedRound + ' to ' + expectedRound);
+
+  // Determine this team's 3 crisis rounds
+  // Stored in team.oc_crisis_rounds — drawn once when clock starts, same schema as tournaments
+  var crisisRounds = (team.oc_crisis_rounds && Array.isArray(team.oc_crisis_rounds))
+    ? team.oc_crisis_rounds
+    : null;
+
+  // If not yet assigned, draw now and save
+  if (!crisisRounds) {
+    crisisRounds = _pickCrisisRounds(OC_ROUNDS);
+    try {
+      await sbPatch('teams', 'id=eq.' + team.id, { oc_crisis_rounds: crisisRounds });
+      team.oc_crisis_rounds = crisisRounds;
+    } catch(e) { ocLog('Could not save crisis rounds: ' + e.message); }
+  }
 
   try {
     var econRows = await sbGetPublic('economies',
@@ -13793,12 +14086,66 @@ async function ocAdvanceTeamRounds(team, tourn) {
         }
       }
 
+      // Build crisis array for this round
+      var activeCrises = [];
+      if (crisisRounds && crisisRounds.indexOf(r) !== -1) {
+        // Check for existing crisis record (player may have responded)
+        var crisisRows = [];
+        try {
+          crisisRows = await sbGet('crises_active',
+            'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id +
+            '&round=eq.' + r + '&limit=1') || [];
+        } catch(e) {}
+
+        var crRecord = crisisRows.length ? crisisRows[0] : null;
+        var crisisId = crRecord ? crRecord.crisis_id : null;
+
+        // If no crisis record yet — draw one and create it
+        if (!crRecord) {
+          var crisisKeys = ['banking', 'pandemic', 'trade_war', 'debt_crisis'];
+          crisisId = crisisKeys[Math.floor(Math.random() * crisisKeys.length)];
+          var crDef0 = CRISES && CRISES[crisisId];
+          if (crDef0) {
+            try {
+              await sbPost('crises_active', {
+                team_id:       team.id,
+                tournament_id: tourn.id,
+                crisis_id:     crisisId,
+                name:          crDef0.name,
+                round:         r,
+                resolved:      true  // auto-resolved since being processed now
+              });
+            } catch(e) { ocLog('Could not create crisis record: ' + e.message); }
+          }
+        }
+
+        // Apply crisis effect
+        var crDef = CRISES && CRISES[crisisId];
+        if (crDef) {
+          var eff = 0;
+          if (crRecord && crRecord.response) {
+            var opts = crDef.options || [];
+            for (var oi = 0; oi < opts.length; oi++) {
+              if (opts[oi].id === crRecord.response) { eff = opts[oi].effectiveness; break; }
+            }
+          }
+          activeCrises.push({
+            gdp_shock:            crDef.gdp_shock,
+            unemp_shock:          crDef.unemp_shock,
+            inf_shock:            crDef.inf_shock,
+            fin_shock:            crDef.fin_shock,
+            chosen_effectiveness: eff
+          });
+          ocLog('  Round ' + r + ': crisis=' + crDef.name + ' eff=' + eff + '%');
+        }
+      }
+
       snapshots = snapshots.concat([JSON.parse(JSON.stringify(state))]);
-      var newState = simRound(state, policy, []);
+      var newState = simRound(state, policy, activeCrises);
       var scores   = computeScores(newState);
       scoresHist   = scoresHist.concat([{ round: r, scores: scores }]);
       state = newState;
-      ocLog('  Round ' + r + ': score=' + scores.total);
+      ocLog('  Round ' + r + ': score=' + scores.total + (activeCrises.length ? ' (crisis)' : ''));
     }
 
     // Write to DB
@@ -14113,25 +14460,27 @@ window.OC.register = async function() {
 // -- Post-registration -----------------------------------------------
 function ocRenderPostRegistration(el, team, tourn) {
   if (!el) { return; }
-  var payLink = DEFAULT_PAYMENT_LINK || '#';
   var invCode = team.invite_code || '';
   var isCap   = team.captain_id === (currentUser && currentUser.id);
+  var fee     = (tourn && tourn.entry_fee) ? Number(tourn.entry_fee) : OC_ENTRY_FEE;
+  var tid     = team.id;
+  var tnid    = (tourn && tourn.id) ? tourn.id : '';
 
   var msg = encodeURIComponent(
     "I just registered for the MacroNations Open Championship - a real-time macroeconomic policy simulation open to everyone! " +
     "Join me at macronations.com and test your economic thinking against teams worldwide! #MacroNations #Economics"
   );
-  var url    = encodeURIComponent('https://macronations.com');
-  var fbUrl  = 'https://www.facebook.com/sharer/sharer.php?u=' + url + '&quote=' + msg;
-  var twUrl  = 'https://twitter.com/intent/tweet?text=' + msg + '&url=' + url;
-  var liUrl  = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url + '&summary=' + msg;
-  var waUrl  = 'https://wa.me/?text=' + msg + '%20' + url;
+  var url     = encodeURIComponent('https://macronations.com');
+  var fbUrl   = 'https://www.facebook.com/sharer/sharer.php?u=' + url + '&quote=' + msg;
+  var twUrl   = 'https://twitter.com/intent/tweet?text=' + msg + '&url=' + url;
+  var liUrl   = 'https://www.linkedin.com/sharing/share-offsite/?url=' + url + '&summary=' + msg;
+  var waUrl   = 'https://wa.me/?text=' + msg + '%20' + url;
   var mailUrl = 'mailto:?subject=' + encodeURIComponent('[MacroNations] Join me in the Open Championship!') +
     '&body=' + encodeURIComponent("I just joined the MacroNations Open Championship!\n\nJoin me at https://macronations.com\n\n#MacroNations");
 
   el.innerHTML =
     '<div class="dash-alert dash-alert--success" style="margin-bottom:1.5rem;">' +
-      '<div class="dash-alert__icon">v</div>' +
+      '<div class="dash-alert__icon">&#10003;</div>' +
       '<div class="dash-alert__body">' +
         '<div class="dash-alert__title">You\'re registered!</div>' +
         (isCap
@@ -14143,9 +14492,10 @@ function ocRenderPostRegistration(el, team, tourn) {
     '<div class="card" style="margin-bottom:1.5rem;border:2px solid var(--blue);">' +
       '<div class="card__header"><span class="card__title">Step 1 — Pay Entry Fee</span></div>' +
       '<div class="card__body">' +
-        '<p style="margin-bottom:1rem;">Pay the <strong>' + ocFmt$(OC_ENTRY_FEE) + '</strong> entry fee to unlock policy submission. Your 10-day clock starts when you submit Round 1.</p>' +
-        '<a href="' + ocEsc(payLink) + '" target="_blank" class="btn btn--gold" style="margin-bottom:0.75rem;">Pay ' + ocFmt$(OC_ENTRY_FEE) + ' via Stripe</a>' +
-        '<p class="text-sm text-muted" style="margin-top:0.5rem;">After paying, go to your dashboard to submit your Round 1 policy and start the clock.</p>' +
+        '<p style="margin-bottom:1rem;">Pay the <strong>' + ocFmt$(fee) + '</strong> entry fee to unlock policy submission. Your 10-day clock starts when you submit Round 1.</p>' +
+        '<button id="pay-btn-' + tid + '" class="btn btn--gold" style="margin-bottom:0.75rem;" ' +
+          'onclick="doStripeCheckout(\'' + tid + '\',\'' + tnid + '\',' + fee + ',\'' + ocEsc(team.name || '') + '\')">Pay ' + ocFmt$(fee) + ' via Stripe</button>' +
+        '<p class="text-sm text-muted" style="margin-top:0.5rem;">Payment is processed by Stripe. Your team is automatically unlocked once payment is confirmed — no admin action required.</p>' +
       '</div>' +
     '</div>' +
 
@@ -14167,7 +14517,7 @@ function ocRenderPostRegistration(el, team, tourn) {
     '</div>' +
 
     '<div style="text-align:center;">' +
-      '<button class="btn btn--ghost" onclick="showPage(\'open-champ\')">Go to my dashboard</button>' +
+      '<button class="btn btn--ghost" onclick="ocRenderPage()">Go to my dashboard</button>' +
     '</div>';
 }
 
@@ -14176,6 +14526,23 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
   if (!tourn) {
     el.innerHTML = '<div class="empty-state"><div class="empty-state__title">No active championship found.</div></div>';
     return;
+  }
+
+  // Handle return from Stripe Checkout — ?payment=success in URL
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success') {
+    window.history.replaceState({}, '', window.location.pathname);
+    ocRenderPostRegistration(el, team, tourn);
+    return;
+  }
+
+  // Show social sharing banner if team was just registered (within 10 mins) and not yet paid
+  if (!team.fee_paid && !team.started_at && team.created_at) {
+    var age = Date.now() - new Date(team.created_at).getTime();
+    if (age < 10 * 60 * 1000) {
+      ocRenderPostRegistration(el, team, tourn);
+      return;
+    }
   }
 
   var econRows = [];
@@ -14266,7 +14633,9 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
           '<div class="card__header"><span class="card__title">Pay Entry Fee to Start</span></div>' +
           '<div class="card__body">' +
             '<p style="margin-bottom:1rem;">Pay the <strong>' + ocFmt$(OC_ENTRY_FEE) + '</strong> entry fee to unlock policy submission and start competing.</p>' +
-            '<a href="' + ocEsc(DEFAULT_PAYMENT_LINK || '#') + '" target="_blank" class="btn btn--gold">Pay ' + ocFmt$(OC_ENTRY_FEE) + ' via Stripe</a>' +
+            '<button id="pay-btn-' + team.id + '" class="btn btn--gold" ' +
+              'onclick="doStripeCheckout(\'' + team.id + '\',\'' + ((tourn && tourn.id) || '') + '\',' + OC_ENTRY_FEE + ',\'' + ocEsc(team.name || '') + '\')">Pay ' + ocFmt$(OC_ENTRY_FEE) + ' via Stripe</button>' +
+            '<p class="text-sm text-muted" style="margin-top:0.5rem;">Your team is automatically unlocked once payment is confirmed — no admin action needed.</p>' +
           '</div>' +
         '</div>'
       : !started
@@ -14297,6 +14666,14 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
           (started ? '<div><div class="stat-card__label">Started</div><div class="text-mono" style="font-size:0.875rem;">' + new Date(team.started_at).toLocaleDateString() + '</div></div>' : '') +
           (started ? '<div><div class="stat-card__label">Must complete by</div><div class="text-mono" style="font-size:0.875rem;">' + ocTeamDeadline(team.started_at, OC_ROUNDS).toLocaleDateString() + '</div></div>' : '') +
         '</div>' +
+        (team.oc_crisis_rounds && team.oc_crisis_rounds.length
+          ? '<div style="margin-top:0.875rem;padding:0.625rem 0.875rem;background:var(--bg-subtle);border-radius:var(--radius);font-size:0.8125rem;">' +
+              '<span style="color:var(--warning);font-weight:600;">⚡ Your crisis rounds: ' + team.oc_crisis_rounds.join(', ') + '</span>' +
+              ' — prepare your crisis response in the Crisis tab on those rounds.' +
+            '</div>'
+          : (started
+              ? '<div style="margin-top:0.875rem;font-size:0.8125rem;color:var(--text-400);">Crisis rounds are assigned on your first round advancement.</div>'
+              : '')) +
       '</div>' +
     '</div>' +
 
