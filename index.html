@@ -13922,8 +13922,15 @@ var OC_SEASON_CUTOFF_DAY = 20;  // November 20
 var OC_SEASON_CUTOFF_MON = 10;  // 0-indexed = November
 
 // -- Helpers ---------------------------------------------------------
+// ocEnabled is now DB-driven — if an active OC tournament exists, the module is on
+// localStorage is kept as a fast cache to avoid waiting for DB on every page load
 function ocEnabled() {
-  try { return localStorage.getItem(OC_MODULE_KEY) === '1'; } catch(e) { return false; }
+  // Check localStorage cache first (set after DB check)
+  try {
+    var cached = localStorage.getItem(OC_MODULE_KEY);
+    if (cached !== null) { return cached === '1'; }
+  } catch(e) {}
+  return false; // default until DB check runs in ocInit
 }
 function ocSetEnabled(v) {
   try { localStorage.setItem(OC_MODULE_KEY, v ? '1' : '0'); } catch(e) {}
@@ -14930,8 +14937,24 @@ window.OC.adminExportQualifiers = async function() {
 };
 
 // -- Init ------------------------------------------------------------
-function ocInit() {
-  if (ocEnabled()) { ocInjectNav(); }
+async function ocInit() {
+  // Always check DB — if an active OC tournament exists, show the nav
+  // This means the nav appears on every browser/device without admin needing to toggle
+  try {
+    var tourn = await ocGetActiveTournament();
+    if (tourn) {
+      ocSetEnabled(true);  // cache in localStorage for future fast loads
+      ocInjectNav();
+    } else {
+      // No active tournament — keep nav hidden but don't clear cache
+      // (admin may want to create one without nav disappearing mid-session)
+      var cached = localStorage.getItem(OC_MODULE_KEY);
+      if (cached === '1') { ocInjectNav(); } // show if previously enabled
+    }
+  } catch(e) {
+    // Network error — fall back to localStorage cache
+    if (ocEnabled()) { ocInjectNav(); }
+  }
   console.log('[OC] Open Championship module v2.0 loaded.');
 }
 
