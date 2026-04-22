@@ -6941,6 +6941,13 @@ async function renderDashboard() {
     var tRows = await sbGet('tournaments', 'id=eq.' + _dashTeam.tournament_id + '&limit=1');
     _dashTourn = (tRows && tRows.length) ? tRows[0] : null;
 
+    // For OC tournaments — run lazy per-team advancement before rendering
+    if (_dashTourn && _dashTourn.tier === 'open_championship' && _dashTeam.started_at) {
+      try {
+        _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
+      } catch(ocAdvErr) { ocLog('Advance error: ' + ocAdvErr.message); }
+    }
+
     // 3. Load economy — query by team+tournament only (not round)
     var econRows = await sbGet('economies',
       'team_id=eq.' + currentTeamId +
@@ -6965,7 +6972,10 @@ async function renderDashboard() {
     }
 
     // 4. Load this round's decision
-    var round = (_dashTourn && _dashTourn.current_round) ? Number(_dashTourn.current_round) : 1;
+    // For OC tournaments: use per-team oc_round, not tournament current_round
+    var round = (_dashTourn && _dashTourn.tier === 'open_championship')
+      ? ((_dashTeam && _dashTeam.oc_round) || 1)
+      : ((_dashTourn && _dashTourn.current_round) ? Number(_dashTourn.current_round) : 1);
     var decRows = await sbGet('decisions',
       'team_id=eq.' + currentTeamId +
       '&tournament_id=eq.' + _dashTeam.tournament_id +
@@ -6996,7 +7006,9 @@ async function renderDashboard() {
     // Update header
     var teamName  = (_dashTeam && _dashTeam.name)         ? _dashTeam.name         : 'Your Team';
     var tournName = (_dashTourn && _dashTourn.name)        ? _dashTourn.name        : 'Tournament';
-    var roundTot  = (_dashTourn && _dashTourn.rounds_total)? _dashTourn.rounds_total: '?';
+    var roundTot  = (_dashTourn && _dashTourn.tier === 'open_championship')
+      ? OC_ROUNDS
+      : ((_dashTourn && _dashTourn.rounds_total) ? _dashTourn.rounds_total : '?');
     if (titleEl) { titleEl.textContent = teamName; }
     if (subEl)   { subEl.textContent   = tournName + ' · Round ' + round + ' of ' + roundTot; }
 
@@ -7301,7 +7313,10 @@ function renderDashPolicy() {
 
   var team   = _dashTeam  || {};
   var tourn  = _dashTourn || {};
-  var round  = tourn.current_round || 1;
+  // For OC tournaments: use per-team oc_round, not tournament current_round
+  var round  = (tourn.tier === 'open_championship')
+    ? (team.oc_round || 1)
+    : (tourn.current_round || 1);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
   var locked  = (fee > 0 && !feePaid);
@@ -7449,7 +7464,10 @@ async function doSubmitPolicy() {
   setLoading('btn-submit-policy', true, 'Submitting…');
   try {
     var policy = _collectPolicy();
-    var round  = _dashTourn.current_round || 1;
+    // For OC tournaments: save against team's own oc_round, not tournament current_round
+    var round  = (_dashTourn.tier === 'open_championship')
+      ? ((_dashTeam && _dashTeam.oc_round) || 1)
+      : (_dashTourn.current_round || 1);
     if (_dashDecision) {
       _dashDecision = await sbPatch('decisions', 'id=eq.' + _dashDecision.id, { policy: policy, is_final: true });
     } else {
@@ -9583,6 +9601,7 @@ async function renderAdminRounds(el) {
   var completedTourneys = [];
   for (var i = 0; i < _adminTournaments.length; i++) {
     var t = _adminTournaments[i];
+    if (t.tier === 'open_championship') { continue; } // OC uses per-team auto-advancement
     if (t.status === 'active')    { activeTourneys.push(t); }
     if (t.status === 'completed') { completedTourneys.push(t); }
   }
@@ -9985,6 +10004,12 @@ async function runSimulation(tournId) {
 
   var t = _getTournById(tournId);
   if (!t) { log('Tournament not found.', 'err'); return; }
+
+  // OC tournaments use per-team auto-advancement — never run admin simulation on them
+  if (t.tier === 'open_championship') {
+    flash('The Open Championship uses automatic per-team round advancement. Admin simulation does not apply.', 'info');
+    return;
+  }
 
   var round    = t.current_round || 0;
   var maxRound = t.rounds_total  || 5;
@@ -14714,10 +14739,10 @@ var _ocOrigSubmitPolicy = null;
       _ocOrigSubmitPolicy = doSubmitPolicy;
       doSubmitPolicy = async function() {
         var result = await _ocOrigSubmitPolicy.apply(this, arguments);
-        // After successful submission, check if this is an OC team's Round 1
+        // After successful submission, set started_at if this is OC team's first submission
         if (currentUser && _dashTeam && _dashTourn && _dashTourn.tier === OC_TOURN_TYPE) {
-          var round = (_dashTourn.current_round || _dashEconomy && _dashEconomy.current_round || 1);
-          if (round === 1 && !_dashTeam.started_at) {
+          // Use oc_round — not tourn.current_round — to detect first submission
+          if (!_dashTeam.started_at && !_dashTeam.oc_round) {
             try {
               var startedAt = new Date().toISOString();
               await sbPatch('teams', 'id=eq.' + _dashTeam.id, { started_at: startedAt, oc_round: 1 });
