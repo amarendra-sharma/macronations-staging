@@ -14049,10 +14049,11 @@ async function ocCheckAlreadyRegistered(userId) {
     if (!ocTourns || !ocTourns.length) { return null; }
     for (var i = 0; i < ocTourns.length; i++) {
       var tid = ocTourns[i].id;
-      var cap = await sbGetPublic('teams',
+      // Use authenticated sbGet (not sbGetPublic) so new columns (oc_round, started_at) are returned
+      var cap = await sbGet('teams',
         'captain_id=eq.' + userId + '&tournament_id=eq.' + tid + '&limit=1');
       if (cap && cap.length) { return cap[0]; }
-      var mem = await sbGetPublic('teams',
+      var mem = await sbGet('teams',
         'members=cs.{' + userId + '}&tournament_id=eq.' + tid + '&limit=1');
       if (mem && mem.length) { return mem[0]; }
     }
@@ -14284,6 +14285,11 @@ async function ocRenderPage() {
   if (currentUser) {
     existingTeam = await ocCheckAlreadyRegistered(currentUser.id);
     if (existingTeam) {
+      // Re-fetch with authenticated call to ensure all columns (oc_round, started_at) are fresh
+      try {
+        var freshTeam = await sbGet('teams', 'id=eq.' + existingTeam.id + '&limit=1');
+        if (freshTeam && freshTeam.length) { existingTeam = freshTeam[0]; }
+      } catch(e) { /* use existing */ }
       // Run lazy advancement
       existingTeam = await ocAdvanceTeamRounds(existingTeam, tourn);
     }
