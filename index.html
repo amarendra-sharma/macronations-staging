@@ -6955,37 +6955,6 @@ async function renderDashboard() {
     var tRows = await sbGet('tournaments', 'id=eq.' + _dashTeam.tournament_id + '&limit=1');
     _dashTourn = (tRows && tRows.length) ? tRows[0] : null;
 
-    // For OC tournaments — derive state from decisions table, advance if needed
-    if (_dashTourn && _dashTourn.tier === 'open_championship') {
-      try {
-        // Get economy first so we know what's already been simulated
-        var ocEconRows = await sbGet('economies',
-          'team_id=eq.' + currentTeamId + '&tournament_id=eq.' + _dashTeam.tournament_id + '&limit=1') || [];
-        var ocEcon = ocEconRows.length ? ocEconRows[0] : null;
-        // Inject simulated round count so ocGetTeamState knows what's already done
-        _dashTeam._ocSimulatedRound = (ocEcon && ocEcon.current_round) ? Number(ocEcon.current_round) : 0;
-
-        var ocState = await ocGetTeamState(_dashTeam, _dashTourn.id);
-        ocLog('Dashboard OC state: submitted=' + ocState.highestSubmitted +
-          ' clockRound=' + ocState.clockRound +
-          ' simulated=' + ocState.simulatedRound +
-          ' toSimulate=' + ocState.roundsToSimulate);
-
-        // Update in-memory team with derived values
-        _dashTeam.started_at = ocState.startedAt;
-        _dashTeam.oc_round   = ocState.simulatedRound; // rounds already simulated
-
-        if (ocState.roundsToSimulate > 0 && ocState.startedAt) {
-          // Advance — but set economy on team so we don't loop
-          _dashTeam._ocSimulatedRound = ocState.simulatedRound; // prevent re-advancing same rounds
-          _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
-          // Do NOT recurse — just continue rendering with updated state
-          // Update round display values
-          _dashTeam.oc_round = _dashTeam._ocSimulatedRound || ocState.clockRound;
-        }
-      } catch(ocErr) { ocLog('OC state error: ' + ocErr.message); }
-    }
-
     // 3. Load economy — query by team+tournament only (not round)
     var econRows = await sbGet('economies',
       'team_id=eq.' + currentTeamId +
@@ -7010,10 +6979,17 @@ async function renderDashboard() {
     }
 
     // 4. Load this round's decision
-    // For OC tournaments: use per-team oc_round, not tournament current_round
-    var round = (_dashTourn && _dashTourn.tier === 'open_championship')
-      ? ((_dashTeam && _dashTeam.oc_round) || 1)
-      : ((_dashTourn && _dashTourn.current_round) ? Number(_dashTourn.current_round) : 1);
+    // For OC: use economy.current_round (simulated rounds) + 1 as the active round
+    // For regular: use tournament current_round
+    var round;
+    if (_dashTourn && _dashTourn.tier === 'open_championship') {
+      var ocSimRound = (_dashEconomy && _dashEconomy.current_round) ? Number(_dashEconomy.current_round) : 0;
+      _dashTeam.oc_round = ocSimRound;
+      round = ocSimRound + 1; // next round to submit
+      if (round > OC_ROUNDS) { round = OC_ROUNDS; }
+    } else {
+      round = ((_dashTourn && _dashTourn.current_round) ? Number(_dashTourn.current_round) : 1);
+    }
     var decRows = await sbGet('decisions',
       'team_id=eq.' + currentTeamId +
       '&tournament_id=eq.' + _dashTeam.tournament_id +
@@ -14457,12 +14433,16 @@ async function ocRenderPage() {
   if (currentUser) {
     existingTeam = await ocCheckAlreadyRegistered(currentUser.id);
     if (existingTeam) {
-      // Re-fetch with authenticated call to ensure all columns (oc_round, started_at) are fresh
       try {
         var freshTeam = await sbGet('teams', 'id=eq.' + existingTeam.id + '&limit=1');
         if (freshTeam && freshTeam.length) { existingTeam = freshTeam[0]; }
-      } catch(e) { /* use existing */ }
-      // Run lazy advancement
+      } catch(e) {}
+      // Inject simulated round from economy so advancement loop guard works
+      try {
+        var ocEconR = await sbGetPublic('economies',
+          'team_id=eq.' + existingTeam.id + '&tournament_id=eq.' + (tourn && tourn.id) + '&limit=1') || [];
+        existingTeam._ocSimulatedRound = (ocEconR.length && ocEconR[0].current_round) ? Number(ocEconR[0].current_round) : 0;
+      } catch(e) { existingTeam._ocSimulatedRound = 0; }
       existingTeam = await ocAdvanceTeamRounds(existingTeam, tourn);
     }
   }
