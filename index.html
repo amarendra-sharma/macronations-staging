@@ -6944,7 +6944,14 @@ async function renderDashboard() {
     // For OC tournaments — run lazy per-team advancement before rendering
     if (_dashTourn && _dashTourn.tier === 'open_championship' && _dashTeam.started_at) {
       try {
+        var ocRoundBefore = _dashTeam.oc_round || 0;
         _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
+        // If round advanced, reload dashboard with updated round
+        if ((_dashTeam.oc_round || 0) > ocRoundBefore) {
+          ocLog('Round advanced from ' + ocRoundBefore + ' to ' + _dashTeam.oc_round + ' — reloading dashboard');
+          renderDashboard();
+          return;
+        }
       } catch(ocAdvErr) { ocLog('Advance error: ' + ocAdvErr.message); }
     }
 
@@ -7106,9 +7113,27 @@ function renderDashOverview() {
   var tourn  = _dashTourn || {};
   var eco    = (_dashEconomy && _dashEconomy.current) ? _dashEconomy.current : defaultEconomy();
   var scores = computeScores(eco);
-  var round  = tourn.current_round || 1;
+  // For OC teams that haven't played — don't show default economy scores
+  var ocNotStarted = (tourn.tier === 'open_championship') && !(team.oc_round > 0);
+  var round  = (tourn.tier === 'open_championship')
+    ? (team.oc_round || 1)
+    : (tourn.current_round || 1);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
+
+  // If OC team hasn't played, show a simple "not started" panel
+  if (ocNotStarted) {
+    el.innerHTML =
+      '<div class="dash-alert dash-alert--info" style="margin-bottom:1.5rem;">' +
+        '<div class="dash-alert__icon">i</div>' +
+        '<div class="dash-alert__body"><div class="dash-alert__title">Not yet started</div>' +
+        (feePaid
+          ? 'Your fee is confirmed. Go to the <strong>Policy</strong> tab to submit your Round 1 decisions and start your 10-day clock.'
+          : 'Pay your entry fee first, then submit your Round 1 policy to start competing.') +
+        '</div>' +
+      '</div>';
+    return;
+  }
 
   // Metric cards — all economy variables visible to student
   var metrics = [
@@ -14593,7 +14618,7 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
   var scores   = typeof computeScores === 'function' ? computeScores(state) : { total: 0, gdp: 0, stability: 0, equality: 0, sustainability: 0, innovation: 0 };
   var ocRound  = team.oc_round || 0;
   var feePaid  = team.fee_paid;
-  var started  = !!team.started_at;
+  var started  = !!team.started_at && ocRound > 0;  // only "started" if actually played a round
   var year     = new Date().getFullYear();
   var eligible = ocIsEligible(team.started_at);
   var isComplete = ocRound >= OC_ROUNDS;
