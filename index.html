@@ -6955,29 +6955,23 @@ async function renderDashboard() {
     var tRows = await sbGet('tournaments', 'id=eq.' + _dashTeam.tournament_id + '&limit=1');
     _dashTourn = (tRows && tRows.length) ? tRows[0] : null;
 
-    // For OC tournaments — run lazy per-team advancement before rendering
-    if (_dashTourn && _dashTourn.tier === 'open_championship' && _dashTeam.started_at) {
+    // For OC tournaments — derive state from decisions table, advance if needed
+    if (_dashTourn && _dashTourn.tier === 'open_championship') {
       try {
-        var ocRoundBefore = _dashTeam.oc_round || 0;
-        var ocStartedAt   = _dashTeam.started_at;
-        var ocExpected    = ocTeamCurrentRound(ocStartedAt);
+        var ocState = await ocGetTeamState(_dashTeam, _dashTourn.id);
+        ocLog('Dashboard OC state: submitted=' + ocState.highestSubmitted + ' clockRound=' + ocState.clockRound + ' toSimulate=' + ocState.roundsToSimulate);
 
-        ocLog('OC check: oc_round=' + ocRoundBefore + ' expected=' + ocExpected + ' started=' + ocStartedAt);
+        // Update in-memory team with derived values
+        _dashTeam.started_at = ocState.startedAt;
+        _dashTeam.oc_round   = ocState.highestSubmitted; // what round they've completed
 
-        if (ocExpected > ocRoundBefore) {
-          // Advancement needed — run it
+        if (ocState.roundsToSimulate > 0) {
+          // Rounds need to be simulated — run advancement then reload
           _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
-          // Re-fetch team from DB to confirm oc_round was written
-          try {
-            var refreshed = await sbGet('teams', 'id=eq.' + _dashTeam.id + '&limit=1');
-            if (refreshed && refreshed.length) { _dashTeam = refreshed[0]; currentTeamId = _dashTeam.id; }
-          } catch(re) {}
-          ocLog('OC advancement done: oc_round now=' + (_dashTeam.oc_round || 0));
-          // Recurse to re-render with updated round
           renderDashboard();
           return;
         }
-      } catch(ocAdvErr) { ocLog('Advance error: ' + ocAdvErr.message); }
+      } catch(ocErr) { ocLog('OC state error: ' + ocErr.message); }
     }
 
     // 3. Load economy — query by team+tournament only (not round)
@@ -7363,9 +7357,10 @@ function renderDashPolicy() {
 
   var team   = _dashTeam  || {};
   var tourn  = _dashTourn || {};
-  // For OC tournaments: use per-team oc_round, not tournament current_round
+  // For OC: oc_round in _dashTeam is now set from ocGetTeamState (decisions-derived)
+  // The next round to submit = highest submitted + 1
   var round  = (tourn.tier === 'open_championship')
-    ? (team.oc_round || 1)
+    ? Math.min((team.oc_round || 0) + 1, OC_ROUNDS)
     : (tourn.current_round || 1);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
@@ -7514,9 +7509,9 @@ async function doSubmitPolicy() {
   setLoading('btn-submit-policy', true, 'Submitting…');
   try {
     var policy = _collectPolicy();
-    // For OC tournaments: save against team's own oc_round, not tournament current_round
+    // For OC: submit to next round after highest submitted (derived, no DB column needed)
     var round  = (_dashTourn.tier === 'open_championship')
-      ? ((_dashTeam && _dashTeam.oc_round) || 1)
+      ? Math.min((_dashTeam && (_dashTeam.oc_round || 0)) + 1, OC_ROUNDS)
       : (_dashTourn.current_round || 1);
     if (_dashDecision) {
       _dashDecision = await sbPatch('decisions', 'id=eq.' + _dashDecision.id, { policy: policy, is_final: true });
@@ -7530,21 +7525,8 @@ async function doSubmitPolicy() {
       });
     }
     flash('Policy submitted for Round ' + round + '!', 'success');
-
-    // OC: set started_at on first submission — directly here, no hook needed
-    if (_dashTourn.tier === 'open_championship' && _dashTeam && !_dashTeam.started_at && !(_dashTeam.oc_round > 0)) {
-      try {
-        var ocStartedAt = new Date().toISOString();
-        await sbPatch('teams', 'id=eq.' + _dashTeam.id, { started_at: ocStartedAt, oc_round: 1 });
-        _dashTeam.started_at = ocStartedAt;
-        _dashTeam.oc_round   = 1;
-        ocLog('Clock started for team ' + _dashTeam.id + ' at ' + ocStartedAt);
-        flash('Your 10-day clock has started! Complete all 10 rounds by ' + ocTeamDeadline(ocStartedAt, OC_ROUNDS).toLocaleDateString() + '.', 'success');
-      } catch(ocErr) {
-        ocLog('Could not set started_at: ' + ocErr.message);
-      }
-    }
-
+    // OC: note — started_at and oc_round are now computed from decisions table
+    // No DB patch needed here — ocAdvanceTeamRounds reads decisions directly
     renderDashPolicy();
   } catch(e) {
     flash('Submit failed: ' + (e.message || 'Error'), 'error');
@@ -14237,169 +14219,156 @@ async function ocCheckAlreadyRegistered(userId) {
 }
 
 // -- Per-team lazy advancement ---------------------------------------
-async function ocAdvanceTeamRounds(team, tourn) {
-  if (!team || !team.started_at) { return team; }
-  var expectedRound = ocTeamCurrentRound(team.started_at);
-  var storedRound   = team.oc_round || 0;
-  if (expectedRound <= storedRound) { return team; }
+// Derive OC team state from decisions — no dependency on oc_round/started_at columns
+async function ocGetTeamState(team, tournId) {
+  // Fetch all final decisions for this team in OC tournament, ordered by round
+  var decs = [];
+  try {
+    decs = await sbGet('decisions',
+      'team_id=eq.' + team.id +
+      '&tournament_id=eq.' + tournId +
+      '&is_final=eq.true&order=round.asc&limit=20') || [];
+  } catch(e) { ocLog('ocGetTeamState error: ' + e.message); }
 
-  ocLog('Advancing team ' + team.name + ' from round ' + storedRound + ' to ' + expectedRound);
+  var submittedRounds = decs.map(function(d) { return d.round; });
+  var highestSubmitted = submittedRounds.length ? Math.max.apply(null, submittedRounds) : 0;
 
-  // Determine this team's 3 crisis rounds
-  // Stored in team.oc_crisis_rounds — drawn once when clock starts, same schema as tournaments
-  var crisisRounds = (team.oc_crisis_rounds && Array.isArray(team.oc_crisis_rounds))
-    ? team.oc_crisis_rounds
-    : null;
-
-  // If not yet assigned, draw now and save
-  if (!crisisRounds) {
-    crisisRounds = _pickCrisisRounds(OC_ROUNDS);
-    try {
-      await sbPatch('teams', 'id=eq.' + team.id, { oc_crisis_rounds: crisisRounds });
-      team.oc_crisis_rounds = crisisRounds;
-    } catch(e) { ocLog('Could not save crisis rounds: ' + e.message); }
+  // started_at: use team.started_at if set, otherwise use timestamp of round 1 decision
+  var startedAt = team.started_at || null;
+  if (!startedAt && decs.length) {
+    // Find round 1 decision timestamp
+    var r1 = decs.filter(function(d) { return d.round === 1; })[0];
+    if (r1 && r1.submitted_at) { startedAt = r1.submitted_at; }
+    else if (r1 && r1.created_at) { startedAt = r1.created_at; }
+    else { startedAt = decs[0].submitted_at || decs[0].created_at || null; }
   }
 
+  // oc_round: what round should be active NOW based on time elapsed since start
+  var clockRound = startedAt ? Math.min(Math.floor((Date.now() - new Date(startedAt).getTime()) / OC_MS_PER_ROUND) + 1, OC_ROUNDS) : 0;
+
+  // The active round is max(clock-based round, highest submitted + 1, 1 if started)
+  var activeRound = startedAt ? Math.max(clockRound, highestSubmitted + 1 <= OC_ROUNDS ? highestSubmitted + 1 : OC_ROUNDS) : 0;
+  // But cap at OC_ROUNDS
+  activeRound = Math.min(activeRound, OC_ROUNDS);
+
+  return {
+    startedAt:        startedAt,
+    submittedRounds:  submittedRounds,
+    highestSubmitted: highestSubmitted,
+    clockRound:       clockRound,
+    activeRound:      activeRound,   // round player should be on NOW
+    roundsToSimulate: clockRound - highestSubmitted,  // rounds elapsed but not yet simulated
+    decisions:        decs
+  };
+}
+
+async function ocAdvanceTeamRounds(team, tourn) {
+  if (!team || !tourn) { return team; }
+
+  var state = await ocGetTeamState(team, tourn.id);
+  ocLog('OC state for ' + team.name + ': started=' + state.startedAt + ' submitted=' + state.highestSubmitted + ' clockRound=' + state.clockRound + ' toSimulate=' + state.roundsToSimulate);
+
+  // Nothing to advance
+  if (!state.startedAt || state.roundsToSimulate <= 0) {
+    // Update in-memory team with derived state for rendering
+    team.started_at = state.startedAt;
+    team.oc_round   = state.highestSubmitted;
+    return team;
+  }
+
+  // Try to write started_at/oc_round to DB (best-effort — schema may not have columns yet)
+  // We don't depend on this succeeding — we derive state from decisions each time
+  if (!team.started_at && state.startedAt) {
+    try {
+      await sbPatch('teams', 'id=eq.' + team.id, { started_at: state.startedAt });
+    } catch(e) { ocLog('Could not persist started_at (schema may be pending): ' + e.message); }
+  }
+
+  // Simulate all elapsed rounds that haven't been simulated yet
   try {
     var econRows = await sbGetPublic('economies',
       'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id + '&limit=1') || [];
     var econRecord = econRows.length ? econRows[0] : null;
-    var state = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
+    var econState  = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
+    var snapshots  = (econRecord && econRecord.snapshots)      || [];
+    var scoresHist = (econRecord && econRecord.scores_history) || [];
 
-    var snapshots  = (econRecord && econRecord.snapshots)      ? econRecord.snapshots      : [];
-    var scoresHist = (econRecord && econRecord.scores_history) ? econRecord.scores_history : [];
-
-    // Advance each missing round sequentially
-    for (var r = storedRound + 1; r <= expectedRound; r++) {
-      // Load decision for this round
-      var decRows = [];
-      try {
-        decRows = await sbGet('decisions',
-          'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id +
-          '&round=eq.' + r + '&is_final=eq.true&limit=1') || [];
-      } catch(e) {}
+    var scores = null;
+    for (var r = state.highestSubmitted + 1; r <= state.clockRound; r++) {
+      // Get decision for this round if player submitted one
+      var dec = state.decisions.filter(function(d) { return d.round === r; })[0];
       var policy = {};
-      if (decRows.length && decRows[0].policy) {
-        policy = decRows[0].policy;
+      if (dec && dec.policy) {
+        policy = dec.policy;
       } else {
-        for (var li = 0; li < LEVERS.length; li++) {
-          policy[LEVERS[li].key] = LEVERS[li].def;
-        }
+        // Default policy — use current lever defaults
+        for (var li = 0; li < LEVERS.length; li++) { policy[LEVERS[li].key] = LEVERS[li].def; }
+        ocLog('  Round ' + r + ': no decision found, using defaults');
       }
 
-      // Build crisis array for this round
+      // Crisis handling
+      var crisisRounds = (team.oc_crisis_rounds && Array.isArray(team.oc_crisis_rounds)) ? team.oc_crisis_rounds : [];
       var activeCrises = [];
-      if (crisisRounds && crisisRounds.indexOf(r) !== -1) {
-        // Check for existing crisis record (player may have responded)
+      if (crisisRounds.indexOf(r) !== -1) {
         var crisisRows = [];
-        try {
-          crisisRows = await sbGet('crises_active',
-            'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id +
-            '&round=eq.' + r + '&limit=1') || [];
-        } catch(e) {}
-
-        var crRecord = crisisRows.length ? crisisRows[0] : null;
-        var crisisId = crRecord ? crRecord.crisis_id : null;
-
-        // If no crisis record yet — draw one and create it
-        if (!crRecord) {
-          var crisisKeys = ['banking', 'pandemic', 'trade_war', 'debt_crisis'];
-          crisisId = crisisKeys[Math.floor(Math.random() * crisisKeys.length)];
-          var crDef0 = CRISES && CRISES[crisisId];
-          if (crDef0) {
-            try {
-              await sbPost('crises_active', {
-                team_id:       team.id,
-                tournament_id: tourn.id,
-                crisis_id:     crisisId,
-                name:          crDef0.name,
-                round:         r,
-                resolved:      true  // auto-resolved since being processed now
-              });
-            } catch(e) { ocLog('Could not create crisis record: ' + e.message); }
-          }
+        try { crisisRows = await sbGet('crises_active', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id + '&round=eq.' + r + '&limit=1') || []; } catch(e) {}
+        var crRecord  = crisisRows[0] || null;
+        var crisisId  = crRecord ? crRecord.crisis_id : null;
+        if (!crisisId) {
+          var crKeys = ['banking', 'pandemic', 'trade_war', 'debt_crisis'];
+          crisisId = crKeys[Math.floor(Math.random() * crKeys.length)];
+          try { await sbPost('crises_active', { team_id: team.id, tournament_id: tourn.id, crisis_id: crisisId, name: (CRISES && CRISES[crisisId] && CRISES[crisisId].name) || crisisId, round: r, resolved: true }); } catch(e) {}
         }
-
-        // Apply crisis effect
         var crDef = CRISES && CRISES[crisisId];
         if (crDef) {
           var eff = 0;
           if (crRecord && crRecord.response) {
             var opts = crDef.options || [];
-            for (var oi = 0; oi < opts.length; oi++) {
-              if (opts[oi].id === crRecord.response) { eff = opts[oi].effectiveness; break; }
-            }
+            for (var oi = 0; oi < opts.length; oi++) { if (opts[oi].id === crRecord.response) { eff = opts[oi].effectiveness; break; } }
           }
-          activeCrises.push({
-            gdp_shock:            crDef.gdp_shock,
-            unemp_shock:          crDef.unemp_shock,
-            inf_shock:            crDef.inf_shock,
-            fin_shock:            crDef.fin_shock,
-            chosen_effectiveness: eff
-          });
-          ocLog('  Round ' + r + ': crisis=' + crDef.name + ' eff=' + eff + '%');
+          activeCrises.push({ gdp_shock: crDef.gdp_shock, unemp_shock: crDef.unemp_shock, inf_shock: crDef.inf_shock, fin_shock: crDef.fin_shock, chosen_effectiveness: eff });
         }
       }
 
-      snapshots = snapshots.concat([JSON.parse(JSON.stringify(state))]);
-      var newState = simRound(state, policy, activeCrises);
-      var scores   = computeScores(newState);
+      snapshots = snapshots.concat([JSON.parse(JSON.stringify(econState))]);
+      var newState = simRound(econState, policy, activeCrises);
+      scores       = computeScores(newState);
       scoresHist   = scoresHist.concat([{ round: r, scores: scores }]);
-      state = newState;
-      ocLog('  Round ' + r + ': score=' + scores.total + (activeCrises.length ? ' (crisis)' : ''));
+      econState    = newState;
+      ocLog('  Simulated round ' + r + ': score=' + scores.total);
     }
 
-    // Write to DB
+    // Write economy back
+    var newOcRound = state.clockRound;
     try {
       if (econRecord) {
-        await sbPatch('economies',
-          'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id, {
-          current:        state,
-          snapshots:      snapshots,
-          current_round:  expectedRound,
-          scores_history: scoresHist
+        await sbPatch('economies', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id, {
+          current: econState, snapshots: snapshots, current_round: newOcRound, scores_history: scoresHist
         });
       } else {
-        await sbPost('economies', {
-          team_id:        team.id,
-          tournament_id:  tourn.id,
-          current:        state,
-          snapshots:      snapshots,
-          current_round:  expectedRound,
-          scores_history: scoresHist
-        });
+        await sbPost('economies', { team_id: team.id, tournament_id: tourn.id, current: econState, snapshots: snapshots, current_round: newOcRound, scores_history: scoresHist });
       }
     } catch(dbErr) { ocLog('Economy write failed: ' + dbErr.message); }
 
-    // Update team oc_round and check completion
-    var newOcRound = expectedRound;
-    var patchData  = { oc_round: newOcRound };
-    if (newOcRound >= OC_ROUNDS) {
-      patchData.status = 'completed';
-      if (ocIsEligible(team.started_at)) {
-        try { await _registerTeamAsQualifier(team, tourn, scores); } catch(e) {}
-      }
-    }
-    try {
-      await sbPatch('teams', 'id=eq.' + team.id, patchData);
-    } catch(colErr) {
-      // oc_round column may not exist yet — patch without it
-      ocLog('oc_round patch failed (' + colErr.message + '), retrying without it');
-      var safePatch = {};
-      if (patchData.status) { safePatch.status = patchData.status; }
-      if (Object.keys(safePatch).length) {
-        try { await sbPatch('teams', 'id=eq.' + team.id, safePatch); } catch(e2) {}
-      }
-    }
-    team.oc_round = newOcRound;
+    // Try to persist oc_round to teams table (best-effort)
+    try { await sbPatch('teams', 'id=eq.' + team.id, { oc_round: newOcRound }); } catch(e) {}
 
-    // 1-hour warning for next round
-    ocCheckSendWarning(team, tourn, expectedRound);
+    // Register as qualifier if complete
+    if (newOcRound >= OC_ROUNDS && scores && ocIsEligible(state.startedAt)) {
+      try { await _registerTeamAsQualifier(team, tourn, scores); } catch(e) {}
+    }
+
+    // Update in-memory
+    team.started_at = state.startedAt;
+    team.oc_round   = newOcRound;
+
+    ocCheckSendWarning(team, tourn, newOcRound);
 
   } catch(e) { ocLog('Advancement error: ' + e.message); }
 
   return team;
 }
+
 
 async function _registerTeamAsQualifier(team, tourn, scores) {
   var year = new Date().getFullYear();
