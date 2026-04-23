@@ -5331,6 +5331,20 @@ function _updateFeeDisplays() {
   } catch(feeErr) { /* keep hardcoded defaults */ }
   _updateFeeDisplays();
 
+  // Track visit — fire and forget, never blocks UI
+  (function() {
+    try {
+      var sid = sessionStorage.getItem('mn_sid');
+      if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('mn_sid', sid); }
+      sbPost('page_views', {
+        session_id: sid,
+        user_id:    (currentUser && currentUser.id) || null,
+        referrer:   document.referrer ? document.referrer.slice(0, 500) : null,
+        visited_at: new Date().toISOString()
+      }).catch(function() {});
+    } catch(e) {}
+  })();
+
   showPage('home');
 })();
 
@@ -7516,6 +7530,21 @@ async function doSubmitPolicy() {
       });
     }
     flash('Policy submitted for Round ' + round + '!', 'success');
+
+    // OC: set started_at on first submission — directly here, no hook needed
+    if (_dashTourn.tier === 'open_championship' && _dashTeam && !_dashTeam.started_at && !(_dashTeam.oc_round > 0)) {
+      try {
+        var ocStartedAt = new Date().toISOString();
+        await sbPatch('teams', 'id=eq.' + _dashTeam.id, { started_at: ocStartedAt, oc_round: 1 });
+        _dashTeam.started_at = ocStartedAt;
+        _dashTeam.oc_round   = 1;
+        ocLog('Clock started for team ' + _dashTeam.id + ' at ' + ocStartedAt);
+        flash('Your 10-day clock has started! Complete all 10 rounds by ' + ocTeamDeadline(ocStartedAt, OC_ROUNDS).toLocaleDateString() + '.', 'success');
+      } catch(ocErr) {
+        ocLog('Could not set started_at: ' + ocErr.message);
+      }
+    }
+
     renderDashPolicy();
   } catch(e) {
     flash('Submit failed: ' + (e.message || 'Error'), 'error');
@@ -11541,7 +11570,7 @@ async function doSaveChampionshipSchedule(year) {
   }
 }
 
-function renderAdminAnalytics(el) {
+async function renderAdminAnalytics(el) {
   var totalRevenue = 0;
   var paidCount = 0;
   var completedCount = 0;
@@ -11555,7 +11584,6 @@ function renderAdminAnalytics(el) {
       if (t) { totalRevenue += Number(t.entry_fee) || 0; }
     }
   }
-
   var avgTeamsPerTournament = _adminTournaments.length
     ? Math.round(_adminTeams.length / _adminTournaments.length * 10) / 10
     : 0;
@@ -11571,6 +11599,12 @@ function renderAdminAnalytics(el) {
       _metricCard('📊', avgTeamsPerTournament,       'Avg Teams / Tournament') +
       _metricCard('🔄', _adminTournaments.filter(function(t){ return t.status === 'active'; }).length, 'Active Now') +
     '</div>' +
+    '<div id="analytics-visitor-section" style="margin:1.25rem 0;">' +
+      '<div class="card"><div class="card__body" style="text-align:center;">' +
+        '<div class="spinner" style="width:20px;height:20px;margin:0 auto;"></div>' +
+        '<p class="text-sm text-muted" style="margin-top:0.5rem;">Loading visitor stats...</p>' +
+      '</div></div>' +
+    '</div>' +
     '<div class="card">' +
       '<div class="card__header"><span class="card__title">Data Exports</span></div>' +
       '<div class="card__body">' +
@@ -11578,9 +11612,107 @@ function renderAdminAnalytics(el) {
           '<button class="btn btn--ghost" onclick="exportCSV()">📥 Export Grades (CSV)</button>' +
           '<button class="btn btn--ghost" onclick="exportJSON()">📦 Export JSON Snapshot</button>' +
         '</div>' +
-        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">Grades CSV includes: team scores across all 5 pillars with rankings, plus every round\'s policy decisions and student rationale — ready for your gradebook. JSON includes full economy snapshots.</p>' +
+        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">Grades CSV includes team scores, pillar breakdowns, rankings, and all round rationale. JSON includes full economy snapshots.</p>' +
       '</div>' +
     '</div>';
+
+  // Load visitor stats
+  try {
+    var now      = new Date();
+    var today    = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    var week     = new Date(now.getTime() - 7  * 86400000).toISOString();
+    var month    = new Date(now.getTime() - 30 * 86400000).toISOString();
+    var allViews = await sbGet('page_views', 'order=visited_at.desc&limit=2000') || [];
+
+    var todayV = allViews.filter(function(v) { return v.visited_at >= today; });
+    var weekV  = allViews.filter(function(v) { return v.visited_at >= week; });
+    var monthV = allViews.filter(function(v) { return v.visited_at >= month; });
+
+    function uniq(arr) { return new Set(arr.map(function(v) { return v.session_id; })).size; }
+    var loggedIn = allViews.filter(function(v) { return v.user_id; }).length;
+
+    // Referrers
+    var refMap = {};
+    for (var ri = 0; ri < allViews.length; ri++) {
+      var ref = allViews[ri].referrer;
+      if (!ref) { ref = 'Direct / None'; }
+      else { try { ref = new URL(ref).hostname; } catch(e) {} }
+      refMap[ref] = (refMap[ref] || 0) + 1;
+    }
+    var refList = Object.keys(refMap).map(function(k) { return { ref: k, count: refMap[k] }; })
+      .sort(function(a, b) { return b.count - a.count; });
+
+    // 14-day trend
+    var dayMap = {};
+    for (var di = 0; di < allViews.length; di++) {
+      var day = (allViews[di].visited_at || '').slice(0, 10);
+      if (day) { dayMap[day] = (dayMap[day] || 0) + 1; }
+    }
+    var days = [];
+    for (var d = 13; d >= 0; d--) {
+      var dt  = new Date(now.getTime() - d * 86400000);
+      var key = dt.toISOString().slice(0, 10);
+      days.push({ date: key.slice(5), count: dayMap[key] || 0 });
+    }
+    var maxDay = Math.max.apply(null, days.map(function(d) { return d.count; })) || 1;
+
+    var trendHtml = days.map(function(d) {
+      var h = Math.max(2, Math.round((d.count / maxDay) * 72));
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0;">' +
+        '<div style="font-size:0.625rem;color:var(--text-400);">' + (d.count || '') + '</div>' +
+        '<div style="width:100%;background:var(--blue);border-radius:2px 2px 0 0;height:' + h + 'px;"></div>' +
+        '<div style="font-size:0.5625rem;color:var(--text-400);transform:rotate(-40deg);transform-origin:top left;margin-top:4px;white-space:nowrap;">' + d.date + '</div>' +
+      '</div>';
+    }).join('');
+
+    var refHtml = refList.slice(0, 8).map(function(r) {
+      return '<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;">' +
+        '<span style="color:var(--text-700);">' + esc(r.ref) + '</span>' +
+        '<span class="text-mono">' + r.count + '</span>' +
+      '</div>';
+    }).join('');
+
+    var visEl = document.getElementById('analytics-visitor-section');
+    if (!visEl) { return; }
+    visEl.innerHTML =
+      '<div class="card" style="margin-bottom:1.25rem;">' +
+        '<div class="card__header"><span class="card__title">Visitor Analytics</span>' +
+          '<span class="text-sm text-muted">' + allViews.length + ' total visits recorded</span>' +
+          '<button class="btn btn--ghost btn--sm" onclick="renderAdminAnalytics(document.getElementById(\'admin-panel-content\'))">Refresh</button>' +
+        '</div>' +
+        '<div class="card__body">' +
+          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.25rem;">' +
+            _metricCard('👁', uniq(todayV),  'Unique Today') +
+            _metricCard('📅', uniq(weekV),   'Unique This Week') +
+            _metricCard('📆', uniq(monthV),  'Unique This Month') +
+            _metricCard('🌐', uniq(allViews),'All-Time Unique Sessions') +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' +
+            _metricCard('🔑', loggedIn,              'Logged-in Visits') +
+            _metricCard('👻', allViews.length - loggedIn, 'Anonymous Visits') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:1.25rem;">' +
+        '<div class="card__header"><span class="card__title">Daily Visits — Last 14 Days</span></div>' +
+        '<div class="card__body">' +
+          '<div style="display:flex;align-items:flex-end;gap:1px;height:96px;padding-bottom:24px;">' + trendHtml + '</div>' +
+        '</div>' +
+      '</div>' +
+      (refList.length
+        ? '<div class="card"><div class="card__header"><span class="card__title">Top Referrers</span></div>' +
+          '<div class="card__body" style="padding-top:0;">' + (refHtml || '') + '</div></div>'
+        : '');
+
+  } catch(e) {
+    var vEl2 = document.getElementById('analytics-visitor-section');
+    if (vEl2) {
+      vEl2.innerHTML = '<div class="dash-alert dash-alert--info"><div class="dash-alert__icon">i</div>' +
+        '<div class="dash-alert__body"><div class="dash-alert__title">Visitor tracking table not found</div>' +
+        'Run this SQL in Supabase to enable visitor analytics:<br><code style="font-size:0.75rem;">CREATE TABLE page_views (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, session_id text, user_id text, referrer text, visited_at timestamptz DEFAULT now()); ALTER TABLE page_views ENABLE ROW LEVEL SECURITY; CREATE POLICY "insert_anon" ON page_views FOR INSERT WITH CHECK (true);</code>' +
+        '</div></div>';
+    }
+  }
 }
 
 async function exportCSV() {
@@ -14780,33 +14912,7 @@ function _ocStatBox(label, val) {
 // -- Policy submission hook: start clock on Round 1 ------------------
 // Called by the existing doSubmitPolicy after a successful Round 1 submission
 // We hook into the existing submit flow by extending it
-var _ocOrigSubmitPolicy = null;
-(function() {
-  // Wait for doSubmitPolicy to be defined, then wrap it
-  var _ocHookInterval = setInterval(function() {
-    if (typeof doSubmitPolicy === 'function' && !_ocOrigSubmitPolicy) {
-      _ocOrigSubmitPolicy = doSubmitPolicy;
-      doSubmitPolicy = async function() {
-        var result = await _ocOrigSubmitPolicy.apply(this, arguments);
-        // After successful submission, set started_at if this is OC team's first submission
-        if (currentUser && _dashTeam && _dashTourn && _dashTourn.tier === OC_TOURN_TYPE) {
-          // Use oc_round — not tourn.current_round — to detect first submission
-          if (!_dashTeam.started_at && !_dashTeam.oc_round) {
-            try {
-              var startedAt = new Date().toISOString();
-              await sbPatch('teams', 'id=eq.' + _dashTeam.id, { started_at: startedAt, oc_round: 1 });
-              _dashTeam.started_at = startedAt;
-              _dashTeam.oc_round   = 1;
-              ocFlash('Your 10-day clock has started! Complete all 10 rounds by ' + ocTeamDeadline(startedAt, OC_ROUNDS).toLocaleDateString() + '.', 'success');
-            } catch(e) { ocLog('Could not set started_at: ' + e.message); }
-          }
-        }
-        return result;
-      };
-      clearInterval(_ocHookInterval);
-    }
-  }, 500);
-})();
+var _ocOrigSubmitPolicy = null; // kept for compatibility — logic now in doSubmitPolicy directly
 
 // -- Admin panel -----------------------------------------------------
 window.ocRenderAdminPanel = async function(el) {
