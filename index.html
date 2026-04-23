@@ -7053,6 +7053,9 @@ async function renderDashboard() {
 
   } catch(e) {
     var msg = (e && e.message) ? e.message : 'Unknown error';
+    console.error('[renderDashboard ERROR]', e);
+    // Always wire tabs even on error so user isn't completely stuck
+    try { _wireDashTabs(); } catch(we) {}
     if (overviewPanel) {
       overviewPanel.innerHTML =
         '<div class="empty-state">' +
@@ -7133,9 +7136,10 @@ function renderDashOverview() {
   var eco    = (_dashEconomy && _dashEconomy.current) ? _dashEconomy.current : defaultEconomy();
   var scores = computeScores(eco);
   // For OC teams that haven't played — don't show default economy scores
-  var ocNotStarted = (tourn.tier === 'open_championship') && !(team.oc_round > 0);
-  var round  = (tourn.tier === 'open_championship')
-    ? (team.oc_round || 1)
+  var isOC = (tourn.tier === 'open_championship');
+  var ocNotStarted = isOC && !((team.oc_round || 0) > 0);
+  var round  = isOC
+    ? ((team.oc_round || 0) + 1)
     : (tourn.current_round || 1);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
