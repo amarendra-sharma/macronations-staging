@@ -6958,18 +6958,30 @@ async function renderDashboard() {
     // For OC tournaments — derive state from decisions table, advance if needed
     if (_dashTourn && _dashTourn.tier === 'open_championship') {
       try {
+        // Get economy first so we know what's already been simulated
+        var ocEconRows = await sbGet('economies',
+          'team_id=eq.' + currentTeamId + '&tournament_id=eq.' + _dashTeam.tournament_id + '&limit=1') || [];
+        var ocEcon = ocEconRows.length ? ocEconRows[0] : null;
+        // Inject simulated round count so ocGetTeamState knows what's already done
+        _dashTeam._ocSimulatedRound = (ocEcon && ocEcon.current_round) ? Number(ocEcon.current_round) : 0;
+
         var ocState = await ocGetTeamState(_dashTeam, _dashTourn.id);
-        ocLog('Dashboard OC state: submitted=' + ocState.highestSubmitted + ' clockRound=' + ocState.clockRound + ' toSimulate=' + ocState.roundsToSimulate);
+        ocLog('Dashboard OC state: submitted=' + ocState.highestSubmitted +
+          ' clockRound=' + ocState.clockRound +
+          ' simulated=' + ocState.simulatedRound +
+          ' toSimulate=' + ocState.roundsToSimulate);
 
         // Update in-memory team with derived values
         _dashTeam.started_at = ocState.startedAt;
-        _dashTeam.oc_round   = ocState.highestSubmitted; // what round they've completed
+        _dashTeam.oc_round   = ocState.simulatedRound; // rounds already simulated
 
-        if (ocState.roundsToSimulate > 0) {
-          // Rounds need to be simulated — run advancement then reload
+        if (ocState.roundsToSimulate > 0 && ocState.startedAt) {
+          // Advance — but set economy on team so we don't loop
+          _dashTeam._ocSimulatedRound = ocState.simulatedRound; // prevent re-advancing same rounds
           _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
-          renderDashboard();
-          return;
+          // Do NOT recurse — just continue rendering with updated state
+          // Update round display values
+          _dashTeam.oc_round = _dashTeam._ocSimulatedRound || ocState.clockRound;
         }
       } catch(ocErr) { ocLog('OC state error: ' + ocErr.message); }
     }
@@ -14240,28 +14252,34 @@ async function ocGetTeamState(team, tournId) {
   // started_at: use team.started_at if set, otherwise use timestamp of round 1 decision
   var startedAt = team.started_at || null;
   if (!startedAt && decs.length) {
-    // Find round 1 decision timestamp
     var r1 = decs.filter(function(d) { return d.round === 1; })[0];
-    if (r1 && r1.submitted_at) { startedAt = r1.submitted_at; }
-    else if (r1 && r1.created_at) { startedAt = r1.created_at; }
-    else { startedAt = decs[0].submitted_at || decs[0].created_at || null; }
+    if (r1) { startedAt = r1.submitted_at || r1.created_at || null; }
+    if (!startedAt) { startedAt = decs[0].submitted_at || decs[0].created_at || null; }
   }
 
-  // oc_round: what round should be active NOW based on time elapsed since start
-  var clockRound = startedAt ? Math.min(Math.floor((Date.now() - new Date(startedAt).getTime()) / OC_MS_PER_ROUND) + 1, OC_ROUNDS) : 0;
+  // clockRound: how many rounds have elapsed since start (time-based)
+  var clockRound = startedAt
+    ? Math.min(Math.floor((Date.now() - new Date(startedAt).getTime()) / OC_MS_PER_ROUND) + 1, OC_ROUNDS)
+    : 0;
 
-  // The active round is max(clock-based round, highest submitted + 1, 1 if started)
-  var activeRound = startedAt ? Math.max(clockRound, highestSubmitted + 1 <= OC_ROUNDS ? highestSubmitted + 1 : OC_ROUNDS) : 0;
-  // But cap at OC_ROUNDS
-  activeRound = Math.min(activeRound, OC_ROUNDS);
+  // simulatedRound: what economy.current_round says (rounds already processed)
+  // This is the key — we only simulate rounds BEYOND what's already in the economy
+  var simulatedRound = team._ocSimulatedRound || 0; // injected by caller from economy record
+
+  // Rounds to simulate = elapsed clock rounds - already simulated rounds
+  // Cap: we can only simulate up to highestSubmitted+1 (next round after last policy)
+  // Because we need a decision (or default) for each round
+  var canSimulateTo = Math.max(highestSubmitted, clockRound > highestSubmitted ? highestSubmitted + 0 : clockRound);
+  // Actually: simulate all clock-elapsed rounds, using defaults for rounds without decisions
+  var roundsToSimulate = Math.max(0, clockRound - simulatedRound);
 
   return {
     startedAt:        startedAt,
     submittedRounds:  submittedRounds,
     highestSubmitted: highestSubmitted,
     clockRound:       clockRound,
-    activeRound:      activeRound,   // round player should be on NOW
-    roundsToSimulate: clockRound - highestSubmitted,  // rounds elapsed but not yet simulated
+    simulatedRound:   simulatedRound,
+    roundsToSimulate: roundsToSimulate,
     decisions:        decs
   };
 }
@@ -14280,15 +14298,20 @@ async function ocAdvanceTeamRounds(team, tourn) {
     return team;
   }
 
-  // Try to write started_at/oc_round to DB (best-effort — schema may not have columns yet)
-  // We don't depend on this succeeding — we derive state from decisions each time
-  if (!team.started_at && state.startedAt) {
-    try {
-      await sbPatch('teams', 'id=eq.' + team.id, { started_at: state.startedAt });
-    } catch(e) { ocLog('Could not persist started_at (schema may be pending): ' + e.message); }
+  // Simulate all elapsed rounds that haven't been simulated yet
+  // Start from simulatedRound (what's in economy), not highestSubmitted (what player typed)
+  var startFrom = state.simulatedRound; // rounds already in economy
+  var simulateTo = state.clockRound;    // rounds elapsed by clock
+
+  ocLog('Simulating rounds ' + (startFrom + 1) + ' to ' + simulateTo + ' for ' + team.name);
+
+  if (startFrom >= simulateTo) {
+    ocLog('Nothing to simulate');
+    team.started_at = state.startedAt;
+    team.oc_round   = state.simulatedRound;
+    return team;
   }
 
-  // Simulate all elapsed rounds that haven't been simulated yet
   try {
     var econRows = await sbGetPublic('economies',
       'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id + '&limit=1') || [];
@@ -14298,7 +14321,7 @@ async function ocAdvanceTeamRounds(team, tourn) {
     var scoresHist = (econRecord && econRecord.scores_history) || [];
 
     var scores = null;
-    for (var r = state.highestSubmitted + 1; r <= state.clockRound; r++) {
+    for (var r = startFrom + 1; r <= simulateTo; r++) {
       // Get decision for this round if player submitted one
       var dec = state.decisions.filter(function(d) { return d.round === r; })[0];
       var policy = {};
@@ -14343,7 +14366,7 @@ async function ocAdvanceTeamRounds(team, tourn) {
     }
 
     // Write economy back
-    var newOcRound = state.clockRound;
+    var newOcRound = simulateTo;
     try {
       if (econRecord) {
         await sbPatch('economies', 'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id, {
@@ -14363,8 +14386,9 @@ async function ocAdvanceTeamRounds(team, tourn) {
     }
 
     // Update in-memory
-    team.started_at = state.startedAt;
-    team.oc_round   = newOcRound;
+    team.started_at          = state.startedAt;
+    team.oc_round            = newOcRound;
+    team._ocSimulatedRound   = newOcRound; // prevent re-simulation on next call
 
     ocCheckSendWarning(team, tourn, newOcRound);
 
