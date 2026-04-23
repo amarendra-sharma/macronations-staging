@@ -6945,10 +6945,21 @@ async function renderDashboard() {
     if (_dashTourn && _dashTourn.tier === 'open_championship' && _dashTeam.started_at) {
       try {
         var ocRoundBefore = _dashTeam.oc_round || 0;
-        _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
-        // If round advanced, reload dashboard with updated round
-        if ((_dashTeam.oc_round || 0) > ocRoundBefore) {
-          ocLog('Round advanced from ' + ocRoundBefore + ' to ' + _dashTeam.oc_round + ' — reloading dashboard');
+        var ocStartedAt   = _dashTeam.started_at;
+        var ocExpected    = ocTeamCurrentRound(ocStartedAt);
+
+        ocLog('OC check: oc_round=' + ocRoundBefore + ' expected=' + ocExpected + ' started=' + ocStartedAt);
+
+        if (ocExpected > ocRoundBefore) {
+          // Advancement needed — run it
+          _dashTeam = await ocAdvanceTeamRounds(_dashTeam, _dashTourn);
+          // Re-fetch team from DB to confirm oc_round was written
+          try {
+            var refreshed = await sbGet('teams', 'id=eq.' + _dashTeam.id + '&limit=1');
+            if (refreshed && refreshed.length) { _dashTeam = refreshed[0]; currentTeamId = _dashTeam.id; }
+          } catch(re) {}
+          ocLog('OC advancement done: oc_round now=' + (_dashTeam.oc_round || 0));
+          // Recurse to re-render with updated round
           renderDashboard();
           return;
         }
