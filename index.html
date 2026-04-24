@@ -8041,23 +8041,44 @@ async function renderDashRankings() {
     }
 
     // Build ranked list
+    var isOcTourn = (_dashTourn && _dashTourn.tier === 'open_championship');
+    // Build round map so we can detect unstarted OC teams
+    var roundMap = {};
+    if (econRows) {
+      for (var eri = 0; eri < econRows.length; eri++) {
+        roundMap[econRows[eri].team_id] = Number(econRows[eri].current_round) || 0;
+      }
+    }
     var ranked = [];
     for (var ti = 0; ti < _dashAllTeams.length; ti++) {
       var t = _dashAllTeams[ti];
-      ranked.push({ team: t, score: scoreMap[t.id] || 0 });
+      var teamRound = roundMap[t.id] || 0;
+      // For OC: skip teams that haven't played at all (round = 0 = default 702 score)
+      var hasPlayed = !isOcTourn || teamRound > 0;
+      ranked.push({ team: t, score: scoreMap[t.id] || 0, hasPlayed: hasPlayed, round: teamRound });
     }
-    ranked.sort(function(a, b) { return b.score - a.score; });
+    // Sort: played teams by score, then unstarted at bottom
+    ranked.sort(function(a, b) {
+      if (a.hasPlayed && !b.hasPlayed) { return -1; }
+      if (!a.hasPlayed && b.hasPlayed) { return 1; }
+      return b.score - a.score;
+    });
 
     var rowsHtml = '';
+    var rankNum = 0;
     for (var ri = 0; ri < ranked.length; ri++) {
       var r     = ranked[ri];
       var isMe  = (r.team.id === currentTeamId);
-      var medal = ri === 0 ? '🥇' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : (ri + 1);
+      if (r.hasPlayed) { rankNum++; }
+      var medal = !r.hasPlayed ? '—' : rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : rankNum;
+      var scoreCell = r.hasPlayed
+        ? '<span class="rank-score">' + r.score + '</span>' + (isOcTourn ? '<span style="font-size:0.7rem;color:var(--text-400);margin-left:0.375rem;">R' + r.round + '</span>' : '')
+        : '<span style="color:var(--text-400);font-size:0.8125rem;">Not started</span>';
       rowsHtml +=
         '<tr class="' + (isMe ? 'rank-my-row' : '') + '">' +
           '<td>' + medal + '</td>' +
           '<td>' + esc(r.team.name || 'Unknown') + (isMe ? ' <span class="badge badge--blue badge--no-dot" style="font-size:0.7rem;">You</span>' : '') + '</td>' +
-          '<td><span class="rank-score">' + r.score + '</span></td>' +
+          '<td>' + scoreCell + '</td>' +
         '</tr>';
     }
 
@@ -11706,10 +11727,12 @@ async function renderAdminAnalytics(el) {
         ? '<div class="card" style="margin-bottom:1.25rem;"><div class="card__header"><span class="card__title">Top Referrers</span></div>' +
           '<div class="card__body" style="padding-top:0;">' + (refHtml || '') + '</div></div>'
         : '') +
-      (countryList.length && countryList[0].country !== 'Unknown'
-        ? '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span></div>' +
+      (countryList.length > 1 || (countryList.length === 1 && countryList[0].country !== 'Unknown')
+        ? '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span>' +
+            '<span class="text-sm text-muted">geo tracked from ip-api.com</span></div>' +
           '<div class="card__body" style="padding-top:0;">' + countryHtml + '</div></div>'
-        : '');
+        : '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span></div>' +
+          '<div class="card__body"><p class="text-sm text-muted">Country data will appear after new visits — run the ALTER TABLE SQL to add geo columns to existing table.</p></div></div>');
 
   } catch(e) {
     var vEl2 = document.getElementById('analytics-visitor-section');
