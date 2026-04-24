@@ -5331,17 +5331,31 @@ function _updateFeeDisplays() {
   } catch(feeErr) { /* keep hardcoded defaults */ }
   _updateFeeDisplays();
 
-  // Track visit — fire and forget, never blocks UI
+  // Track visit with geo — fire and forget, never blocks UI
   (function() {
     try {
       var sid = sessionStorage.getItem('mn_sid');
       if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('mn_sid', sid); }
-      sbPost('page_views', {
+      var visitData = {
         session_id: sid,
         user_id:    (currentUser && currentUser.id) || null,
         referrer:   document.referrer ? document.referrer.slice(0, 500) : null,
         visited_at: new Date().toISOString()
-      }).catch(function() {});
+      };
+      // Fetch geo from ip-api (free, no key needed, non-blocking)
+      fetch('https://ip-api.com/json/?fields=country,countryCode,city,regionName')
+        .then(function(r) { return r.json(); })
+        .then(function(geo) {
+          visitData.country      = geo.country      || null;
+          visitData.country_code = geo.countryCode  || null;
+          visitData.city         = geo.city         || null;
+          visitData.region       = geo.regionName   || null;
+          sbPost('page_views', visitData).catch(function() {});
+        })
+        .catch(function() {
+          // Geo failed — still track without location
+          sbPost('page_views', visitData).catch(function() {});
+        });
     } catch(e) {}
   })();
 
@@ -7125,10 +7139,10 @@ function renderDashOverview() {
   var scores = computeScores(eco);
   // For OC teams that haven't played — don't show default economy scores
   var isOC = (tourn.tier === 'open_championship');
-  var ocNotStarted = isOC && !((team.oc_round || 0) > 0);
-  var round  = isOC
-    ? ((team.oc_round || 0) + 1)
-    : (tourn.current_round || 1);
+  // For OC: use economy current_round (simulated rounds) set by renderDashboard
+  var ocSimulated = isOC ? ((_dashEconomy && _dashEconomy.current_round) ? Number(_dashEconomy.current_round) : (team.oc_round || 0)) : 0;
+  var ocNotStarted = isOC && ocSimulated === 0;
+  var round  = isOC ? (ocSimulated + 1) : (tourn.current_round || 1);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
 
@@ -11616,6 +11630,21 @@ async function renderAdminAnalytics(el) {
     var refList = Object.keys(refMap).map(function(k) { return { ref: k, count: refMap[k] }; })
       .sort(function(a, b) { return b.count - a.count; });
 
+    // Countries
+    var countryMap = {};
+    for (var ci2 = 0; ci2 < allViews.length; ci2++) {
+      var co = allViews[ci2].country || 'Unknown';
+      countryMap[co] = (countryMap[co] || 0) + 1;
+    }
+    var countryList = Object.keys(countryMap).map(function(k) { return { country: k, count: countryMap[k] }; })
+      .sort(function(a, b) { return b.count - a.count; });
+    var countryHtml = countryList.slice(0, 10).map(function(r) {
+      return '<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;">' +
+        '<span style="color:var(--text-700);">' + esc(r.country) + '</span>' +
+        '<span class="text-mono">' + r.count + '</span>' +
+      '</div>';
+    }).join('');
+
     // 14-day trend
     var dayMap = {};
     for (var di = 0; di < allViews.length; di++) {
@@ -11674,8 +11703,12 @@ async function renderAdminAnalytics(el) {
         '</div>' +
       '</div>' +
       (refList.length
-        ? '<div class="card"><div class="card__header"><span class="card__title">Top Referrers</span></div>' +
+        ? '<div class="card" style="margin-bottom:1.25rem;"><div class="card__header"><span class="card__title">Top Referrers</span></div>' +
           '<div class="card__body" style="padding-top:0;">' + (refHtml || '') + '</div></div>'
+        : '') +
+      (countryList.length && countryList[0].country !== 'Unknown'
+        ? '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span></div>' +
+          '<div class="card__body" style="padding-top:0;">' + countryHtml + '</div></div>'
         : '');
 
   } catch(e) {
@@ -11683,7 +11716,7 @@ async function renderAdminAnalytics(el) {
     if (vEl2) {
       vEl2.innerHTML = '<div class="dash-alert dash-alert--info"><div class="dash-alert__icon">i</div>' +
         '<div class="dash-alert__body"><div class="dash-alert__title">Visitor tracking table not found</div>' +
-        'Run this SQL in Supabase to enable visitor analytics:<br><code style="font-size:0.75rem;">CREATE TABLE page_views (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, session_id text, user_id text, referrer text, visited_at timestamptz DEFAULT now()); ALTER TABLE page_views ENABLE ROW LEVEL SECURITY; CREATE POLICY "insert_anon" ON page_views FOR INSERT WITH CHECK (true);</code>' +
+        'Run this SQL in Supabase to enable visitor analytics:<br><code style="font-size:0.75rem;">CREATE TABLE page_views (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, session_id text, user_id text, referrer text, country text, country_code text, city text, region text, visited_at timestamptz DEFAULT now()); ALTER TABLE page_views ENABLE ROW LEVEL SECURITY; CREATE POLICY "insert_anon" ON page_views FOR INSERT WITH CHECK (true);</code>' +
         '</div></div>';
     }
   }
@@ -14309,8 +14342,24 @@ async function ocAdvanceTeamRounds(team, tourn) {
         ocLog('  Round ' + r + ': no decision found, using defaults');
       }
 
-      // Crisis handling
-      var crisisRounds = (team.oc_crisis_rounds && Array.isArray(team.oc_crisis_rounds)) ? team.oc_crisis_rounds : [];
+      // Crisis handling — derive crisis rounds deterministically from team.id
+      // Same seed = same rounds every time = no DB column needed
+      var crisisRounds = team.oc_crisis_rounds || null;
+      if (!crisisRounds || !crisisRounds.length) {
+        // Seed random from team id characters for deterministic result
+        var seed = 0;
+        var seedStr = team.id || '';
+        for (var si = 0; si < seedStr.length; si++) { seed = (seed * 31 + seedStr.charCodeAt(si)) & 0xffffffff; }
+        function seededRand(s, n) { return ((s * 1664525 + 1013904223) & 0x7fffffff) % n; }
+        var s1 = Math.abs(seed); var s2 = Math.abs(s1 * 6364136223846793005 | 0); var s3 = Math.abs(s2 * 6364136223846793005 | 0);
+        crisisRounds = [
+          seededRand(s1, 3) + 1,          // round 1-3
+          seededRand(s2, 3) + 4,          // round 4-6
+          seededRand(s3, 3) + 7           // round 7-9
+        ];
+        team.oc_crisis_rounds = crisisRounds;
+        ocLog('Crisis rounds for team ' + team.id + ': ' + crisisRounds.join(', '));
+      }
       var activeCrises = [];
       if (crisisRounds.indexOf(r) !== -1) {
         var crisisRows = [];
@@ -14736,9 +14785,10 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
   var econRecord = econRows.length ? econRows[0] : null;
   var state    = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
   var scores   = typeof computeScores === 'function' ? computeScores(state) : { total: 0, gdp: 0, stability: 0, equality: 0, sustainability: 0, innovation: 0 };
-  var ocRound  = team.oc_round || 0;
+  var ocRound  = team.oc_round || team._ocSimulatedRound || 0;
   var feePaid  = team.fee_paid;
-  var started  = !!team.started_at && ocRound > 0;  // only "started" if actually played a round
+  // "started" means they have actually played at least one round (economy processed)
+  var started  = ocRound > 0;
   var year     = new Date().getFullYear();
   var eligible = ocIsEligible(team.started_at);
   var isComplete = ocRound >= OC_ROUNDS;
