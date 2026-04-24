@@ -5354,14 +5354,14 @@ function _updateFeeDisplays() {
           body: JSON.stringify(data)
         }).catch(function() {});
       }
-      // Fetch geo from ip-api (free, no key needed, non-blocking)
-      fetch('https://ip-api.com/json/?fields=country,countryCode,city,regionName')
+      // Geo lookup — ipapi.co supports HTTPS on free tier
+      fetch('https://ipapi.co/json/')
         .then(function(r) { return r.json(); })
         .then(function(geo) {
-          visitData.country      = geo.country     || null;
-          visitData.country_code = geo.countryCode || null;
-          visitData.city         = geo.city        || null;
-          visitData.region       = geo.regionName  || null;
+          visitData.country      = geo.country_name || null;
+          visitData.country_code = geo.country_code || null;
+          visitData.city         = geo.city         || null;
+          visitData.region       = geo.region       || null;
           _trackVisit(visitData);
         })
         .catch(function() {
@@ -11740,7 +11740,7 @@ async function renderAdminAnalytics(el) {
         : '') +
       (countryList.length > 1 || (countryList.length === 1 && countryList[0].country !== 'Unknown')
         ? '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span>' +
-            '<span class="text-sm text-muted">geo tracked from ip-api.com</span></div>' +
+            '<span class="text-sm text-muted">geo tracked via ipapi.co</span></div>' +
           '<div class="card__body" style="padding-top:0;">' + countryHtml + '</div></div>'
         : '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span></div>' +
           '<div class="card__body"><p class="text-sm text-muted">Country data will appear after new visits — run the ALTER TABLE SQL to add geo columns to existing table.</p></div></div>');
