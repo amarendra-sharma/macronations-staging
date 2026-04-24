@@ -5332,6 +5332,7 @@ function _updateFeeDisplays() {
   _updateFeeDisplays();
 
   // Track visit with geo — fire and forget, never blocks UI
+  // Uses raw fetch with anon key so anonymous visitors are tracked too
   (function() {
     try {
       var sid = sessionStorage.getItem('mn_sid');
@@ -5342,19 +5343,29 @@ function _updateFeeDisplays() {
         referrer:   document.referrer ? document.referrer.slice(0, 500) : null,
         visited_at: new Date().toISOString()
       };
+      function _trackVisit(data) {
+        return fetch(SUPA_URL + '/rest/v1/page_views', {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'apikey':        SUPA_ANON,
+            'Authorization': 'Bearer ' + SUPA_ANON   // anon key — works without login
+          },
+          body: JSON.stringify(data)
+        }).catch(function() {});
+      }
       // Fetch geo from ip-api (free, no key needed, non-blocking)
       fetch('https://ip-api.com/json/?fields=country,countryCode,city,regionName')
         .then(function(r) { return r.json(); })
         .then(function(geo) {
-          visitData.country      = geo.country      || null;
-          visitData.country_code = geo.countryCode  || null;
-          visitData.city         = geo.city         || null;
-          visitData.region       = geo.regionName   || null;
-          sbPost('page_views', visitData).catch(function() {});
+          visitData.country      = geo.country     || null;
+          visitData.country_code = geo.countryCode || null;
+          visitData.city         = geo.city        || null;
+          visitData.region       = geo.regionName  || null;
+          _trackVisit(visitData);
         })
         .catch(function() {
-          // Geo failed — still track without location
-          sbPost('page_views', visitData).catch(function() {});
+          _trackVisit(visitData); // geo failed — still track without location
         });
     } catch(e) {}
   })();
