@@ -15003,6 +15003,23 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
   var state    = (econRecord && econRecord.current) ? econRecord.current : defaultEconomy();
   var scores   = typeof computeScores === 'function' ? computeScores(state) : { total: 0, gdp: 0, stability: 0, equality: 0, sustainability: 0, innovation: 0 };
   var ocRound  = team.oc_round || team._ocSimulatedRound || 0;
+
+  // Fetch submitted decisions to know which rounds have been submitted (may be ahead of simulation)
+  var submittedRoundSet = {};
+  try {
+    var submittedDecs = await sbGet('decisions',
+      'team_id=eq.' + team.id + '&tournament_id=eq.' + tourn.id +
+      '&is_final=eq.true&select=round&limit=20') || [];
+    for (var sd = 0; sd < submittedDecs.length; sd++) {
+      submittedRoundSet[submittedDecs[sd].round] = true;
+    }
+  } catch(e) {}
+  var highestSubmitted = Object.keys(submittedRoundSet).length
+    ? Math.max.apply(null, Object.keys(submittedRoundSet).map(Number))
+    : ocRound;
+
+  // Display round = highest between simulated and submitted (player may be ahead of clock)
+  var displayRound = Math.max(ocRound, highestSubmitted);
   var feePaid  = team.fee_paid;
   // "started" means they have actually played at least one round (economy processed)
   var started  = ocRound > 0;
@@ -15040,15 +15057,25 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
     for (var rr = 1; rr <= OC_ROUNDS; rr++) {
       var rOpens  = new Date(startMs2 + (rr - 1) * OC_MS_PER_ROUND);
       var rCloses = new Date(startMs2 + rr * OC_MS_PER_ROUND);
-      var isPast2 = nowMs > rCloses.getTime();
-      var isCurr2 = !isPast2 && nowMs >= rOpens.getTime();
-      var rowStyle = isCurr2 ? 'background:var(--blue-light);font-weight:600;' : isPast2 ? 'color:var(--text-400);' : '';
-      var icon2    = isPast2 ? '✓ ' : isCurr2 ? '▶ ' : '';
+      var isPast2      = nowMs > rCloses.getTime();
+      var isCurr2      = !isPast2 && nowMs >= rOpens.getTime();
+      var isSubmitted  = !!submittedRoundSet[rr];
+      var isFutureSubm = isSubmitted && !isPast2 && !isCurr2; // submitted early (ahead of clock)
+      var rowStyle = isCurr2
+        ? 'background:var(--blue-light);font-weight:600;'
+        : isPast2 ? 'color:var(--text-400);'
+        : isFutureSubm ? 'background:rgba(52,211,153,0.08);' : '';
+      var icon2 = isPast2
+        ? '✓ '
+        : isCurr2
+          ? (isSubmitted ? '✓ ' : '▶ ')
+          : isFutureSubm ? '📋 ' : '';
       var crisisTag = team.oc_crisis_rounds && team.oc_crisis_rounds.indexOf(rr) !== -1 ? ' ⚡' : '';
+      var statusNote = isFutureSubm ? ' <span style="font-size:0.7rem;color:var(--success);"> submitted early</span>' : '';
       rows +=
         '<div style="display:flex;justify-content:space-between;align-items:center;' +
               'padding:0.35rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;' + rowStyle + '">' +
-          '<span style="min-width:80px;flex-shrink:0;">' + icon2 + 'Round ' + rr + crisisTag + '</span>' +
+          '<span style="min-width:110px;flex-shrink:0;">' + icon2 + 'Round ' + rr + crisisTag + statusNote + '</span>' +
           '<span style="color:var(--text-500);font-size:0.75rem;text-align:right;">' +
             rOpens.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' +
             rOpens.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' }) +
@@ -15062,7 +15089,7 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
       '<div class="card" style="margin-bottom:1.5rem;">' +
         '<div class="card__header">' +
           '<span class="card__title">Your Round Schedule</span>' +
-          '<span style="font-size:0.75rem;color:var(--text-400);">Your local timezone · ✓ complete · ▶ current · ⚡ crisis</span>' +
+          '<span style="font-size:0.75rem;color:var(--text-400);">Your local timezone · ✓ complete · ▶ current · 📋 submitted early · ⚡ crisis</span>' +
         '</div>' +
         '<div class="card__body" style="padding-top:0;">' + rows + '</div>' +
       '</div>';
@@ -15116,7 +15143,7 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
       '</div>' +
       '<div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">' +
         (feePaid ? '<span class="badge badge--green badge--no-dot">Fee Paid</span>' : '<span class="badge badge--red badge--no-dot">Fee Unpaid</span>') +
-        (isComplete ? '<span class="badge badge--gold badge--no-dot">Complete</span>' : started ? '<span class="badge badge--green badge--no-dot">Round ' + ocRound + '/' + OC_ROUNDS + '</span>' : '<span class="badge badge--blue badge--no-dot">Not Started</span>') +
+        (isComplete ? '<span class="badge badge--gold badge--no-dot">Complete</span>' : started ? '<span class="badge badge--green badge--no-dot">Round ' + displayRound + '/' + OC_ROUNDS + '</span>' : '<span class="badge badge--blue badge--no-dot">Not Started</span>') +
         (!eligible && started ? '<span class="badge badge--red badge--no-dot">Ineligible for playoffs</span>' : '') +
         (countdownHtml ? countdownHtml : '') +
       '</div>' +
@@ -15178,7 +15205,7 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
     // Economy snapshot (if started)
     (started
       ? '<div class="card" style="margin-bottom:1.5rem;">' +
-          '<div class="card__header"><span class="card__title">Economy — Round ' + ocRound + '</span></div>' +
+          '<div class="card__header"><span class="card__title">Economy — Round ' + displayRound + '</span></div>' +
           '<div class="card__body">' +
             '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">' +
               _ocStatBox('GDP Growth', (state.gdp_growth >= 0 ? '+' : '') + (state.gdp_growth || 0) + '%') +
