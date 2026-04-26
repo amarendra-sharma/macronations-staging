@@ -3165,7 +3165,7 @@ h1, h2, h3, h4, h5 {
           </h1>
           <p class="hero__sub">
             MacroNations is the premier macroeconomic policy simulation tournament
-            for university teams and open competitors worldwide. Compete across 5 pillars, manage crises, and
+            for university teams, independent players, and open competitors worldwide. Compete across 5 pillars, manage crises, and
             prove your team has what it takes to run a country.
           </p>
           <div class="hero__actions">
@@ -3297,7 +3297,7 @@ h1, h2, h3, h4, h5 {
         <div class="section__header">
           <span class="section__eyebrow">Play Your Way</span>
           <h2 class="section__title" id="tiers-heading">Free for every classroom. Competitive for the world.</h2>
-          <p class="section__desc">Your professor sets up a class tournament at no cost. Teams that want to compete beyond their university can elect into the MacroNations Global Championship.</p>
+          <p class="section__desc">Your professor sets up a class tournament at no cost. Teams can also compete beyond their university can elect into the MacroNations Global Championship.</p>
         </div>
         <div class="lp-tiers-grid">
           <div class="lp-tier">
@@ -3425,7 +3425,7 @@ h1, h2, h3, h4, h5 {
               <div class="step__num" aria-hidden="true">1</div>
               <div>
                 <h3 class="step__title">Register Your Team</h3>
-                <p class="step__desc">Form a team of up to 5 players using any valid email. No university affiliation required for the Open Championship. Professors selecting professor access need a .edu address.</p>
+                <p class="step__desc">Form a team of up to 5 players using any valid email. No affiliation required for the Open Championship. Professors selecting professor access need a .edu address.</p>
               </div>
             </div>
             <div class="step">
@@ -4093,7 +4093,7 @@ h1, h2, h3, h4, h5 {
         <span class="wordmark__text"><em>Macro</em>Nations</span>
       </a>
       <p class="footer__brand-desc">
-        The premier macroeconomic policy simulation tournament — open to university teams and independent players worldwide.
+        The premier macroeconomic policy simulation tournament — open to university teams, independent competitors, and players worldwide — no affiliation required.
       </p>
     </div>
 
@@ -7436,11 +7436,12 @@ function renderDashPolicy() {
       '<div class="card__body">' +
         '<div class="policy-sliders-grid" id="policy-sliders-grid">' + slidersHtml + '</div>' +
         '<div class="form-field">' +
-          '<label class="form-label" for="decision-rationale">Decision Rationale <span style="color:var(--text-400);font-weight:400;">(optional — max 500 chars)</span></label>' +
-          '<textarea id="decision-rationale" class="form-textarea" rows="3" maxlength="500" ' +
-            'placeholder="Briefly explain your policy reasoning…">' +
+          '<label class="form-label" for="decision-rationale">Decision Rationale <span style="color:var(--text-400);font-weight:400;">(optional — up to 5,000 characters)</span></label>' +
+          '<textarea id="decision-rationale" class="form-textarea" rows="8" maxlength="5000" ' +
+            'placeholder="Explain your policy reasoning. What economic theory guides your choices? What trade-offs did you weigh? How do you expect your economy to respond?">' +
             esc((_dashDecision && _dashDecision.policy && _dashDecision.policy.rationale) ? _dashDecision.policy.rationale : '') +
           '</textarea>' +
+          '<div id="rationale-char-count" style="font-size:0.75rem;color:var(--text-400);text-align:right;margin-top:0.25rem;"></div>' +
         '</div>' +
       '</div>' +
       '<div class="card__footer" style="display:flex;justify-content:flex-end;gap:0.75rem;flex-wrap:wrap;">' +
@@ -7451,6 +7452,20 @@ function renderDashPolicy() {
 
   // Wire sliders
   _wirePolicySliders();
+
+  // Wire live character counter on rationale
+  setTimeout(function() {
+    var ta  = document.getElementById('decision-rationale');
+    var ctr = document.getElementById('rationale-char-count');
+    if (!ta || !ctr) { return; }
+    function _updateRatCount() {
+      var len = ta.value.length;
+      ctr.textContent = len > 0 ? len + ' / 5,000 characters' : '';
+      ctr.style.color = len > 4800 ? 'var(--warning)' : 'var(--text-400)';
+    }
+    ta.addEventListener('input', _updateRatCount);
+    _updateRatCount();
+  }, 50);
 }
 
 function _leverColorHex(name) {
@@ -10751,34 +10766,58 @@ function _scoreRationaleLocal(rationale, policy, round) {
     return { concept: 0, tradeoff: 0, consistency: 0, comment: 'No rationale submitted.' };
   }
 
-  var text = rationale.toLowerCase();
+  var text  = rationale.toLowerCase();
   var words = text.split(/\s+/).length;
+  var chars = rationale.trim().length;
+  var isLong = chars > 300; // substantial writing deserves more generous scoring
 
   // 1. Economic concept score (0-10)
   var conceptHits = 0;
   for (var i = 0; i < ECON_CONCEPTS.length; i++) {
     if (text.indexOf(ECON_CONCEPTS[i]) !== -1) { conceptHits++; }
   }
-  var conceptScore = Math.min(10, words < 10 ? 1 : conceptHits >= 4 ? 10 : conceptHits >= 3 ? 8 : conceptHits >= 2 ? 6 : conceptHits === 1 ? 4 : 2);
+  // Additional markers for sophisticated analysis
+  var analyticalWords = ['therefore','thus','consequently','however','nevertheless','furthermore',
+    'moreover','specifically','empirically','theoretically','historically','assuming','implies',
+    'suggests','indicates','demonstrates','estimates','coefficient','percentage','basis points',
+    'multiplier','elasticity','marginal','aggregate','equilibrium','mechanism','transmission'];
+  var analyticalHits = 0;
+  for (var ai = 0; ai < analyticalWords.length; ai++) {
+    if (text.indexOf(analyticalWords[ai]) !== -1) { analyticalHits++; }
+  }
+  // Quantitative reasoning — numbers in context
+  var hasNumbers = /\d+(\.\d+)?%|\d+ percent|\$\d+|\d+ basis/.test(text);
 
-  // 2. Trade-off acknowledgment score (0-10)
+  var conceptBase = words < 10 ? 1 : conceptHits >= 5 ? 10 : conceptHits >= 4 ? 9 : conceptHits >= 3 ? 7 : conceptHits >= 2 ? 5 : conceptHits === 1 ? 3 : 1;
+  // Boost for long-form analytical writing
+  if (isLong) {
+    if (analyticalHits >= 3) { conceptBase = Math.min(10, conceptBase + 2); }
+    else if (analyticalHits >= 1) { conceptBase = Math.min(10, conceptBase + 1); }
+    if (hasNumbers) { conceptBase = Math.min(10, conceptBase + 1); }
+  }
+  var conceptScore = conceptBase;
+
+  // 2. Trade-off score (0-10)
   var tradeoffHits = 0;
   for (var j = 0; j < TRADEOFF_WORDS.length; j++) {
     if (text.indexOf(TRADEOFF_WORDS[j]) !== -1) { tradeoffHits++; }
   }
-  var tradeoffScore = Math.min(10, words < 10 ? 1 : tradeoffHits >= 3 ? 10 : tradeoffHits >= 2 ? 7 : tradeoffHits === 1 ? 5 : 2);
+  var tradeoffBase = words < 10 ? 1 : tradeoffHits >= 4 ? 10 : tradeoffHits >= 3 ? 8 : tradeoffHits >= 2 ? 6 : tradeoffHits === 1 ? 4 : 2;
+  // Long submissions get credit for structural argumentation even without explicit trade-off words
+  if (isLong && words > 100) { tradeoffBase = Math.min(10, tradeoffBase + 1); }
+  var tradeoffScore = tradeoffBase;
 
-  // 3. Internal consistency (0-10) — checks if levers mentioned match policy
-  var consistencyScore = 5; // default neutral
+  // 3. Consistency score (0-10) — do stated reasons match levers chosen?
+  var consistencyScore = 5;
   if (policy) {
     var leverMentions = 0;
     var leverChecks = [
-      { key: 'interest_rate_target', words: ['interest rate','rate','monetary','central bank'] },
-      { key: 'gov_spending_pct',     words: ['spending','expenditure','fiscal','stimulus','austerity'] },
-      { key: 'tax_rate',             words: ['tax','revenue','laffer'] },
-      { key: 'trade_openness',       words: ['trade','tariff','import','export','open'] },
-      { key: 'rd_investment',        words: ['r&d','research','innovation','technology'] },
-      { key: 'green_energy',         words: ['green','energy','sustainable','climate','environment'] }
+      { key: 'interest_rate_target', words: ['interest rate','rate','monetary','central bank','borrowing','credit'] },
+      { key: 'gov_spending_pct',     words: ['spending','expenditure','fiscal','stimulus','austerity','government'] },
+      { key: 'tax_rate',             words: ['tax','revenue','laffer','burden','rate'] },
+      { key: 'trade_openness',       words: ['trade','tariff','import','export','open','protectionism'] },
+      { key: 'rd_investment',        words: ['r&d','research','innovation','technology','development'] },
+      { key: 'green_energy',         words: ['green','energy','sustainable','climate','environment','renewable'] }
     ];
     for (var k = 0; k < leverChecks.length; k++) {
       var lc = leverChecks[k];
@@ -10788,23 +10827,28 @@ function _scoreRationaleLocal(rationale, policy, round) {
         }
       }
     }
-    consistencyScore = Math.min(10, words < 10 ? 2 : leverMentions >= 3 ? 10 : leverMentions >= 2 ? 8 : leverMentions === 1 ? 5 : 3);
+    consistencyScore = Math.min(10, words < 10 ? 2 : leverMentions >= 4 ? 10 : leverMentions >= 3 ? 8 : leverMentions >= 2 ? 6 : leverMentions === 1 ? 5 : 3);
+    // Long submissions more likely to discuss multiple levers
+    if (isLong && leverMentions >= 2) { consistencyScore = Math.min(10, consistencyScore + 1); }
   }
 
-  // Generate comment
+  // Generate feedback comment scaled to submission length
   var comment = '';
-  if (words < 10)          { comment = 'Very brief — more detail would strengthen the analysis.'; }
-  else if (conceptHits === 0) { comment = 'Good effort — try referencing specific economic concepts (e.g. Phillips Curve, multiplier effect).'; }
-  else if (tradeoffHits === 0){ comment = 'Solid reasoning — consider acknowledging the trade-offs or risks of this policy mix.'; }
-  else if (leverMentions === 0){ comment = 'Good economic reasoning — try linking your rationale more directly to the specific levers you adjusted.'; }
-  else                     { comment = 'Strong rationale with economic grounding and policy reasoning.'; }
+  if (words < 10) {
+    comment = 'Very brief — more detail would strengthen the analysis.';
+  } else if (isLong && conceptHits >= 3 && tradeoffHits >= 2) {
+    comment = 'Strong analytical rationale with economic grounding, trade-off awareness, and clear policy reasoning.';
+  } else if (conceptHits === 0) {
+    comment = 'Good effort — try referencing specific economic concepts (e.g. aggregate demand, Phillips Curve, multiplier effect).';
+  } else if (tradeoffHits === 0) {
+    comment = 'Solid reasoning — consider acknowledging the costs or risks of this policy mix.';
+  } else if (isLong) {
+    comment = 'Well-developed rationale — economic concepts and trade-offs are present.';
+  } else {
+    comment = 'Good reasoning — consider expanding on the mechanisms and expected outcomes.';
+  }
 
-  return {
-    concept:     conceptScore,
-    tradeoff:    tradeoffScore,
-    consistency: consistencyScore,
-    comment:     comment
-  };
+  return { concept: conceptScore, tradeoff: tradeoffScore, consistency: consistencyScore, comment: comment };
 }
 
 async function _scoreRationale(rationale, policy, round) {
@@ -10812,9 +10856,131 @@ async function _scoreRationale(rationale, policy, round) {
   return _scoreRationaleLocal(rationale, policy, round);
 }
 
+async function _scoreRationaleAI(rationale, policy, round) {
+  // Build lever context for Claude
+  var leverCtx = [];
+  if (policy) {
+    var leverLabels = {
+      interest_rate_target: 'Interest Rate', gov_spending_pct: 'Gov Spending %',
+      tax_rate: 'Tax Rate %', trade_openness: 'Trade Openness (1-10)',
+      rd_investment: 'R&D Investment %', green_energy: 'Green Energy %'
+    };
+    var keys = Object.keys(leverLabels);
+    for (var li = 0; li < keys.length; li++) {
+      if (policy[keys[li]] !== undefined) {
+        leverCtx.push(leverLabels[keys[li]] + ': ' + policy[keys[li]]);
+      }
+    }
+  }
+
+  var prompt =
+    'You are grading a university student\'s macroeconomic policy rationale for Round ' + round + ' of a simulation tournament.\n\n' +
+    'Their policy choices:\n' + (leverCtx.join(', ') || 'Default policy') + '\n\n' +
+    'Their written rationale:\n"""\n' + rationale + '\n"""\n\n' +
+    'Score this rationale on three dimensions, each 0-10:\n\n' +
+    '1. ECONOMIC CONCEPTS (0-10): Does it reference real economic theory or concepts? ' +
+       '(e.g. Phillips Curve, multiplier effect, crowding out, aggregate demand, monetary transmission, comparative advantage, output gap, Laffer Curve, liquidity trap, etc.) ' +
+       'Higher scores for precise usage and multiple distinct concepts. 0 for purely descriptive ("we raised spending").\n\n' +
+    '2. TRADE-OFF ACKNOWLEDGMENT (0-10): Does it acknowledge costs, risks, or tensions in the policy? ' +
+       'Does it show awareness that policy choices involve trade-offs (e.g. "while this reduces inflation, unemployment may rise")? ' +
+       'Higher scores for nuanced recognition of competing objectives.\n\n' +
+    '3. INTERNAL CONSISTENCY (0-10): Are the stated reasons logically aligned with the actual lever values chosen? ' +
+       'If they say "we cut rates to stimulate growth" but raised rates, that\'s inconsistent. ' +
+       'Higher scores when the argument matches what they actually did.\n\n' +
+    'If the rationale is under 10 words or purely descriptive, score all dimensions 0-2.\n' +
+    'For long, analytical submissions, reward depth of reasoning not just keyword presence.\n\n' +
+    'Respond ONLY with valid JSON — no markdown, no explanation, nothing else:\n' +
+    '{"concept":7,"tradeoff":6,"consistency":8,"comment":"One sentence of constructive feedback for the student."}';
+
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 150,
+      messages:   [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!resp.ok) { throw new Error('API error ' + resp.status); }
+  var data = await resp.json();
+  var text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '{}';
+  var parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+  return {
+    concept:     Math.min(10, Math.max(0, Number(parsed.concept)     || 0)),
+    tradeoff:    Math.min(10, Math.max(0, Number(parsed.tradeoff)    || 0)),
+    consistency: Math.min(10, Math.max(0, Number(parsed.consistency) || 0)),
+    comment:     String(parsed.comment || '')
+  };
+}
+
 async function doGenerateGrades(tournId) {
   var tourn = _getTournById(tournId);
   if (!tourn) { flash('Tournament not found.', 'error'); return; }
+
+  // ── Step 1: Ask professor to choose scoring method ────────────────
+  var totalRoundsEst = tourn.rounds_total || tourn.current_round || 5;
+  var teamCountEst   = _adminTeams.filter(function(t) { return t.tournament_id === tournId; }).length || '?';
+  var estSeconds     = typeof teamCountEst === 'number' ? Math.ceil(teamCountEst * totalRoundsEst * 1.5) : '?';
+  var estLabel       = estSeconds !== '?' ? (estSeconds < 60 ? estSeconds + 's' : Math.ceil(estSeconds / 60) + ' min') : 'varies';
+
+  var chosen = await new Promise(function(resolve) {
+    var choiceModal = document.createElement('div');
+    choiceModal.className = 'modal-backdrop open';
+    choiceModal.id = 'grade-choice-modal';
+    choiceModal.innerHTML =
+      '<div class="modal" style="max-width:560px;">' +
+        '<div class="modal__header">' +
+          '<div><h2 class="modal__title">Generate Grade Report</h2>' +
+               '<p class="modal__subtitle">' + esc(tourn.name || '') + ' · ' + teamCountEst + ' teams · ' + totalRoundsEst + ' rounds</p></div>' +
+          '<button class="modal__close" onclick="document.getElementById(\'grade-choice-modal\').remove();window.__gradeResolve&&window.__gradeResolve(null);">&#x2715;</button>' +
+        '</div>' +
+        '<div class="modal__body">' +
+          '<p style="margin-bottom:1.25rem;color:var(--text-600);">How should student rationales be scored?</p>' +
+          '<div style="display:grid;gap:0.875rem;">' +
+
+            '<div class="card" style="cursor:pointer;border:2px solid var(--border);transition:border-color 0.15s;" ' +
+                 'id="choice-keyword" onclick="window.__gradeResolve&&window.__gradeResolve(\'keyword\')" ' +
+                 'onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+              '<div class="card__body" style="padding:1rem 1.25rem;">' +
+                '<div style="display:flex;align-items:center;gap:0.875rem;">' +
+                  '<div style="font-size:1.75rem;">⚡</div>' +
+                  '<div>' +
+                    '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.2rem;">Keyword Rubric — Instant</div>' +
+                    '<div style="font-size:0.8125rem;color:var(--text-500);">Scores based on economic concept vocabulary, trade-off language, and lever consistency. Works offline. Best for quick grading.</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="card" style="cursor:pointer;border:2px solid var(--border);transition:border-color 0.15s;" ' +
+                 'id="choice-ai" onclick="window.__gradeResolve&&window.__gradeResolve(\'ai\')" ' +
+                 'onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+              '<div class="card__body" style="padding:1rem 1.25rem;">' +
+                '<div style="display:flex;align-items:center;gap:0.875rem;">' +
+                  '<div style="font-size:1.75rem;">🤖</div>' +
+                  '<div>' +
+                    '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.2rem;">AI Scoring — ~' + estLabel + '</div>' +
+                    '<div style="font-size:0.8125rem;color:var(--text-500);">Uses Claude to read each rationale and score analytical depth, argument quality, and economic reasoning. Best for long-form submissions. Requires Claude.ai session.</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+          '</div>' +
+          '<p style="font-size:0.75rem;color:var(--text-400);margin-top:1rem;">Both methods produce the same CSV format. AI scoring replaces the keyword score column with Claude\'s assessment.</p>' +
+        '</div>' +
+      '</div>';
+    window.__gradeResolve = resolve;
+    document.body.appendChild(choiceModal);
+  });
+
+  var choiceModal = document.getElementById('grade-choice-modal');
+  if (choiceModal) { choiceModal.remove(); }
+  window.__gradeResolve = null;
+  if (!chosen) { return; } // user cancelled
+
+  var useAI = (chosen === 'ai');
 
   // Show progress modal
   var modal = document.createElement('div');
@@ -10824,7 +10990,7 @@ async function doGenerateGrades(tournId) {
     '<div class="modal" style="max-width:520px;">' +
       '<div class="modal__header">' +
         '<div><h2 class="modal__title">Generating Grade Report</h2>' +
-        '<p class="modal__subtitle">' + esc(tourn.name || '') + '</p></div>' +
+        '<p class="modal__subtitle">' + esc(tourn.name || '') + ' · ' + (useAI ? '🤖 AI Scoring' : '⚡ Keyword Rubric') + '</p></div>' +
       '</div>' +
       '<div class="modal__body">' +
         '<div id="grade-progress-bar" style="height:6px;background:var(--bg-subtle);border-radius:3px;margin-bottom:1rem;">' +
@@ -10898,21 +11064,25 @@ async function doGenerateGrades(tournId) {
     var rankMap = {};
     for (var ri = 0; ri < teamScores.length; ri++) { rankMap[teamScores[ri].id] = ri + 1; }
 
-    // Score rationales with AI
-    setProgress(40, 'Scoring rationales (' + teams.length + ' teams x ' + totalRounds + ' rounds)...');
+    // Score rationales
+    var scoringLabel = useAI
+      ? 'AI scoring rationales — ' + teams.length + ' teams × ' + totalRounds + ' rounds (~' + estLabel + ')...'
+      : 'Scoring rationales (' + teams.length + ' teams x ' + totalRounds + ' rounds)...';
+    setProgress(40, scoringLabel);
 
-    var gradeRows = []; // will hold per-team grade data
+    var gradeRows = [];
     var processed = 0;
+    var aiFailed  = false; // track if AI failed so we can note it in CSV
 
     for (var ti2 = 0; ti2 < teams.length; ti2++) {
-      var team2      = teams[ti2];
-      var eco2       = ecoMap[team2.id];
+      var team2       = teams[ti2];
+      var eco2        = ecoMap[team2.id];
       var finalState2 = (eco2 && eco2.current) ? eco2.current : null;
       var sc2 = finalState2 ? computeScores(finalState2) : { total: 0, gdp: 0, stability: 0, equality: 0, sustainability: 0, innovation: 0 };
-      var teamDecs   = decMap[team2.id] || {};
+      var teamDecs    = decMap[team2.id] || {};
       var roundsSubmitted = Object.keys(teamDecs).length;
-      var rank2      = rankMap[team2.id] || teams.length;
-      var rankPct    = rank2 / teams.length;
+      var rank2       = rankMap[team2.id] || teams.length;
+      var rankPct     = rank2 / teams.length;
 
       // Score each round's rationale
       var rationaleScores  = [];
@@ -10924,8 +11094,17 @@ async function doGenerateGrades(tournId) {
         var scored;
         if (rat.trim().length < 5) {
           scored = { concept: 0, tradeoff: 0, consistency: 0, comment: 'No rationale submitted.' };
+        } else if (useAI) {
+          try {
+            scored = await _scoreRationaleAI(rat, pol, r);
+          } catch(aiErr) {
+            // AI failed — fall back to keyword for this rationale
+            scored = _scoreRationaleLocal(rat, pol, r);
+            scored.comment = '[AI unavailable — keyword scored] ' + scored.comment;
+            aiFailed = true;
+          }
         } else {
-          scored = await _scoreRationale(rat, pol, r);
+          scored = _scoreRationaleLocal(rat, pol, r);
         }
         var avgScore = Math.round((scored.concept + scored.tradeoff + scored.consistency) / 3 * 10) / 10;
         rationaleScores.push(avgScore);
@@ -10980,7 +11159,7 @@ async function doGenerateGrades(tournId) {
     gradeRows.sort(function(a, b) { return b.finalGrade - a.finalGrade; });
 
     setProgress(97, 'Building CSV...');
-    _buildGradeCSV(gradeRows, tourn);
+    _buildGradeCSV(gradeRows, tourn, useAI, aiFailed);
 
     setProgress(100, 'Done!');
     setTimeout(function() {
@@ -10995,9 +11174,12 @@ async function doGenerateGrades(tournId) {
   }
 }
 
-function _buildGradeCSV(gradeRows, tourn) {
-  var tournName = (tourn && tourn.name) ? tourn.name : 'Tournament';
-  var date      = new Date().toISOString().slice(0, 10);
+function _buildGradeCSV(gradeRows, tourn, useAI, aiFailed) {
+  var tournName    = (tourn && tourn.name) ? tourn.name : 'Tournament';
+  var date         = new Date().toISOString().slice(0, 10);
+  var scoringMethod = useAI
+    ? (aiFailed ? 'AI (with keyword fallback for some rationales)' : 'AI (Claude)')
+    : 'Keyword Rubric';
   var maxRounds = gradeRows.length ? gradeRows[0].totalRounds : 0;
 
   // ── Header row ────────────────────────────────────────────────────
@@ -11094,7 +11276,8 @@ function _buildGradeCSV(gradeRows, tourn) {
   // Prepend metadata rows that LMS systems ignore but professors can read
   var meta = [
     ['# MacroNations Grade Export', '', 'Tournament: ' + tournName, 'Date: ' + date, 'Format: LMS-compatible CSV'],
-    ['# Grade Formula:', '40% Simulation Score', '30% Rationale Quality (AI-graded)', '20% Participation', '10% Rank Bonus'],
+    ['# Rationale Scoring Method:', scoringMethod, '', '', ''],
+    ['# Grade Formula:', '40% Simulation Score', '30% Rationale Quality (' + scoringMethod + ')', '20% Participation', '10% Rank Bonus'],
     ['# LMS Import:', 'Use Member Emails to match students', 'Import Final Grade (0-100) column', 'Canvas/Brightspace/Moodle accept CSV with email matching'],
     ['# ---', '', '', '', '']
   ];
@@ -12589,7 +12772,7 @@ var LEGAL_CONTENT = {
     updated: 'January 2026',
     sections: [
       { h: 'Agreement to Terms', p: 'By accessing or using the MacroNations platform at macronations.com, you agree to be bound by these Terms of Service. MacroNations is operated by MacroNations LLC, a New York Limited Liability Company. If you do not agree to these terms, please do not use the platform.' },
-      { h: 'Eligibility', p: 'You must be enrolled as a student at an accredited university or college to participate in any MacroNations competition. Professors and educators may access the platform in a non-competing capacity to create and manage class tournaments. By registering, you affirm that the information you provide is accurate and complete.' },
+      { h: 'Eligibility', p: 'MacroNations is open to everyone worldwide. University students may participate in class tournaments created by their professors, as well as in the Open Championship and any elected global tournaments. Professors and educators may create and manage class tournaments. Independent players, professionals, and anyone without a university affiliation may participate in the Open Championship and any elected global tournaments that do not restrict registration. By registering, you affirm that the information you provide is accurate and complete.' },
       { h: 'User Accounts', p: 'You are responsible for maintaining the confidentiality of your login credentials. You agree to notify us immediately of any unauthorized access to your account at support@macronations.com. MacroNations LLC is not liable for losses resulting from unauthorized account use.' },
       { h: 'One-Team-Per-Season Rule', p: 'Each registered user may only be a member of one (1) team per tournament season year. Participation in multiple teams within the same season year across different tournaments is prohibited and may result in disqualification.' },
       { h: 'Academic Integrity', p: 'All policy submissions must reflect the independent judgment of your team. Sharing policy decisions, collusion with other teams, exploiting simulation bugs, reverse-engineering scoring algorithms, or any other conduct inconsistent with academic integrity will result in immediate disqualification without refund.' },
@@ -12956,7 +13139,7 @@ function _aboutHowItWorks() {
       '<div class="card__header"><span class="card__title">🎓 For Students</span></div>' +
       '<div class="card__body">' +
         '<div class="steps">' +
-          _step('1','Register & Join','Create a free account with any valid email. Professors who want to create class tournaments need a .edu address. Open Championship participants need no affiliation. Go to Tournaments, find a competition open for registration, and create or join a team with an 8-character invite code. Teams have up to 5 members.') +
+          _step('1','Register & Join','Create a free account with any valid email. Professors who want to create class tournaments need a .edu address. Open Championship is open to everyone — no university or institutional affiliation required. Go to Tournaments, find a competition open for registration, and create or join a team with an 8-character invite code. Teams have up to 5 members.') +
           _step('2','Pay the Entry Fee (if applicable)','For paid tournaments, go to Dashboard → Payment to pay the entry fee via Stripe. Your policy submissions are locked until payment is confirmed by the admin.') +
           _step('3','Set Your 10 Policy Levers','Every round, go to Dashboard → Policy. Adjust your 10 macroeconomic levers: Interest Rate, Government Spending, Tax Rate, Trade Openness, R&D Investment, Green Energy Mix, Welfare Spending, Regulation, Foreign Aid, and Infrastructure. Write a brief rationale and hit Submit Final Decision before the round deadline.') +
           _step('4','Respond to Crises','Some rounds trigger an economic crisis (banking crash, pandemic, trade war, debt crisis). Go to Crisis tab first — choose your response option — then separately submit your policy. These are two independent steps. If you skip the crisis response, the full unmitigated shock applies to your economy.') +
@@ -14828,16 +15011,61 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
   var isComplete = ocRound >= OC_ROUNDS;
 
   // Countdown to next round deadline
+  // The clock advances every 24h from started_at
+  // Next boundary = startedAt + clockRound * 24h (when current round period ends)
   var countdownHtml = '';
   if (started && !isComplete) {
-    var nextDeadline = ocTeamDeadline(team.started_at, ocRound + 1);
-    var diff = nextDeadline.getTime() - Date.now();
-    if (diff > 0) {
+    var startMs    = new Date(team.started_at).getTime();
+    var elapsed    = Date.now() - startMs;
+    var clockRound = Math.min(Math.floor(elapsed / OC_MS_PER_ROUND) + 1, OC_ROUNDS);
+    // Next clock tick = startedAt + clockRound * 24h
+    var nextBoundary = new Date(startMs + clockRound * OC_MS_PER_ROUND);
+    var diff = nextBoundary.getTime() - Date.now();
+    if (diff > 0 && clockRound < OC_ROUNDS) {
       var hrs  = Math.floor(diff / 3600000);
       var mins = Math.floor((diff % 3600000) / 60000);
       var urgentStyle = diff < 3600000 ? 'color:#E24B4A;font-weight:700;' : '';
       countdownHtml = '<span class="countdown-chip" style="' + urgentStyle + '">Next round in ' + hrs + 'h ' + mins + 'm</span>';
+    } else if (clockRound >= OC_ROUNDS) {
+      countdownHtml = '<span class="countdown-chip">Final round reached</span>';
     }
+  }
+
+  // Build round schedule table
+  var schedHtml = '';
+  if (started && team.started_at) {
+    var startMs2 = new Date(team.started_at).getTime();
+    var nowMs    = Date.now();
+    var rows     = '';
+    for (var rr = 1; rr <= OC_ROUNDS; rr++) {
+      var rOpens  = new Date(startMs2 + (rr - 1) * OC_MS_PER_ROUND);
+      var rCloses = new Date(startMs2 + rr * OC_MS_PER_ROUND);
+      var isPast2 = nowMs > rCloses.getTime();
+      var isCurr2 = !isPast2 && nowMs >= rOpens.getTime();
+      var rowStyle = isCurr2 ? 'background:var(--blue-light);font-weight:600;' : isPast2 ? 'color:var(--text-400);' : '';
+      var icon2    = isPast2 ? '✓ ' : isCurr2 ? '▶ ' : '';
+      var crisisTag = team.oc_crisis_rounds && team.oc_crisis_rounds.indexOf(rr) !== -1 ? ' ⚡' : '';
+      rows +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;' +
+              'padding:0.35rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;' + rowStyle + '">' +
+          '<span style="min-width:80px;flex-shrink:0;">' + icon2 + 'Round ' + rr + crisisTag + '</span>' +
+          '<span style="color:var(--text-500);font-size:0.75rem;text-align:right;">' +
+            rOpens.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' +
+            rOpens.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' }) +
+            ' → ' +
+            rCloses.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' +
+            rCloses.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' }) +
+          '</span>' +
+        '</div>';
+    }
+    schedHtml =
+      '<div class="card" style="margin-bottom:1.5rem;">' +
+        '<div class="card__header">' +
+          '<span class="card__title">Your Round Schedule</span>' +
+          '<span style="font-size:0.75rem;color:var(--text-400);">Your local timezone · ✓ complete · ▶ current · ⚡ crisis</span>' +
+        '</div>' +
+        '<div class="card__body" style="padding-top:0;">' + rows + '</div>' +
+      '</div>';
   }
 
   // Score bars
@@ -14943,6 +15171,9 @@ async function ocRenderParticipantDashboard(el, tourn, team) {
               : '')) +
       '</div>' +
     '</div>' +
+
+    // Round schedule (shown once started)
+    schedHtml +
 
     // Economy snapshot (if started)
     (started
