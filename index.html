@@ -9625,9 +9625,12 @@ function renderAdminTeams(el) {
               ? '<span class="badge badge--green badge--no-dot">Paid</span>'
               : '<span class="badge badge--red badge--no-dot">Unpaid</span>')
           : '<span class="badge badge--subtle badge--no-dot">Free</span>') + '</td>' +
-      '<td>' + (fee > 0 && !tm.fee_paid
-          ? '<button class="btn btn--ghost btn--sm" onclick="doMarkPaid(\'' + tm.id + '\')">Mark Paid</button>'
-          : '—') + '</td>' +
+      '<td style="white-space:nowrap;">' +
+        (fee > 0 && !tm.fee_paid
+          ? '<button class="btn btn--ghost btn--sm" onclick="doMarkPaid(\'' + tm.id + '\')">Mark Paid</button> '
+          : '') +
+        '<button class="btn btn--ghost btn--sm" onclick="doUnlockResubmission(\'' + tm.id + '\',\'' + (tm.tournament_id || '') + '\')">🔓 Unlock Round</button>' +
+      '</td>' +
       '</tr>';
   }
   el.innerHTML =
@@ -9636,11 +9639,117 @@ function renderAdminTeams(el) {
         '<span class="text-sm text-muted">' + _adminTeams.length + ' teams total</span></div>' +
       '<div class="table-wrap" style="border:none;border-radius:0;box-shadow:none;">' +
         '<table class="table">' +
-          '<thead><tr><th>Team · Code</th><th>Tournament</th><th>Members</th><th>Payment</th><th>Action</th></tr></thead>' +
+          '<thead><tr><th>Team · Code</th><th>Tournament</th><th>Members</th><th>Payment</th><th>Actions</th></tr></thead>' +
           '<tbody>' + (rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-400);padding:2rem;">No teams yet.</td></tr>') + '</tbody>' +
         '</table>' +
       '</div>' +
+      '<div class="dash-alert dash-alert--info" style="margin:0.75rem;border-radius:var(--radius);">' +
+        '<div class="dash-alert__icon">i</div>' +
+        '<div class="dash-alert__body"><strong>🔓 Unlock Round</strong> — lets a specific team resubmit their policy for a given round without affecting any other team. Use when a student\'s submission failed. The team\'s economy is rolled back to the previous round so simulation picks up their new decision next time you advance.</div>' +
+      '</div>' +
     '</div>';
+}
+
+async function doUnlockResubmission(teamId, tournamentId) {
+  // Find team and tournament
+  var team  = null;
+  var tourn = null;
+  for (var i = 0; i < _adminTeams.length; i++) {
+    if (_adminTeams[i].id === teamId) { team = _adminTeams[i]; break; }
+  }
+  tourn = _getTournById(tournamentId);
+  if (!team || !tourn) { flash('Team or tournament not found.', 'error'); return; }
+
+  // Get economy to know current round
+  var econRows = await sbGet('economies',
+    'team_id=eq.' + teamId + '&tournament_id=eq.' + tournamentId + '&limit=1') || [];
+  var econ = econRows.length ? econRows[0] : null;
+  var econRound = econ ? (Number(econ.current_round) || 0) : 0;
+  var tournRound = Number(tourn.current_round) || 0;
+
+  // Default to the most recent round (econRound or tournRound)
+  var defaultRound = econRound || tournRound;
+
+  var roundInput = prompt(
+    'Unlock resubmission for team "' + (team.name || teamId) + '".\n\n' +
+    'Tournament: ' + (tourn.name || '') + '\n' +
+    'Current tournament round: ' + tournRound + '\n' +
+    'Team economy round: ' + econRound + '\n\n' +
+    'Which round should this team be allowed to resubmit?\n' +
+    '(Enter the round number — this will unlock that round only for this team)',
+    String(defaultRound)
+  );
+  if (!roundInput) { return; }
+  var targetRound = parseInt(roundInput, 10);
+  if (isNaN(targetRound) || targetRound < 1 || targetRound > (tourn.rounds_total || 15)) {
+    flash('Invalid round number.', 'error'); return;
+  }
+
+  if (!confirm(
+    'This will:\n' +
+    '1. Unlock round ' + targetRound + ' for team "' + (team.name || '') + '" only\n' +
+    '2. Roll back their economy to round ' + (targetRound - 1) + ' (using the snapshot)\n' +
+    '3. Mark their round ' + targetRound + ' decision as draft (not final)\n\n' +
+    'Other teams are NOT affected.\n\n' +
+    'The student should resubmit their round ' + targetRound + ' policy immediately.\n' +
+    'Their economy will be re-simulated when you next run Advance Round.\n\n' +
+    'Continue?'
+  )) { return; }
+
+  try {
+    // Step 1: Find existing decision for this round and unlock it (set is_final = false)
+    var decRows = await sbGet('decisions',
+      'team_id=eq.' + teamId +
+      '&tournament_id=eq.' + tournamentId +
+      '&round=eq.' + targetRound + '&limit=1') || [];
+
+    if (decRows.length) {
+      await sbPatch('decisions', 'id=eq.' + decRows[0].id, { is_final: false });
+      flash('Decision for round ' + targetRound + ' unlocked (set to draft).', 'info');
+    } else {
+      flash('No existing decision found for round ' + targetRound + ' — student can submit fresh.', 'info');
+    }
+
+    // Step 2: Roll back economy to snapshot at round targetRound-1
+    if (econ && econ.snapshots && econ.snapshots.length >= targetRound - 1) {
+      var rollbackState = targetRound > 1
+        ? econ.snapshots[targetRound - 2]  // snapshots[0] = state before round 1, etc.
+        : null;
+
+      if (rollbackState) {
+        // Trim scores_history back to targetRound-1 entries
+        var trimmedHistory = (econ.scores_history || []).slice(0, targetRound - 1);
+        var trimmedSnapshots = (econ.snapshots || []).slice(0, targetRound - 1);
+
+        await sbPatch('economies',
+          'team_id=eq.' + teamId + '&tournament_id=eq.' + tournamentId,
+          {
+            current:        rollbackState,
+            current_round:  targetRound - 1,
+            snapshots:      trimmedSnapshots,
+            scores_history: trimmedHistory
+          }
+        );
+        flash('Economy rolled back to round ' + (targetRound - 1) + '.', 'info');
+      } else if (targetRound === 1) {
+        // Rolling back to round 0 — reset to default economy
+        await sbPatch('economies',
+          'team_id=eq.' + teamId + '&tournament_id=eq.' + tournamentId,
+          { current: defaultEconomy(), current_round: 0, snapshots: [], scores_history: [] }
+        );
+        flash('Economy reset to start (round 0).', 'info');
+      } else {
+        flash('Could not find snapshot for round ' + (targetRound - 1) + ' — economy not rolled back. Student can resubmit but economy rollback is manual.', 'warn');
+      }
+    } else {
+      flash('No snapshots found — economy not rolled back. Student can still resubmit policy.', 'warn');
+    }
+
+    flash('✅ Round ' + targetRound + ' unlocked for ' + (team.name || 'team') + '. Ask the student to resubmit their policy now. Run Advance Round once they\'ve submitted to re-simulate.', 'success');
+
+  } catch(e) {
+    flash('Error: ' + (e.message || ''), 'error');
+  }
 }
 
 async function doMarkPaid(teamId) {
