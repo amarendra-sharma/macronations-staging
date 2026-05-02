@@ -7059,6 +7059,31 @@ async function renderDashboard() {
     }
 
     // Wire tabs once — remove old listeners by replacing buttons
+    // University bracket notification banner
+    if (_dashTourn && _dashTourn.tier === 'university' && _dashTourn.playoff_bracket) {
+      try {
+        var pb3 = typeof _dashTourn.playoff_bracket === 'string' ? JSON.parse(_dashTourn.playoff_bracket) : _dashTourn.playoff_bracket;
+        if (pb3 && pb3.rounds && _dashTeam) {
+          var myActiveMatch = null; var myActiveRound = null;
+          for (var bri3 = 0; bri3 < pb3.rounds.length; bri3++) {
+            var br3 = pb3.rounds[bri3];
+            for (var bmi3 = 0; bmi3 < (br3.matches||[]).length; bmi3++) {
+              var bm3 = br3.matches[bmi3];
+              if ((bm3.team1===_dashTeam.id||bm3.team2===_dashTeam.id) && !bm3.winner && !bm3.bye) { myActiveMatch=bm3; myActiveRound=br3; break; }
+            }
+            if (myActiveMatch) { break; }
+          }
+          var bb = document.getElementById('dash-bracket-banner');
+          if (!bb) { bb=document.createElement('div'); bb.id='dash-bracket-banner'; bb.className='dash-alert dash-alert--gold'; bb.style.marginBottom='1.25rem'; var dc2=document.getElementById('dash-content'); if (dc2) { dc2.insertBefore(bb, dc2.firstChild); } }
+          if (myActiveMatch && bb) {
+            var opp3 = myActiveMatch.team1===_dashTeam.id ? (myActiveMatch.team2Name||'TBD') : (myActiveMatch.team1Name||'TBD');
+            bb.innerHTML = '<div class="dash-alert__icon">🏆</div><div class="dash-alert__body"><div class="dash-alert__title">University Bracket — ' + esc(myActiveRound.label||'Playoff') + '</div>Your opponent: <strong>' + esc(opp3) + '</strong>. Submit your policy each round. Round 3 is a crisis round. Check the Policy tab.</div>';
+          } else if (pb3.champion && pb3.champion.id===_dashTeam.id && bb) {
+            bb.innerHTML = '<div class="dash-alert__icon">🏆</div><div class="dash-alert__body"><div class="dash-alert__title">University Champion!</div>Congratulations! Download your champion certificate from the Certificates tab.</div>';
+          } else if (bb && bb.id === 'dash-bracket-banner') { bb.remove(); }
+        }
+      } catch(bErr3) {}
+    }
     _wireDashTabs();
 
     // Show the correct tab (default to overview)
@@ -10503,43 +10528,131 @@ async function _openRoundNotificationEmail(tourn, newRound, teamData) {
 // ─────────────────────────────────────────────────────────────────
 async function renderAdminPlayoffs(el) {
   el.innerHTML = '<div class="empty-state"><div class="spinner" style="width:24px;height:24px;margin:0 auto 0.75rem;"></div></div>';
-
-  var completedTourneys = _adminTournaments.filter(function(t) {
-    return t.status === 'completed' || t.status === 'active';
-  });
-
-  if (!completedTourneys.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🥊</div>' +
-      '<div class="empty-state__title">No playoffs yet</div>' +
-      '<div class="empty-state__desc">Complete at least one tournament to set up playoffs.</div></div>';
+  var allTourneys = _adminTournaments.filter(function(t) { return t.status === 'completed' || t.status === 'active'; });
+  if (!allTourneys.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🥊</div><div class="empty-state__title">No tournaments yet</div><div class="empty-state__desc">Complete at least one tournament to set up playoffs.</div></div>';
     return;
   }
+  var instrHtml =
+    '<div class="card" style="margin-bottom:1.5rem;">' +
+      '<div class="card__header"><span class="card__title">📋 University Bracket Coordinator Guide</span>' +
+        '<button class="btn btn--ghost btn--sm" onclick="var g=this.closest(\'.card\').querySelector(\'.coord-guide\');g.style.display=g.style.display===\'none\'?\'block\':\'none\'">Show / Hide</button>' +
+      '</div>' +
+      '<div class="coord-guide" style="display:none;"><div class="card__body">' +
+        '<p style="margin-bottom:1rem;color:var(--text-600);">As coordinator, you manage the bracket from quarterfinals through to the final.</p>' +
+        '<div style="display:grid;gap:0.875rem;">' +
+          _step('1','Verify Teams & Scores','Confirm all class tournaments are completed and scores are final. Teams are seeded by final simulation score — highest = #1 seed.') +
+          _step('2','Create the Bracket','Click "Create University Bracket". The platform seeds all teams, constructs QF→SF→Final, and assigns byes to top seeds if teams are not a power of 2.') +
+          _step('3','Notify Participants','After bracket creation, teams see a banner on their dashboard. Email participants with their opponent, the 3-round format (round 3 = crisis), and round deadlines.') +
+          _step('4','Advance Bracket Rounds','Each matchup plays 3 rounds. Use Admin → Rounds → Run Simulation for each. After round 3 of each matchup, record results and click "Advance to Next Stage".') +
+          _step('5','Advance to Next Stage','After all matches in a stage are complete, click "Advance to Next Stage". Winners fill the next round. Repeat QF→SF→Final.') +
+          _step('6','Complete & Issue Certificates','After the Final, click "Advance to Next Stage" — the champion is recorded automatically. Certificates unlock for all participants based on how far they advanced.') +
+        '</div>' +
+        '<div class="dash-alert dash-alert--info" style="margin-top:1.25rem;"><div class="dash-alert__icon">i</div><div class="dash-alert__body"><strong>Crisis Round Rule:</strong> Round 3 of each matchup is always a crisis round. Both teams face the same crisis simultaneously.</div></div>' +
+      '</div></div>' +
+    '</div>';
 
-  var cards = '';
-  for (var i = 0; i < completedTourneys.length; i++) {
-    var t = completedTourneys[i];
-    var bracket = (t.playoff_bracket && typeof t.playoff_bracket === 'object') ? t.playoff_bracket : {};
-    var hasMatches = bracket.rounds && bracket.rounds.length;
-
-    cards += '<div class="card" style="margin-bottom:1.5rem;">' +
-      '<div class="card__header"><span class="card__title">' + esc(t.name || '') + ' Playoffs</span>' +
-        (!hasMatches
-          ? '<button class="btn btn--primary btn--sm" onclick="doCreateBracket(\'' + t.id + '\')">Create Top-8 Bracket</button>'
-          : '<button class="btn btn--ghost btn--sm" onclick="doCreateBracket(\'' + t.id + '\',true)">Rebuild Bracket</button>') +
-      '</div><div class="card__body">';
-
-    if (hasMatches) {
-      cards += _renderBracket(bracket);
+  var cards = instrHtml;
+  for (var i = 0; i < allTourneys.length; i++) {
+    var t = allTourneys[i];
+    var isUniv = (t.tier === 'university');
+    var bracket = null;
+    if (t.playoff_bracket) { try { bracket = typeof t.playoff_bracket === 'string' ? JSON.parse(t.playoff_bracket) : t.playoff_bracket; } catch(e) {} }
+    var hasRounds = bracket && bracket.rounds && bracket.rounds.length;
+    var cardTitle = isUniv ? (esc(t.name||'') + ' — University Bracket') : (esc(t.name||'') + ' Playoffs');
+    var actionBtns = '';
+    if (isUniv) {
+      if (!hasRounds) { actionBtns = '<button class="btn btn--primary btn--sm" onclick="doCreateUniversityBracket(\'' + t.id + '\')">🏆 Create University Bracket</button>'; }
+      else { actionBtns = '<button class="btn btn--ghost btn--sm" onclick="doCreateUniversityBracket(\'' + t.id + '\',true)">Rebuild</button> <button class="btn btn--primary btn--sm" onclick="doAdvanceBracketStage(\'' + t.id + '\')">Advance to Next Stage →</button>'; }
     } else {
-      cards += '<div class="empty-state" style="padding:2rem;"><div class="empty-state__icon">📋</div>' +
-        '<div class="empty-state__title">No bracket yet</div>' +
-        '<div class="empty-state__desc">Click "Create Top-8 Bracket" to seed teams by score.</div></div>';
+      if (!hasRounds) { actionBtns = '<button class="btn btn--primary btn--sm" onclick="doCreateBracket(\'' + t.id + '\')">Create Top-8 Bracket</button>'; }
+      else { actionBtns = '<button class="btn btn--ghost btn--sm" onclick="doCreateBracket(\'' + t.id + '\',true)">Rebuild Bracket</button>'; }
     }
-    cards += '</div></div>';
+    cards += '<div class="card" style="margin-bottom:1.5rem;"><div class="card__header"><span class="card__title">' + cardTitle + '</span><div style="display:flex;gap:0.5rem;">' + actionBtns + '</div></div><div class="card__body">' +
+      (hasRounds ? _renderBracket(bracket) : '<div class="empty-state" style="padding:2rem;"><div class="empty-state__icon">' + (isUniv ? '🏛️' : '📋') + '</div><div class="empty-state__title">No bracket yet</div><div class="empty-state__desc">' + (isUniv ? 'Click "Create University Bracket" to auto-seed all teams and build QF→SF→Final.' : 'Click "Create Top-8 Bracket" to seed by score.') + '</div></div>') +
+    '</div></div>';
   }
-
   el.innerHTML = cards;
 }
+
+async function doCreateUniversityBracket(tournId, rebuild) {
+  var t = _getTournById(tournId);
+  if (!t) { flash('Tournament not found.', 'error'); return; }
+  if (rebuild && !confirm('Rebuild the bracket? This will reset all match results.')) { return; }
+  try {
+    var teams = await sbGet('teams', 'tournament_id=eq.' + tournId + '&limit=200') || [];
+    if (teams.length < 2) { flash('Need at least 2 teams.', 'error'); return; }
+    var econRows = await sbGet('economies', 'tournament_id=eq.' + tournId + '&select=team_id,current&limit=200') || [];
+    var scoreMap = {};
+    for (var ei = 0; ei < econRows.length; ei++) {
+      var er = econRows[ei];
+      if (er.current) { var st = typeof er.current === 'string' ? JSON.parse(er.current) : er.current; scoreMap[er.team_id] = computeScores(st).total; }
+    }
+    teams.sort(function(a, b) { return (scoreMap[b.id]||0) - (scoreMap[a.id]||0); });
+    var n = teams.length;
+    var bracketSize = 1; while (bracketSize < n) { bracketSize *= 2; }
+    var numByes = bracketSize - n;
+    var totalRounds = Math.log2(bracketSize);
+    var seeds = [];
+    for (var si = 0; si < bracketSize; si++) { seeds.push(si < n ? teams[si] : null); }
+    function makePairs(arr) { var pairs = []; for (var pi = 0; pi < arr.length/2; pi++) { pairs.push([arr[pi], arr[arr.length-1-pi]]); } return pairs; }
+    var pairs = makePairs(seeds);
+    var rounds = [];
+    var rLabels = ['', 'Final', 'Semifinals', 'Quarterfinals', 'Round of 16'];
+    var qfMatches = [];
+    for (var pi2 = 0; pi2 < pairs.length; pi2++) {
+      var p = pairs[pi2]; var t1 = p[0] ? p[0].id : null; var t2 = p[1] ? p[1].id : null;
+      var isBye = !t2;
+      qfMatches.push({ matchId:'qf_'+pi2, team1:t1, team1Name:p[0]?p[0].name:'BYE', score1:null, team2:t2, team2Name:p[1]?p[1].name:null, score2:null, winner:isBye?t1:null, winnerName:isBye?(p[0]?p[0].name:''):null, bye:isBye, round:1, crisisRound:3 });
+    }
+    rounds.push({ roundNum:1, label:rLabels[totalRounds]||'Quarterfinals', matches:qfMatches });
+    for (var rr = 2; rr <= totalRounds; rr++) {
+      var mc = Math.pow(2, totalRounds-rr); var rms = [];
+      for (var rm = 0; rm < mc; rm++) { rms.push({ matchId:'r'+rr+'_'+rm, team1:null, team1Name:'TBD', score1:null, team2:null, team2Name:'TBD', score2:null, winner:null, winnerName:null, round:rr, crisisRound:3 }); }
+      rounds.push({ roundNum:rr, label:rr===totalRounds?'Final':rr===totalRounds-1?'Semifinals':'Quarterfinals', matches:rms });
+    }
+    var bracket = { createdAt:new Date().toISOString(), totalRounds:totalRounds, bracketSize:bracketSize, teamsSeeded:n, numByes:numByes, currentStage:1, rounds:rounds, champion:null, runnerUp:null };
+    await sbPatch('tournaments', 'id=eq.' + tournId, { playoff_bracket: bracket });
+    for (var ai = 0; ai < _adminTournaments.length; ai++) { if (_adminTournaments[ai].id === tournId) { _adminTournaments[ai].playoff_bracket = bracket; break; } }
+    flash('University bracket created! ' + n + ' teams seeded, ' + numByes + ' bye(s) assigned to top seed(s).', 'success');
+    renderAdminPlayoffs(document.getElementById('admin-panel-content'));
+  } catch(e) { flash('Error: ' + (e.message||''), 'error'); }
+}
+
+async function doAdvanceBracketStage(tournId) {
+  var t = _getTournById(tournId);
+  if (!t || !t.playoff_bracket) { flash('No bracket found.', 'error'); return; }
+  var bracket = typeof t.playoff_bracket === 'string' ? JSON.parse(t.playoff_bracket) : t.playoff_bracket;
+  var currentStage = bracket.currentStage || 1;
+  var currentRound = bracket.rounds[currentStage-1];
+  if (!currentRound) { flash('All bracket stages complete.', 'info'); return; }
+  var pending = currentRound.matches.filter(function(m) { return !m.bye && !m.winner; });
+  if (pending.length) { flash('Cannot advance — ' + pending.length + ' match(es) still pending results.', 'warn'); return; }
+  var winners = currentRound.matches.map(function(m) { return { id:m.winner, name:m.winnerName }; });
+  if (currentStage >= bracket.totalRounds) {
+    var champ = winners[0]; var fm = currentRound.matches[0];
+    var runnerUp = fm.team1 === champ.id ? { id:fm.team2, name:fm.team2Name } : { id:fm.team1, name:fm.team1Name };
+    bracket.champion = champ; bracket.runnerUp = runnerUp; bracket.completed = true;
+    await sbPatch('tournaments', 'id=eq.' + tournId, { playoff_bracket: bracket });
+    flash('🏆 University Tournament complete! Champion: ' + (champ.name||'') + '. Certificates now available.', 'success');
+    renderAdminPlayoffs(document.getElementById('admin-panel-content'));
+    return;
+  }
+  var nextRound = bracket.rounds[currentStage];
+  for (var wi = 0; wi < winners.length; wi++) {
+    var matchIdx = Math.floor(wi/2); var isT1 = (wi%2===0);
+    if (nextRound.matches[matchIdx]) {
+      if (isT1) { nextRound.matches[matchIdx].team1 = winners[wi].id; nextRound.matches[matchIdx].team1Name = winners[wi].name; }
+      else      { nextRound.matches[matchIdx].team2 = winners[wi].id; nextRound.matches[matchIdx].team2Name = winners[wi].name; }
+    }
+  }
+  bracket.currentStage = currentStage + 1;
+  await sbPatch('tournaments', 'id=eq.' + tournId, { playoff_bracket: bracket });
+  for (var ai2 = 0; ai2 < _adminTournaments.length; ai2++) { if (_adminTournaments[ai2].id === tournId) { _adminTournaments[ai2].playoff_bracket = bracket; break; } }
+  flash('Advanced to ' + (nextRound.label||'next stage') + '! Notify participants of their new matchups.', 'success');
+  renderAdminPlayoffs(document.getElementById('admin-panel-content'));
+}
+
 
 function _renderBracket(bracket) {
   if (!bracket || !bracket.rounds || !bracket.rounds.length) { return '<em>Empty bracket</em>'; }
@@ -12183,39 +12296,21 @@ function _downloadFile(filename, content, mimeType) {
 // ═══════════════════════════════════════════════════════════════════
 
 var CERT_TYPES = {
-  participation: {
-    label:      'Certificate of Participation',
-    accent:     '#0f3d9e',
-    accentLight:'#e8eef8',
-    watermark:  'PARTICIPANT',
-    ribbon:     '🎓',
-    message:    'has demonstrated exceptional commitment to macroeconomic policy analysis through active participation in the MacroNations Global Economic Strategy Tournament, a rigorous simulation of real-world governance challenges.'
-  },
-  winner: {
-    label:      'Championship Certificate',
-    accent:     '#b87408',
-    accentLight:'#fef3d8',
-    watermark:  'CHAMPION',
-    ribbon:     '🏆',
-    seal:       true,
-    message:    'has achieved the highest score in the MacroNations Global Economic Strategy Tournament, demonstrating mastery of macroeconomic policy, crisis management, and strategic governance across all five scoring pillars.'
-  },
-  runner_up: {
-    label:      'Runner-Up Certificate',
-    accent:     '#475569',
-    accentLight:'#f1f5f9',
-    watermark:  'RUNNER-UP',
-    ribbon:     '🥈',
-    message:    'has achieved second place in the MacroNations Global Economic Strategy Tournament, exhibiting outstanding skill in macroeconomic policy formulation and demonstrating excellence across the five scoring pillars.'
-  },
-  playoff: {
-    label:      'Playoff Qualifier Certificate',
-    accent:     '#5b21b6',
-    accentLight:'#f5f3ff',
-    watermark:  'QUALIFIER',
-    ribbon:     '⭐',
-    message:    'has qualified for the MacroNations playoff bracket, placing among the top competitors in the tournament and demonstrating superior macroeconomic reasoning, policy design, and crisis response capability.'
-  }
+  participation: { label:'Certificate of Participation', accent:'#0f3d9e', accentLight:'#e8eef8', watermark:'PARTICIPANT', ribbon:'🎓', tier:'class', message:'has demonstrated exceptional commitment to macroeconomic policy analysis through active participation in the MacroNations Tournament, a rigorous simulation of real-world governance challenges.' },
+  winner:        { label:'Championship Certificate', accent:'#b87408', accentLight:'#fef3d8', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'class', message:'has achieved the highest score in the MacroNations Tournament, demonstrating mastery of macroeconomic policy, crisis management, and strategic governance across all five scoring pillars.' },
+  runner_up:     { label:'Runner-Up Certificate', accent:'#475569', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'class', message:'has achieved second place in the MacroNations Tournament, exhibiting outstanding skill in macroeconomic policy formulation and demonstrating excellence across the five scoring pillars.' },
+  playoff:       { label:'Playoff Qualifier Certificate', accent:'#5b21b6', accentLight:'#f5f3ff', watermark:'QUALIFIER', ribbon:'⭐', tier:'university', message:'has qualified for the MacroNations playoff bracket, placing among the top competitors in the tournament.' },
+  class_participation: { label:'Certificate of Participation', accent:'#0f3d9e', accentLight:'#e8eef8', watermark:'PARTICIPANT', ribbon:'🎓', tier:'class', message:'has completed the MacroNations Class Tournament, demonstrating commitment to macroeconomic policy analysis, strategic governance, and real-world simulation of the five pillars of national economic performance.' },
+  class_champion:      { label:'Class Champion Certificate', accent:'#b87408', accentLight:'#fef3d8', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'class', message:'has achieved the highest score in the MacroNations Class Tournament, demonstrating exceptional mastery of macroeconomic policy, crisis management, and strategic governance across GDP, stability, equality, sustainability, and innovation.' },
+  class_runner_up:     { label:'Class Runner-Up Certificate', accent:'#64748b', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'class', message:'has achieved second place in the MacroNations Class Tournament, exhibiting outstanding macroeconomic reasoning and policy design across all five scoring pillars of national economic performance.' },
+  univ_participation:    { label:'University Tournament Participant', accent:'#6d28d9', accentLight:'#f5f3ff', watermark:'PARTICIPANT', ribbon:'🎓', tier:'university', message:'has competed in the MacroNations University Tournament, representing their institution in a rigorous intercollegiate macroeconomic policy simulation across the five pillars of national economic performance.' },
+  univ_quarterfinalist:  { label:'University Quarterfinalist', accent:'#7c3aed', accentLight:'#ede9fe', watermark:'FINALIST', ribbon:'⭐', tier:'university', message:'has advanced to the Quarterfinals of the MacroNations University Tournament, placing among the top competitors in the intercollegiate bracket and demonstrating superior macroeconomic policy formulation and crisis response.' },
+  univ_semifinalist:     { label:'University Semifinalist', accent:'#5b21b6', accentLight:'#ede9fe', watermark:'FINALIST', ribbon:'🌟', tier:'university', message:'has advanced to the Semifinals of the MacroNations University Tournament, placing among the top four competitors in the intercollegiate bracket and demonstrating exceptional macroeconomic reasoning, strategic policy design, and crisis management.' },
+  univ_runner_up:        { label:'University Runner-Up', accent:'#475569', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'university', message:'has achieved second place in the MacroNations University Tournament Finals, demonstrating outstanding mastery of macroeconomic policy across the five pillars and advancing to the championship match of the intercollegiate bracket.' },
+  univ_champion:         { label:'University Champion Certificate', accent:'#7c2d12', accentLight:'#fff7ed', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'university', message:'has won the MacroNations University Tournament, defeating all bracket competitors to claim the intercollegiate championship. This achievement reflects exceptional mastery of macroeconomic governance, crisis response, and strategic policy design.' },
+  wc_participation: { label:'World Cup Participant', accent:'#0f172a', accentLight:'#fef9ec', watermark:'WORLD CUP', ribbon:'🌍', tier:'worldcup', message:'has qualified for and competed in the MacroNations World Cup, representing their institution among the top macroeconomic policy teams from universities and open competitors worldwide in the global season championship.' },
+  wc_runner_up:     { label:'World Cup Finalist', accent:'#334155', accentLight:'#f8fafc', watermark:'FINALIST', ribbon:'🥈', tier:'worldcup', message:'has achieved Finalist standing in the MacroNations World Cup, competing at the highest level of the global season championship and demonstrating world-class mastery of macroeconomic governance, crisis management, and strategic policy design.' },
+  wc_champion:      { label:'World Cup Champion', accent:'#92400e', accentLight:'#fef3c7', watermark:'WORLD CUP', ribbon:'🏆', seal:true, wcSeal:true, tier:'worldcup', message:'has won the MacroNations World Cup — the highest achievement in global macroeconomic policy simulation. This certificate recognises world-class mastery of governance, crisis response, and strategic policy across all five pillars of national economic performance.' }
 };
 
 // ── Word-wrap helper ──────────────────────────────────────────────
@@ -13643,9 +13738,73 @@ var _asyncRenderDashCertificates = async function(el) {
       } catch(rankErr) {}
     }
 
-    // winner/runner_up/playoff reserved for fee-paying global tournaments only
-    var hasFee = Number(tourn.entry_fee || 0) > 0;
-    var eligible = { participation: isAdmin || isCompleted, winner: isAdmin || (isCompleted && hasFee && myRank===1), runner_up: isAdmin || (isCompleted && hasFee && myRank===2), playoff: isAdmin || (isCompleted && hasFee && myRank<=8) };
+    var tournTier = tourn.tier || 'class';
+    var isClassTier  = (tournTier === 'class');
+    var isUnivTier   = (tournTier === 'university');
+    var isWCTier     = (tournTier === 'global' || tourn.is_global_elected);
+    var isOCTier     = (tournTier === 'open_championship');
+
+    // Fetch creator name from mn_users
+    var creatorName = ''; var creatorInst = '';
+    if (tourn.created_by) {
+      var _pr = (typeof _professorMap !== 'undefined') && _professorMap[tourn.created_by];
+      if (_pr) { creatorName = _pr.name || ''; creatorInst = _pr.institution || ''; }
+    }
+
+    // University bracket position
+    var bracketPosition = null;
+    if (isUnivTier && tourn.playoff_bracket) {
+      try {
+        var pb = typeof tourn.playoff_bracket === 'string' ? JSON.parse(tourn.playoff_bracket) : tourn.playoff_bracket;
+        if (pb && pb.champion) {
+          if (pb.champion.id === team.id) { bracketPosition = 'champion'; }
+          else if (pb.runnerUp && pb.runnerUp.id === team.id) { bracketPosition = 'runner_up'; }
+          else {
+            var totalRnds = pb.totalRounds || 3;
+            for (var bri2 = 0; bri2 < (pb.rounds || []).length; bri2++) {
+              var bRnd = pb.rounds[bri2];
+              for (var bmj = 0; bmj < (bRnd.matches || []).length; bmj++) {
+                var bm2 = bRnd.matches[bmj];
+                if (bm2.team1 === team.id || bm2.team2 === team.id) {
+                  if (!bracketPosition) {
+                    if (bRnd.roundNum === totalRnds)     { bracketPosition = 'runner_up'; }
+                    else if (bRnd.roundNum === totalRnds - 1) { bracketPosition = 'semifinalist'; }
+                    else                                 { bracketPosition = 'quarterfinalist'; }
+                  }
+                }
+              }
+            }
+          }
+          if (!bracketPosition) { bracketPosition = 'participant'; }
+        }
+      } catch(bpe2) {}
+    }
+
+    var eligible = {};
+    if (isClassTier || isOCTier) {
+      eligible = { class_participation: isAdmin || isCompleted, class_champion: isAdmin || (isCompleted && myRank===1), class_runner_up: isAdmin || (isCompleted && myRank===2) };
+    } else if (isUnivTier) {
+      var atLeastQF = bracketPosition === 'quarterfinalist' || bracketPosition === 'semifinalist' || bracketPosition === 'runner_up' || bracketPosition === 'champion';
+      eligible = {
+        univ_participation:   isAdmin || isCompleted,
+        univ_quarterfinalist: isAdmin || (isCompleted && atLeastQF),
+        univ_semifinalist:    isAdmin || (isCompleted && (bracketPosition === 'semifinalist' || bracketPosition === 'runner_up' || bracketPosition === 'champion')),
+        univ_runner_up:       isAdmin || (isCompleted && (bracketPosition === 'runner_up' || bracketPosition === 'champion')),
+        univ_champion:        isAdmin || (isCompleted && bracketPosition === 'champion')
+      };
+    } else if (isWCTier) {
+      eligible = { wc_participation: isAdmin || isCompleted, wc_runner_up: isAdmin || (isCompleted && myRank===2), wc_champion: isAdmin || (isCompleted && myRank===1) };
+    } else {
+      var hasFee = Number(tourn.entry_fee || 0) > 0;
+      eligible = { participation: isAdmin || isCompleted, winner: isAdmin || (isCompleted && myRank===1), runner_up: isAdmin || (isCompleted && myRank===2), playoff: isAdmin || (isCompleted && hasFee && myRank<=8) };
+    }
+
+    // Context line for cert
+    var contextLine = '';
+    if (isClassTier)  { contextLine = (creatorName ? 'Prof. ' + creatorName + ' · ' : '') + (tourn.name || ''); }
+    if (isUnivTier)   { contextLine = (creatorInst || creatorName || '') + ' University Tournament ' + (tourn.season_year || ''); }
+    if (isWCTier)     { contextLine = 'MacroNations World Cup ' + (tourn.season_year || new Date().getFullYear()); }
+    if (isOCTier)     { contextLine = 'Open Championship ' + (tourn.season_year || new Date().getFullYear()); }
 
     if (!isAdmin && !isCompleted) {
       el.innerHTML =
@@ -13657,27 +13816,17 @@ var _asyncRenderDashCertificates = async function(el) {
       return;
     }
 
-    // Build type buttons — track firstElig
-    var typeKeys   = ['participation','winner','runner_up','playoff'];
-    var typeLabels = { participation:'Participation', winner:'Champion', runner_up:'Runner-Up', playoff:'Playoff Qualifier' };
-    var typeIcons  = { participation:'🎓', winner:'🏆', runner_up:'🥈', playoff:'⭐' };
-    var typeBtns   = '';
-    var firstElig  = null;
+    // Build type buttons
+    var typeKeys   = Object.keys(eligible);
+    var typeLabels = { participation:'Participation', winner:'Champion', runner_up:'Runner-Up', playoff:'Playoff Qualifier', class_participation:'Participation', class_champion:'Class Champion', class_runner_up:'Class Runner-Up', univ_participation:'Participant', univ_quarterfinalist:'Quarterfinalist', univ_semifinalist:'Semifinalist', univ_runner_up:'Runner-Up', univ_champion:'University Champion', wc_participation:'WC Participant', wc_runner_up:'WC Finalist', wc_champion:'World Cup Champion' };
+    var typeIcons  = { participation:'🎓', winner:'🏆', runner_up:'🥈', playoff:'⭐', class_participation:'🎓', class_champion:'🏆', class_runner_up:'🥈', univ_participation:'🎓', univ_quarterfinalist:'⭐', univ_semifinalist:'🌟', univ_runner_up:'🥈', univ_champion:'🏆', wc_participation:'🌍', wc_runner_up:'🥈', wc_champion:'🏆' };
+    var typeBtns   = ''; var firstElig = null;
     for (var i = 0; i < typeKeys.length; i++) {
-      var tk     = typeKeys[i];
-      var isElig = eligible[tk];
+      var tk = typeKeys[i]; var isElig = eligible[tk];
       if (isElig && !firstElig) { firstElig = tk; }
-      typeBtns +=
-        '<button class="cert-type-btn' + (isElig && firstElig === tk ? ' active' : '') +
-          (isElig ? '' : ' btn--disabled') + '" data-cert="' + tk + '" ' +
-          (isElig
-            ? 'onclick="_certSelectType(\'' + tk + '\')"'
-            : 'onclick="flash(\'Reserved for paid global tournament participants.\',\'info\')"') + '>' +
-          '<span class="cert-type-btn__icon">' + typeIcons[tk] + (isElig ? '' : ' 🔒') + '</span>' +
-          '<span class="cert-type-btn__label">' + typeLabels[tk] + '</span>' +
-        '</button>';
+      typeBtns += '<button class="cert-type-btn' + (isElig && firstElig===tk ? ' active' : '') + (isElig ? '' : ' btn--disabled') + '" data-cert="' + tk + '" ' + (isElig ? 'onclick="_certSelectType(\'' + tk + '\')"' : 'onclick="flash(\'Not available for your result.\',\'info\')"') + '><span class="cert-type-btn__icon">' + (typeIcons[tk]||'🎓') + (isElig ? '' : ' 🔒') + '</span><span class="cert-type-btn__label">' + (typeLabels[tk]||tk) + '</span></button>';
     }
-    if (!firstElig) { firstElig = 'participation'; }
+    if (!firstElig) { firstElig = typeKeys[0] || 'participation'; }
 
     // Signer editor (admin/professor only)
     var signerEditor = '';
@@ -13709,7 +13858,7 @@ var _asyncRenderDashCertificates = async function(el) {
 
     // Initial cert
     var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.season_year || new Date().getFullYear(), signers.tournDirector, signers.director);
+    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.season_year || new Date().getFullYear(), signers.tournDirector || creatorName, signers.director, contextLine);
 
     el.innerHTML =
       '<div class="cert-wrap">' +
@@ -13725,6 +13874,8 @@ var _asyncRenderDashCertificates = async function(el) {
       '</div>';
 
     el._activeCertType = firstElig;
+    el._certContextLine = contextLine;
+    el._certCreatorName = creatorName;
 
   } catch(e) {
     el.innerHTML =
@@ -13750,13 +13901,15 @@ function _certSelectType(type) {
   // Always read live input values first — these are the admin's explicit edits
   var td = document.getElementById('cert-signer-tourndirector');
   var dd = document.getElementById('cert-signer-director');
-  var signers = _getCertSigners();
+  var signers  = _getCertSigners();
   var tournDir = td ? td.value : signers.tournDirector;
   var dirName  = dd ? dd.value : signers.director;
-
-  // If input is empty string, fall back to signers
   if (!tournDir) { tournDir = signers.tournDirector; }
   if (!dirName)  { dirName  = signers.director; }
+  var _cPanel2 = document.getElementById('dash-panel-certificates');
+  var contextLine2  = (_cPanel2 && _cPanel2._certContextLine) ? _cPanel2._certContextLine : '';
+  var creatorName2  = (_cPanel2 && _cPanel2._certCreatorName) ? _cPanel2._certCreatorName : '';
+  if (!tournDir && creatorName2) { tournDir = creatorName2; }
 
   var btns = document.querySelectorAll('.cert-type-btn');
   for (var i = 0; i < btns.length; i++) {
@@ -13764,7 +13917,7 @@ function _certSelectType(type) {
     else { btns[i].classList.remove('active'); }
   }
   var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-  var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.season_year || new Date().getFullYear(), tournDir, dirName);
+  var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2);
   var preview = document.getElementById('cert-preview');
   if (preview) { preview.innerHTML = svg; }
   var panel = document.getElementById('dash-panel-certificates');
@@ -13807,67 +13960,49 @@ function _certDownloadSVG() {
 
 // Override makeCertSVG to accept signer params
 var _origMakeCertSVG = makeCertSVG;
-makeCertSVG = function(type, recipientName, tournName, score, year, tournDirector, directorName) {
-  // Use passed-in values; only fall back to getCertSigners when truly absent
+makeCertSVG = function(type, recipientName, tournName, score, year, tournDirector, directorName, contextLine) {
   if (tournDirector === undefined || tournDirector === null) { tournDirector = _getCertSigners().tournDirector; }
   if (directorName  === undefined || directorName  === null) { directorName  = _getCertSigners().director; }
   year = year || new Date().getFullYear();
   var certYear = new Date().getFullYear();
-
   var cfg  = CERT_TYPES[type] || CERT_TYPES.participation;
-  var W    = 900;
-  var H    = 636;
+  var tier = cfg.tier || 'class';
+  var W = 900; var H = 636;
   var name = _truncateName(recipientName || 'Participant', 38);
   var msgLines = _wrapText(cfg.message, 68);
   var accentBar = cfg.accent;
   var bgLight   = cfg.accentLight;
-
-  var msgStartY = 362;
-  var msgLineH  = 20;
-  var msgSvg = '';
+  var barColor  = tier === 'worldcup' ? '#92400e' : tier === 'university' ? '#5b21b6' : accentBar;
+  var msgStartY = 362; var msgLineH = 20; var msgSvg = '';
   for (var mi = 0; mi < msgLines.length; mi++) {
     msgSvg += '<text x="450" y="' + (msgStartY + mi * msgLineH) + '" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="13.5" fill="#2a3a58" letter-spacing="0.01em">' + _svgEsc(msgLines[mi]) + '</text>';
   }
-
   var sealSvg = '';
   if (cfg.seal) {
-    sealSvg = '<g transform="translate(782,88)">' +
-      '<circle r="44" fill="' + accentBar + '" opacity="0.12"/>' +
-      '<circle r="38" fill="none" stroke="' + accentBar + '" stroke-width="2" opacity="0.5" stroke-dasharray="4 3"/>' +
-      '<circle r="28" fill="' + accentBar + '" opacity="0.9"/>' +
-      '<text x="0" y="4" text-anchor="middle" font-family="\'Cinzel\',serif" font-size="8.5" fill="white" letter-spacing="0.1em">CHAMPION</text>' +
-      '<text x="0" y="-7" text-anchor="middle" font-size="14" fill="#f5a623">★</text>' +
-    '</g>';
+    var sealLabel = cfg.wcSeal ? 'WORLD CUP' : tier === 'university' ? 'UNIVERSITY' : 'CHAMPION';
+    sealSvg = '<g transform="translate(782,88)"><circle r="44" fill="' + accentBar + '" opacity="0.12"/><circle r="38" fill="none" stroke="' + accentBar + '" stroke-width="2" opacity="0.5" stroke-dasharray="4 3"/><circle r="28" fill="' + accentBar + '" opacity="0.9"/><text x="0" y="4" text-anchor="middle" font-family="\'Cinzel\',serif" font-size="8.5" fill="white" letter-spacing="0.1em">' + sealLabel + '</text><text x="0" y="-7" text-anchor="middle" font-size="14" fill="#f5a623">★</text></g>';
   }
-
-  var tournDisplayName = _truncateName(tournName || 'MacroNations Global Tournament', 55);
-  var nameYOffset = msgStartY + msgLines.length * msgLineH + 24;
-  var scoreYOffset = nameYOffset + 24;
-
+  var wcDecoSvg = cfg.wcSeal ? '<circle cx="118" cy="88" r="32" fill="none" stroke="#92400e" stroke-width="1.5" opacity="0.15"/><circle cx="118" cy="88" r="22" fill="none" stroke="#92400e" stroke-width="1" opacity="0.25"/><text x="118" y="93" text-anchor="middle" font-size="20" opacity="0.3">🌍</text>' : '';
+  var tournDisplayName = _truncateName(tournName || 'MacroNations Tournament', 55);
+  var nameYOffset  = msgStartY + msgLines.length * msgLineH + 24;
+  var scoreYOffset = nameYOffset + 20;
+  var contextY     = scoreYOffset + (score ? 22 : 2);
+  var ctxDisplay   = contextLine || '';
+  var contextSvg   = ctxDisplay ? '<text x="450" y="' + contextY + '" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="11" fill="#8494b0" letter-spacing="0.1em">' + _svgEsc(ctxDisplay.toUpperCase()) + '</text>' : '';
+  var sig1Label = tier === 'university' ? 'TOURNAMENT COORDINATOR' : tier === 'worldcup' ? 'MACRONATIONS LLC DIRECTOR' : 'TOURNAMENT DIRECTOR';
+  var sig1Name  = tournDirector || '';
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" id="cert-svg">' +
-    '<defs>' +
-      '<linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1">' +
-        '<stop offset="0%" stop-color="#ffffff"/>' +
-        '<stop offset="100%" stop-color="' + bgLight + '"/>' +
-      '</linearGradient>' +
-      '<linearGradient id="bar-grad" x1="0" y1="0" x2="1" y2="0">' +
-        '<stop offset="0%" stop-color="' + accentBar + '"/>' +
-        '<stop offset="100%" stop-color="' + accentBar + '" stop-opacity="0.7"/>' +
-      '</linearGradient>' +
-    '</defs>' +
+    '<defs><linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="' + bgLight + '"/></linearGradient><linearGradient id="bar-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="' + barColor + '"/><stop offset="100%" stop-color="' + barColor + '" stop-opacity="0.7"/></linearGradient></defs>' +
     '<rect width="' + W + '" height="' + H + '" fill="url(#bg-grad)"/>' +
+    (tier === 'worldcup' ? '<rect x="0" y="0" width="6" height="' + H + '" fill="url(#bar-grad)" opacity="0.6"/><rect x="' + (W-6) + '" y="0" width="6" height="' + H + '" fill="url(#bar-grad)" opacity="0.6"/>' : '') +
     '<text x="450" y="360" text-anchor="middle" font-family="\'Cinzel\',serif" font-size="120" fill="' + accentBar + '" opacity="0.04" letter-spacing="0.15em" font-weight="700">' + _svgEsc(cfg.watermark) + '</text>' +
     '<rect x="0" y="0" width="' + W + '" height="12" fill="url(#bar-grad)"/>' +
     '<rect x="0" y="' + (H-12) + '" width="' + W + '" height="12" fill="url(#bar-grad)"/>' +
     '<rect x="24" y="24" width="' + (W-48) + '" height="' + (H-48) + '" fill="none" stroke="' + accentBar + '" stroke-width="1" opacity="0.2" rx="4"/>' +
-    '<g fill="none" stroke="' + accentBar + '" stroke-width="2" opacity="0.5">' +
-      '<path d="M 44 44 L 80 44 M 44 44 L 44 80"/>' +
-      '<path d="M ' + (W-44) + ' 44 L ' + (W-80) + ' 44 M ' + (W-44) + ' 44 L ' + (W-44) + ' 80"/>' +
-      '<path d="M 44 ' + (H-44) + ' L 80 ' + (H-44) + ' M 44 ' + (H-44) + ' L 44 ' + (H-80) + '"/>' +
-      '<path d="M ' + (W-44) + ' ' + (H-44) + ' L ' + (W-80) + ' ' + (H-44) + ' M ' + (W-44) + ' ' + (H-44) + ' L ' + (W-44) + ' ' + (H-80) + '"/>' +
-    '</g>' +
-    sealSvg +
+    (tier === 'worldcup' ? '<rect x="30" y="30" width="' + (W-60) + '" height="' + (H-60) + '" fill="none" stroke="' + accentBar + '" stroke-width="0.5" opacity="0.12" rx="3"/>' : '') +
+    '<g fill="none" stroke="' + accentBar + '" stroke-width="2" opacity="0.5"><path d="M 44 44 L 80 44 M 44 44 L 44 80"/><path d="M ' + (W-44) + ' 44 L ' + (W-80) + ' 44 M ' + (W-44) + ' 44 L ' + (W-44) + ' 80"/><path d="M 44 ' + (H-44) + ' L 80 ' + (H-44) + ' M 44 ' + (H-44) + ' L 44 ' + (H-80) + '"/><path d="M ' + (W-44) + ' ' + (H-44) + ' L ' + (W-80) + ' ' + (H-44) + ' M ' + (W-44) + ' ' + (H-44) + ' L ' + (W-44) + ' ' + (H-80) + '"/></g>' +
+    wcDecoSvg + sealSvg +
     '<line x1="120" y1="88" x2="790" y2="88" stroke="' + accentBar + '" stroke-width="0.75" opacity="0.25"/>' +
     '<defs><clipPath id="csc2"><path d="M450,100 L475,108 L475,128 Q475,148 450,155 Q425,148 425,128 L425,108 Z"/></clipPath></defs>' +
     '<path d="M450,100 L475,108 L475,128 Q475,148 450,155 Q425,148 425,128 L425,108 Z" fill="#0D1F3C"/>' +
@@ -13880,7 +14015,7 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
     '<text x="450" y="120" text-anchor="middle" font-family="Georgia,serif" font-size="10" font-weight="700" fill="#FFD700" letter-spacing="2">MN</text>' +
     '<line x1="432" y1="123" x2="468" y2="123" stroke="#FFD700" stroke-width="1"/>' +
     '<rect x="448.5" y="121.5" width="3" height="3" fill="#FFD700" transform="rotate(45 450 123)"/>' +
-    '<rect x="429" y="143" width="4" height="7"  fill="#60A5FA" opacity="0.85" clip-path="url(#csc2)"/>' +
+    '<rect x="429" y="143" width="4" height="7" fill="#60A5FA" opacity="0.85" clip-path="url(#csc2)"/>' +
     '<rect x="434.5" y="140" width="4" height="10" fill="#60A5FA" opacity="0.85" clip-path="url(#csc2)"/>' +
     '<rect x="440" y="137" width="4" height="13" fill="#60A5FA" opacity="0.85" clip-path="url(#csc2)"/>' +
     '<rect x="445.5" y="134" width="4" height="16" fill="#60A5FA" opacity="0.85" clip-path="url(#csc2)"/>' +
@@ -13901,14 +14036,14 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
     msgSvg +
     '<text x="450" y="' + nameYOffset + '" text-anchor="middle" font-family="\'DM Serif Display\',serif" font-size="14" fill="#0d1526" letter-spacing="0.02em">' + _svgEsc(tournDisplayName) + '</text>' +
     (score ? '<text x="450" y="' + scoreYOffset + '" text-anchor="middle" font-family="\'DM Mono\',monospace" font-size="12" fill="#8494b0" letter-spacing="0.06em">Final Score: ' + score + ' / 1000</text>' : '') +
-    // Signature lines with actual names
+    contextSvg +
     '<line x1="80" y1="574" x2="310" y2="574" stroke="#0d1526" stroke-width="0.75" opacity="0.3"/>' +
     '<line x1="590" y1="574" x2="820" y2="574" stroke="#0d1526" stroke-width="0.75" opacity="0.3"/>' +
-    '<text x="195" y="588" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="10" fill="#0d1526" font-weight="600">' + certYear + '</text>' +
-    '<text x="195" y="600" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="9" fill="#8494b0" letter-spacing="0.06em">DATE OF ISSUANCE</text>' +
-    '<text x="705" y="588" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="10" fill="#0d1526" font-weight="600">' + _svgEsc(_truncateName(directorName,28)) + '</text>' +
-    '<text x="705" y="600" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="9" fill="#8494b0" letter-spacing="0.04em">MACRONATIONS LLC — NEW YORK</text>' +
-    '<text x="450" y="600" text-anchor="middle" font-family="\'DM Mono\',monospace" font-size="10" fill="#8494b0">' + certYear + '</text>' +
+    '<text x="195" y="586" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="10" fill="#0d1526" font-weight="600">' + _svgEsc(_truncateName(sig1Name,28)) + '</text>' +
+    '<text x="195" y="598" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="9" fill="#8494b0" letter-spacing="0.04em">' + sig1Label + '</text>' +
+    '<text x="705" y="586" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="10" fill="#0d1526" font-weight="600">' + _svgEsc(_truncateName(directorName,28)) + '</text>' +
+    '<text x="705" y="598" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="9" fill="#8494b0" letter-spacing="0.04em">MACRONATIONS LLC — NEW YORK</text>' +
+    '<text x="450" y="598" text-anchor="middle" font-family="\'DM Mono\',monospace" font-size="10" fill="#8494b0">' + certYear + '</text>' +
     '</svg>'
   );
 };
