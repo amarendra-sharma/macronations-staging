@@ -8686,7 +8686,7 @@ async function doViewAsTeam(teamId, tournamentId) {
       certType = myRank === 1 ? 'wc_champion' : myRank === 2 ? 'wc_runner_up' : 'wc_participation';
       certCtx  = 'MacroNations World Cup ' + (tourn.season_year || new Date().getFullYear());
     }
-    var certSvg = makeCertSVG(certType, team.name || 'Team', tourn.name || '', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplay || 'Tournament Director', 'Amarendra Sharma, PhD', certCtx);
+    var certSvg = makeCertSVG(certType, team.name || 'Team', tourn.name || '', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplay || 'Tournament Director', 'Amarendra Sharma, PhD', certCtx, '');
 
     // Render all sections
     body.innerHTML =
@@ -14018,7 +14018,7 @@ var _asyncRenderDashCertificates = async function(el) {
 
     // Initial cert
     var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine);
+    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine, (team && team.name) || '');
 
     el.innerHTML =
       '<div class="cert-wrap">' +
@@ -14080,7 +14080,7 @@ function _certSelectType(type) {
     else { btns[i].classList.remove('active'); }
   }
   var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-  var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2);
+  var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2, (team && team.name) || '');
   var preview = document.getElementById('cert-preview');
   if (preview) { preview.innerHTML = svg; }
   var panel = document.getElementById('dash-panel-certificates');
@@ -14123,7 +14123,7 @@ function _certDownloadSVG() {
 
 // Override makeCertSVG to accept signer params
 var _origMakeCertSVG = makeCertSVG;
-makeCertSVG = function(type, recipientName, tournName, score, year, tournDirector, directorName, contextLine) {
+makeCertSVG = function(type, recipientName, tournName, score, year, tournDirector, directorName, contextLine, teamName) {
   if (tournDirector === undefined || tournDirector === null) { tournDirector = _getCertSigners().tournDirector; }
   if (directorName  === undefined || directorName  === null) { directorName  = _getCertSigners().director; }
   year = year || new Date().getFullYear();
@@ -14142,11 +14142,12 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
   var tier = cfg.tier || 'class';
   var W = 900; var H = 636;
   var name = _truncateName(recipientName || 'Participant', 38);
+  var teamNameDisplay = (teamName && teamName !== recipientName) ? _truncateName(teamName, 44) : '';
   var msgLines = _wrapText(cfg.message, 68);
   var accentBar = cfg.accent;
   var bgLight   = cfg.accentLight;
   var barColor  = tier === 'worldcup' ? '#92400e' : tier === 'university' ? '#5b21b6' : accentBar;
-  var msgStartY = 362; var msgLineH = 20; var msgSvg = '';
+  var msgStartY = teamNameDisplay ? 376 : 362; var msgLineH = 20; var msgSvg = '';
   for (var mi = 0; mi < msgLines.length; mi++) {
     msgSvg += '<text x="450" y="' + (msgStartY + mi * msgLineH) + '" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="13.5" fill="#2a3a58" letter-spacing="0.01em">' + _svgEsc(msgLines[mi]) + '</text>';
   }
@@ -14214,7 +14215,8 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
     '<line x1="300" y1="234" x2="600" y2="234" stroke="' + accentBar + '" stroke-width="1" opacity="0.35"/>' +
     '<text x="450" y="268" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="11" fill="#8494b0" letter-spacing="0.22em">PRESENTED TO</text>' +
     '<text x="450" y="316" text-anchor="middle" font-family="\'DM Serif Display\',serif" font-size="' + (name.length > 26 ? '28' : '34') + '" fill="' + accentBar + '" letter-spacing="-0.01em">' + _svgEsc(name) + '</text>' +
-    '<line x1="280" y1="332" x2="620" y2="332" stroke="' + accentBar + '" stroke-width="0.75" opacity="0.25"/>' +
+    (teamNameDisplay ? '<text x="450" y="334" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="11" fill="#8494b0" letter-spacing="0.06em">representing ' + _svgEsc(teamNameDisplay) + '</text>' : '') +
+    '<line x1="280" y1="' + (teamNameDisplay ? '348' : '332') + '" x2="620" y2="' + (teamNameDisplay ? '348' : '332') + '" stroke="' + accentBar + '" stroke-width="0.75" opacity="0.25"/>' +
     msgSvg +
     '<text x="450" y="' + nameYOffset + '" text-anchor="middle" font-family="\'DM Serif Display\',serif" font-size="14" fill="#0d1526" letter-spacing="0.02em">' + _svgEsc(tournDisplayName) + '</text>' +
     (score ? '<text x="450" y="' + scoreYOffset + '" text-anchor="middle" font-family="\'DM Mono\',monospace" font-size="12" fill="#8494b0" letter-spacing="0.06em">Final Score: ' + score + ' / 1000</text>' : '') +
