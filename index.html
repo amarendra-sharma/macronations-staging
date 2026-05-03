@@ -14017,7 +14017,7 @@ var _asyncRenderDashCertificates = async function(el) {
       : scores.total;
 
     // Initial cert
-    var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
+    var recipName = (currentUser && (currentUser.name || currentUser.username)) ? (currentUser.name || currentUser.username) : 'Participant';
     var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine, (team && team.name) || '');
 
     el.innerHTML =
@@ -14079,7 +14079,7 @@ function _certSelectType(type) {
     if (btns[i].getAttribute('data-cert') === type) { btns[i].classList.add('active'); }
     else { btns[i].classList.remove('active'); }
   }
-  var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
+    var recipName = (currentUser && (currentUser.name || currentUser.username)) ? (currentUser.name || currentUser.username) : 'Participant';
   var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2, (team && team.name) || '');
   var preview = document.getElementById('cert-preview');
   if (preview) { preview.innerHTML = svg; }
@@ -14142,7 +14142,7 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
   var tier = cfg.tier || 'class';
   var W = 900; var H = 636;
   var name = _truncateName(recipientName || 'Participant', 38);
-  var teamNameDisplay = (teamName && teamName !== recipientName) ? _truncateName(teamName, 44) : '';
+  var teamNameDisplay = teamName ? _truncateName(teamName, 44) : '';
   var msgLines = _wrapText(cfg.message, 68);
   var accentBar = cfg.accent;
   var bgLight   = cfg.accentLight;
