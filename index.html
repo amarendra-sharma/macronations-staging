@@ -14016,8 +14016,21 @@ var _asyncRenderDashCertificates = async function(el) {
       ? certScoreMap[team.id]
       : scores.total;
 
-    // Initial cert
-    var recipName = (currentUser && (currentUser.name || currentUser.username)) ? (currentUser.name || currentUser.username) : 'Participant';
+    // Fetch participant's real name directly from mn_users — most reliable source
+    var recipName = 'Participant';
+    if (currentUser && currentUser.id) {
+      try {
+        var userRow = await sbGet('mn_users', 'id=eq.' + currentUser.id + '&select=id,name,username&limit=1');
+        if (userRow && userRow.length) {
+          recipName = userRow[0].name || userRow[0].username || 'Participant';
+        }
+      } catch(e) {
+        recipName = currentUser.name || currentUser.username || 'Participant';
+      }
+    }
+
+    // Store fetched name on panel for synchronous re-use in _certSelectType
+    el._certRecipName = recipName;
     var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine, (team && team.name) || '');
 
     el.innerHTML =
@@ -14079,7 +14092,9 @@ function _certSelectType(type) {
     if (btns[i].getAttribute('data-cert') === type) { btns[i].classList.add('active'); }
     else { btns[i].classList.remove('active'); }
   }
-    var recipName = (currentUser && (currentUser.name || currentUser.username)) ? (currentUser.name || currentUser.username) : 'Participant';
+  var recipName = (_cPanel2 && _cPanel2._certRecipName) ? _cPanel2._certRecipName
+    : (currentUser && (currentUser.name || currentUser.username)) ? (currentUser.name || currentUser.username)
+    : 'Participant';
   var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2, (team && team.name) || '');
   var preview = document.getElementById('cert-preview');
   if (preview) { preview.innerHTML = svg; }
