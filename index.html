@@ -8332,6 +8332,7 @@ var ADMIN_TABS_PROF = [
   { id:'tournaments', label:'🏆 Manage' },
   { id:'teams',       label:'👥 Teams' },
   { id:'rounds',      label:'🔄 Rounds' },
+  { id:'playoffs',    label:'🥊 Playoffs' },
   { id:'notify',      label:'📧 Notify Students' }
 ];
 
@@ -10528,7 +10529,11 @@ async function _openRoundNotificationEmail(tourn, newRound, teamData) {
 // ─────────────────────────────────────────────────────────────────
 async function renderAdminPlayoffs(el) {
   el.innerHTML = '<div class="empty-state"><div class="spinner" style="width:24px;height:24px;margin:0 auto 0.75rem;"></div></div>';
-  var allTourneys = _adminTournaments.filter(function(t) { return t.status === 'completed' || t.status === 'active'; });
+  var allTourneys = _adminTournaments.filter(function(t) {
+    var statusOk = t.status === 'completed' || t.status === 'active';
+    var ownerOk  = _isAdmin() || (currentUser && t.created_by === currentUser.id);
+    return statusOk && ownerOk;
+  });
   if (!allTourneys.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🥊</div><div class="empty-state__title">No tournaments yet</div><div class="empty-state__desc">Complete at least one tournament to set up playoffs.</div></div>';
     return;
@@ -13744,12 +13749,34 @@ var _asyncRenderDashCertificates = async function(el) {
     var isWCTier     = (tournTier === 'global' || tourn.is_global_elected);
     var isOCTier     = (tournTier === 'open_championship');
 
-    // Fetch creator name from mn_users
+    // Fetch creator name from mn_users — always await fresh fetch to ensure it's populated
     var creatorName = ''; var creatorInst = '';
     if (tourn.created_by) {
+      // Check cache first
       var _pr = (typeof _professorMap !== 'undefined') && _professorMap[tourn.created_by];
-      if (_pr) { creatorName = _pr.name || ''; creatorInst = _pr.institution || ''; }
+      if (!_pr) {
+        // Not cached yet — fetch now (pre-fetch block above may have already set it)
+        try {
+          var _profFetch2 = await sbGetPublic('mn_users', 'id=eq.' + tourn.created_by + '&select=id,name,institution&limit=1');
+          if (_profFetch2 && _profFetch2.length) {
+            if (typeof _professorMap === 'undefined') { _professorMap = {}; }
+            _professorMap[tourn.created_by] = _profFetch2[0];
+            _pr = _profFetch2[0];
+          }
+        } catch(e2) {}
+      }
+      if (_pr) {
+        creatorName = _pr.name || '';
+        creatorInst = _pr.institution || '';
+      }
+      // Also check if this IS the current user (professor viewing their own tournament)
+      if (!creatorName && currentUser && tourn.created_by === currentUser.id) {
+        creatorName = currentUser.name || currentUser.username || '';
+        creatorInst = currentUser.institution || '';
+      }
     }
+    // Build display name with institution
+    var creatorDisplayName = creatorName + (creatorInst ? ', ' + creatorInst : '');
 
     // University bracket position
     var bracketPosition = null;
@@ -13858,7 +13885,7 @@ var _asyncRenderDashCertificates = async function(el) {
 
     // Initial cert
     var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.season_year || new Date().getFullYear(), signers.tournDirector || creatorName, signers.director, contextLine);
+    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine);
 
     el.innerHTML =
       '<div class="cert-wrap">' +
@@ -13873,9 +13900,10 @@ var _asyncRenderDashCertificates = async function(el) {
         '</div>' +
       '</div>';
 
-    el._activeCertType = firstElig;
-    el._certContextLine = contextLine;
-    el._certCreatorName = creatorName;
+    el._activeCertType      = firstElig;
+    el._certContextLine     = contextLine;
+    el._certCreatorName     = creatorName;
+    el._certCreatorDisplay  = creatorDisplayName;
 
   } catch(e) {
     el.innerHTML =
@@ -13907,9 +13935,11 @@ function _certSelectType(type) {
   if (!tournDir) { tournDir = signers.tournDirector; }
   if (!dirName)  { dirName  = signers.director; }
   var _cPanel2 = document.getElementById('dash-panel-certificates');
-  var contextLine2  = (_cPanel2 && _cPanel2._certContextLine) ? _cPanel2._certContextLine : '';
-  var creatorName2  = (_cPanel2 && _cPanel2._certCreatorName) ? _cPanel2._certCreatorName : '';
-  if (!tournDir && creatorName2) { tournDir = creatorName2; }
+  var contextLine2     = (_cPanel2 && _cPanel2._certContextLine)    ? _cPanel2._certContextLine    : '';
+  var creatorName2     = (_cPanel2 && _cPanel2._certCreatorName)    ? _cPanel2._certCreatorName    : '';
+  var creatorDisplay2  = (_cPanel2 && _cPanel2._certCreatorDisplay) ? _cPanel2._certCreatorDisplay : '';
+  if (!tournDir && creatorDisplay2) { tournDir = creatorDisplay2; }
+  else if (!tournDir && creatorName2) { tournDir = creatorName2; }
 
   var btns = document.querySelectorAll('.cert-type-btn');
   for (var i = 0; i < btns.length; i++) {
