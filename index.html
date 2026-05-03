@@ -8577,6 +8577,126 @@ function openIndividualCrisisModal(tournId) {
   _loadIndividualCrisisTeams(tournId, tourn.current_round || 1);
 }
 
+
+// ── Super-admin: View As Team ─────────────────────────────────────
+async function doViewAsTeam(teamId, tournamentId) {
+  var team  = null;
+  for (var i = 0; i < _adminTeams.length; i++) {
+    if (_adminTeams[i].id === teamId) { team = _adminTeams[i]; break; }
+  }
+  var tourn = _getTournById(tournamentId);
+  if (!team || !tourn) { flash('Team or tournament not found.', 'error'); return; }
+
+  var existing = document.getElementById('modal-view-as');
+  if (existing) { existing.remove(); }
+
+  var modal = document.createElement('div');
+  modal.className = 'modal-backdrop open';
+  modal.id = 'modal-view-as';
+  modal.style.zIndex = '9999';
+  modal.innerHTML =
+    '<div class="modal" style="max-width:900px;width:95vw;max-height:90vh;overflow-y:auto;">' +
+      '<div class="modal__header" style="position:sticky;top:0;background:var(--bg-base);z-index:1;border-bottom:1px solid var(--border);">' +
+        '<div>' +
+          '<h2 class="modal__title">👁 Viewing As: ' + esc(team.name || 'Team') + '</h2>' +
+          '<p class="modal__subtitle">' + esc(tourn.name || '') + ' · Read-only preview · Your admin session is unaffected</p>' +
+        '</div>' +
+        '<button class="modal__close" onclick="document.getElementById(\'modal-view-as\').remove();">&#x2715;</button>' +
+      '</div>' +
+      '<div class="modal__body" id="view-as-body">' +
+        '<div class="empty-state"><div class="spinner" style="width:24px;height:24px;margin:0 auto 0.75rem;"></div><div>Loading...</div></div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  var body = document.getElementById('view-as-body');
+  try {
+    // Economy
+    var econRows = await sbGet('economies', 'team_id=eq.' + teamId + '&tournament_id=eq.' + tournamentId + '&limit=1') || [];
+    var econ = econRows.length ? econRows[0] : null;
+    var state  = (econ && econ.current) ? econ.current : defaultEconomy();
+    var scores = computeScores(state);
+    var round = tourn.tier === 'open_championship'
+      ? ((econ && econ.current_round) ? Number(econ.current_round) : 0)
+      : (tourn.current_round || 1);
+
+    // Decision
+    var decRows = await sbGet('decisions',
+      'team_id=eq.' + teamId + '&tournament_id=eq.' + tournamentId + '&round=eq.' + round + '&limit=1') || [];
+    var dec = decRows.length ? decRows[0] : null;
+
+    // Rankings
+    var allTeams = await sbGet('teams', 'tournament_id=eq.' + tournamentId + '&limit=200') || [];
+    var allEcons = await sbGet('economies', 'tournament_id=eq.' + tournamentId + '&select=team_id,current&limit=200') || [];
+    var scoreMap = {};
+    for (var ei = 0; ei < allEcons.length; ei++) {
+      var er = allEcons[ei]; if (er.current) { var st = typeof er.current === 'string' ? JSON.parse(er.current) : er.current; scoreMap[er.team_id] = computeScores(st).total; }
+    }
+    var sorted = allTeams.slice().sort(function(a, b) { return (scoreMap[b.id]||0) - (scoreMap[a.id]||0); });
+    var myRank = 1; for (var ri = 0; ri < sorted.length; ri++) { if (sorted[ri].id === teamId) { myRank = ri + 1; break; } }
+
+    // Creator
+    var creatorDisplay = '';
+    if (tourn.created_by) {
+      try { var cr = await sbGetPublic('mn_users', 'id=eq.' + tourn.created_by + '&select=name,institution&limit=1'); if (cr && cr.length) { creatorDisplay = (cr[0].name||'') + (cr[0].institution ? ', ' + cr[0].institution : ''); } } catch(e) {}
+    }
+
+    // Score bars
+    var pillars = [
+      { label:'GDP Performance',  val: scores.gdp          || 0, max:200, color:'#4a9eff' },
+      { label:'Stability',        val: scores.stability    || 0, max:200, color:'#34d399' },
+      { label:'Equality',         val: scores.equality     || 0, max:200, color:'#f59e0b' },
+      { label:'Sustainability',   val: scores.sustainability|| 0, max:200, color:'#a78bfa' },
+      { label:'Innovation',       val: scores.innovation   || 0, max:200, color:'#f87171' }
+    ];
+    var barsHtml = pillars.map(function(p) {
+      var pct = Math.round((p.val/p.max)*100);
+      return '<div style="margin-bottom:0.5rem;"><div style="display:flex;justify-content:space-between;font-size:0.8125rem;margin-bottom:3px;"><span>' + p.label + '</span><span style="font-weight:600;">' + p.val + '/' + p.max + '</span></div><div style="height:6px;background:var(--bg-subtle);border-radius:3px;"><div style="height:6px;width:' + pct + '%;background:' + p.color + ';border-radius:3px;"></div></div></div>';
+    }).join('');
+
+    // Policy
+    var policyHtml = '';
+    if (dec && dec.policy) {
+      var pol = dec.policy;
+      var leverRows = LEVERS.map(function(lv) {
+        var val = pol[lv.key] !== undefined ? pol[lv.key] : lv.def;
+        return '<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;"><span>' + esc(lv.label) + '</span><span class="text-mono" style="font-weight:600;">' + val + (lv.unit||'') + '</span></div>';
+      }).join('');
+      var rationale = pol.rationale || '';
+      policyHtml = '<div class="card" style="margin-bottom:1.25rem;"><div class="card__header"><span class="card__title">Round ' + round + ' Policy ' + (dec.is_final ? '<span class="badge badge--green badge--no-dot">Submitted</span>' : '<span class="badge badge--subtle badge--no-dot">Draft</span>') + '</span></div><div class="card__body">' + leverRows + (rationale ? '<div style="margin-top:0.875rem;padding:0.75rem;background:var(--bg-subtle);border-radius:var(--radius);font-size:0.8125rem;"><div style="font-weight:600;margin-bottom:0.375rem;font-size:0.75rem;color:var(--text-400);letter-spacing:0.06em;">RATIONALE</div><div style="white-space:pre-wrap;">' + esc(rationale) + '</div></div>' : '') + '</div></div>';
+    } else {
+      policyHtml = '<div class="card" style="margin-bottom:1.25rem;"><div class="card__body" style="color:var(--text-400);">No policy submitted for Round ' + round + '.</div></div>';
+    }
+
+    // Certificate preview
+    var tournTier = tourn.tier || 'class';
+    var isCompleted = tourn.status === 'completed';
+    var certType = 'class_participation';
+    var certCtx  = '';
+    if (tournTier === 'class' || tournTier === 'open_championship') {
+      if (myRank === 1 && isCompleted)      { certType = 'class_champion'; }
+      else if (myRank === 2 && isCompleted) { certType = 'class_runner_up'; }
+      certCtx = (creatorDisplay ? 'Prof. ' + creatorDisplay + ' · ' : '') + (tourn.name || '');
+    } else if (tournTier === 'university') {
+      certType = 'univ_participation'; certCtx = (tourn.name || '') + ' ' + (tourn.season_year || '');
+    } else if (tournTier === 'global') {
+      certType = myRank === 1 ? 'wc_champion' : myRank === 2 ? 'wc_runner_up' : 'wc_participation';
+      certCtx  = 'MacroNations World Cup ' + (tourn.season_year || new Date().getFullYear());
+    }
+    var certSvg = makeCertSVG(certType, team.name || 'Team', tourn.name || '', scores.total, tourn.season_year || new Date().getFullYear(), creatorDisplay || 'Tournament Director', 'Amarendra Sharma, PhD', certCtx);
+
+    // Render all sections
+    body.innerHTML =
+      '<div class="dash-alert dash-alert--info" style="margin-bottom:1.25rem;"><div class="dash-alert__icon">i</div><div class="dash-alert__body">Rank <strong>#' + myRank + '</strong> of ' + sorted.length + ' teams · Round ' + round + (tourn.rounds_total ? '/' + tourn.rounds_total : '') + ' · ' + (team.fee_paid ? '✅ Fee Paid' : '❌ Fee Unpaid') + ' · Status: ' + (tourn.status || '?') + '</div></div>' +
+      '<div class="card" style="margin-bottom:1.25rem;"><div class="card__header"><span class="card__title">Economy Score — ' + scores.total + ' / 1000</span></div><div class="card__body">' + barsHtml + '</div></div>' +
+      policyHtml +
+      '<div class="card"><div class="card__header"><span class="card__title">Certificate Preview</span><span style="font-size:0.8125rem;color:var(--text-400);">Type: ' + certType + ' · Rank #' + myRank + (isCompleted ? '' : ' · Tournament not yet complete') + '</span></div><div class="card__body" style="overflow-x:auto;">' + certSvg + '<p style="font-size:0.75rem;color:var(--text-400);margin-top:0.75rem;">Certificate type is auto-determined from rank and tournament status. Students access their certificate from the Certificate tab after tournament completion.</p></div></div>';
+
+  } catch(e) {
+    body.innerHTML = '<div class="dash-alert dash-alert--error"><div class="dash-alert__icon">!</div><div class="dash-alert__body">Error loading: ' + esc(e.message || '') + '</div></div>';
+  }
+}
+
 async function doDeleteTournament(tournId) {
   var t = _getTournById(tournId);
   var name = (t && t.name) ? t.name : 'this tournament';
@@ -9655,7 +9775,8 @@ function renderAdminTeams(el) {
         (fee > 0 && !tm.fee_paid
           ? '<button class="btn btn--ghost btn--sm" onclick="doMarkPaid(\'' + tm.id + '\')">Mark Paid</button> '
           : '') +
-        '<button class="btn btn--ghost btn--sm" onclick="doUnlockResubmission(\'' + tm.id + '\',\'' + (tm.tournament_id || '') + '\')">🔓 Unlock Round</button>' +
+        '<button class="btn btn--ghost btn--sm" onclick="doUnlockResubmission(\'' + tm.id + '\',\'' + (tm.tournament_id || '') + '\')">🔓 Unlock Round</button> ' +
+        '<button class="btn btn--ghost btn--sm" onclick="doViewAsTeam(\'' + tm.id + '\',\'' + (tm.tournament_id || '') + '\')">👁 View As</button>' +
       '</td>' +
       '</tr>';
   }
