@@ -8686,7 +8686,7 @@ async function doViewAsTeam(teamId, tournamentId) {
       certType = myRank === 1 ? 'wc_champion' : myRank === 2 ? 'wc_runner_up' : 'wc_participation';
       certCtx  = 'MacroNations World Cup ' + (tourn.season_year || new Date().getFullYear());
     }
-    var certSvg = makeCertSVG(certType, team.name || 'Team', tourn.name || '', scores.total, tourn.season_year || new Date().getFullYear(), creatorDisplay || 'Tournament Director', 'Amarendra Sharma, PhD', certCtx);
+    var certSvg = makeCertSVG(certType, team.name || 'Team', tourn.name || '', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplay || 'Tournament Director', 'Amarendra Sharma, PhD', certCtx);
 
     // Render all sections
     body.innerHTML =
@@ -9693,12 +9693,16 @@ async function doSetTournamentStatus(id, status) {
     if (status === 'active' && _getTournById(id) && _getTournById(id).current_round === 0) {
       patch.current_round = 1;
     }
+    if (status === 'completed') {
+      patch.completed_at = new Date().toISOString();
+    }
     await sbPatch('tournaments', 'id=eq.' + id, patch);
     // Update local
     for (var i = 0; i < _adminTournaments.length; i++) {
       if (_adminTournaments[i].id === id) {
         _adminTournaments[i].status = status;
         if (patch.current_round) { _adminTournaments[i].current_round = patch.current_round; }
+        if (patch.completed_at)  { _adminTournaments[i].completed_at  = patch.completed_at; }
         break;
       }
     }
@@ -14014,7 +14018,7 @@ var _asyncRenderDashCertificates = async function(el) {
 
     // Initial cert
     var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine);
+    var initSvg   = makeCertSVG(firstElig, recipName, tourn.name || 'MacroNations Tournament', certScore, tourn.completed_at || tourn.season_year || new Date().getFullYear(), creatorDisplayName || signers.tournDirector, signers.director, contextLine);
 
     el.innerHTML =
       '<div class="cert-wrap">' +
@@ -14076,7 +14080,7 @@ function _certSelectType(type) {
     else { btns[i].classList.remove('active'); }
   }
   var recipName = (currentUser && currentUser.name) ? currentUser.name : (team.name || 'Participant');
-  var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2);
+  var svg = makeCertSVG(type, recipName, tourn.name || 'MacroNations Tournament', scores.total, tourn.completed_at || tourn.season_year || new Date().getFullYear(), tournDir, dirName, contextLine2);
   var preview = document.getElementById('cert-preview');
   if (preview) { preview.innerHTML = svg; }
   var panel = document.getElementById('dash-panel-certificates');
@@ -14123,7 +14127,17 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
   if (tournDirector === undefined || tournDirector === null) { tournDirector = _getCertSigners().tournDirector; }
   if (directorName  === undefined || directorName  === null) { directorName  = _getCertSigners().director; }
   year = year || new Date().getFullYear();
-  var certYear = new Date().getFullYear();
+  // Format precise date: if year looks like an ISO date string use it, else just show year
+  var certDateDisplay;
+  if (year && String(year).length > 4) {
+    // Full ISO date — format as "Month Day, Year"
+    try {
+      var d = new Date(year);
+      certDateDisplay = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } catch(e) { certDateDisplay = String(year).slice(0, 4); }
+  } else {
+    certDateDisplay = String(year);
+  }
   var cfg  = CERT_TYPES[type] || CERT_TYPES.participation;
   var tier = cfg.tier || 'class';
   var W = 900; var H = 636;
@@ -14211,7 +14225,7 @@ makeCertSVG = function(type, recipientName, tournName, score, year, tournDirecto
     sig1LabelSvg +
     '<text x="705" y="586" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="10" fill="#0d1526" font-weight="600">' + _svgEsc(_truncateName(directorName,28)) + '</text>' +
     '<text x="705" y="598" text-anchor="middle" font-family="\'DM Sans\',sans-serif" font-size="9" fill="#8494b0" letter-spacing="0.04em">MACRONATIONS LLC — NEW YORK</text>' +
-    '<text x="450" y="598" text-anchor="middle" font-family="\'DM Mono\',monospace" font-size="10" fill="#8494b0">' + certYear + '</text>' +
+    '<text x="450" y="598" text-anchor="middle" font-family="\'DM Mono\',monospace" font-size="9" fill="#8494b0">' + certDateDisplay + '</text>' +
     '</svg>'
   );
 };
