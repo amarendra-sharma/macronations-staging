@@ -8673,7 +8673,10 @@ async function doViewAsTeam(teamId, tournamentId) {
     var isCompleted = tourn.status === 'completed';
     var certType = 'class_participation';
     var certCtx  = '';
-    if (tournTier === 'class' || tournTier === 'open_championship') {
+    if (tournTier === 'open_championship') {
+      certType = myRank === 1 && isCompleted ? 'oc_champion' : myRank === 2 && isCompleted ? 'oc_runner_up' : 'oc_participation';
+      certCtx  = 'Open Championship ' + (tourn.season_year || new Date().getFullYear());
+    } else if (tournTier === 'class') {
       if (myRank === 1 && isCompleted)      { certType = 'class_champion'; }
       else if (myRank === 2 && isCompleted) { certType = 'class_runner_up'; }
       certCtx = (creatorDisplay ? 'Prof. ' + creatorDisplay + ' · ' : '') + (tourn.name || '');
@@ -12426,9 +12429,12 @@ var CERT_TYPES = {
   winner:        { label:'Championship Certificate', accent:'#b87408', accentLight:'#fef3d8', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'class', message:'has achieved the highest score in the MacroNations Tournament, demonstrating mastery of macroeconomic policy, crisis management, and strategic governance across all five scoring pillars.' },
   runner_up:     { label:'Runner-Up Certificate', accent:'#475569', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'class', message:'has achieved second place in the MacroNations Tournament, exhibiting outstanding skill in macroeconomic policy formulation and demonstrating excellence across the five scoring pillars.' },
   playoff:       { label:'Playoff Qualifier Certificate', accent:'#5b21b6', accentLight:'#f5f3ff', watermark:'QUALIFIER', ribbon:'⭐', tier:'university', message:'has qualified for the MacroNations playoff bracket, placing among the top competitors in the tournament.' },
-  class_participation: { label:'Certificate of Participation', accent:'#0f3d9e', accentLight:'#e8eef8', watermark:'PARTICIPANT', ribbon:'🎓', tier:'class', message:'has completed the MacroNations Class Tournament, demonstrating commitment to macroeconomic policy analysis, strategic governance, and real-world simulation of the five pillars of national economic performance.' },
-  class_champion:      { label:'Class Champion Certificate', accent:'#b87408', accentLight:'#fef3d8', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'class', message:'has achieved the highest score in the MacroNations Class Tournament, demonstrating exceptional mastery of macroeconomic policy, crisis management, and strategic governance across GDP, stability, equality, sustainability, and innovation.' },
-  class_runner_up:     { label:'Class Runner-Up Certificate', accent:'#64748b', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'class', message:'has achieved second place in the MacroNations Class Tournament, exhibiting outstanding macroeconomic reasoning and policy design across all five scoring pillars of national economic performance.' },
+  class_participation: { label:'Certificate of Participation', accent:'#0f3d9e', accentLight:'#e8eef8', watermark:'PARTICIPANT', ribbon:'🎓', tier:'class', message:'has completed the MacroNations Tournament, demonstrating commitment to macroeconomic policy analysis, strategic governance, and real-world simulation of the five pillars of national economic performance.' },
+  class_champion:      { label:'Class Champion Certificate', accent:'#b87408', accentLight:'#fef3d8', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'class', message:'has achieved the highest score in the MacroNations Tournament, demonstrating exceptional mastery of macroeconomic policy, crisis management, and strategic governance across GDP, stability, equality, sustainability, and innovation.' },
+  class_runner_up:     { label:'Class Runner-Up Certificate', accent:'#64748b', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'class', message:'has achieved second place in the MacroNations Tournament, exhibiting outstanding macroeconomic reasoning and policy design across all five scoring pillars of national economic performance.' },
+  oc_participation: { label:'Certificate of Participation', accent:'#0f3d9e', accentLight:'#e8eef8', watermark:'PARTICIPANT', ribbon:'🎓', tier:'oc', message:'has competed in the MacroNations Open Championship, a global macroeconomic policy simulation open to all competitors worldwide, demonstrating commitment to economic governance across the five pillars of national performance.' },
+  oc_champion:      { label:'Open Championship Certificate', accent:'#b87408', accentLight:'#fef3d8', watermark:'CHAMPION', ribbon:'🏆', seal:true, tier:'oc', message:'has achieved the highest score in the MacroNations Open Championship, demonstrating world-class mastery of macroeconomic policy, crisis management, and strategic governance across GDP, stability, equality, sustainability, and innovation.' },
+  oc_runner_up:     { label:'Open Championship Runner-Up', accent:'#64748b', accentLight:'#f1f5f9', watermark:'RUNNER-UP', ribbon:'🥈', tier:'oc', message:'has achieved second place in the MacroNations Open Championship, a global competition open to all, exhibiting outstanding macroeconomic reasoning and policy design across all five pillars of national economic performance.' },
   univ_participation:    { label:'University Tournament Participant', accent:'#6d28d9', accentLight:'#f5f3ff', watermark:'PARTICIPANT', ribbon:'🎓', tier:'university', message:'has competed in the MacroNations University Tournament, representing their institution in a rigorous intercollegiate macroeconomic policy simulation across the five pillars of national economic performance.' },
   univ_quarterfinalist:  { label:'University Quarterfinalist', accent:'#7c3aed', accentLight:'#ede9fe', watermark:'FINALIST', ribbon:'⭐', tier:'university', message:'has advanced to the Quarterfinals of the MacroNations University Tournament, placing among the top competitors in the intercollegiate bracket and demonstrating superior macroeconomic policy formulation and crisis response.' },
   univ_semifinalist:     { label:'University Semifinalist', accent:'#5b21b6', accentLight:'#ede9fe', watermark:'FINALIST', ribbon:'🌟', tier:'university', message:'has advanced to the Semifinals of the MacroNations University Tournament, placing among the top four competitors in the intercollegiate bracket and demonstrating exceptional macroeconomic reasoning, strategic policy design, and crisis management.' },
@@ -13929,8 +13935,10 @@ var _asyncRenderDashCertificates = async function(el) {
     }
 
     var eligible = {};
-    if (isClassTier || isOCTier) {
+    if (isClassTier) {
       eligible = { class_participation: isAdmin || isCompleted, class_champion: isAdmin || (isCompleted && myRank===1), class_runner_up: isAdmin || (isCompleted && myRank===2) };
+    } else if (isOCTier) {
+      eligible = { oc_participation: isAdmin || isCompleted, oc_champion: isAdmin || (isCompleted && myRank===1), oc_runner_up: isAdmin || (isCompleted && myRank===2) };
     } else if (isUnivTier) {
       var atLeastQF = bracketPosition === 'quarterfinalist' || bracketPosition === 'semifinalist' || bracketPosition === 'runner_up' || bracketPosition === 'champion';
       eligible = {
@@ -13966,8 +13974,8 @@ var _asyncRenderDashCertificates = async function(el) {
 
     // Build type buttons
     var typeKeys   = Object.keys(eligible);
-    var typeLabels = { participation:'Participation', winner:'Champion', runner_up:'Runner-Up', playoff:'Playoff Qualifier', class_participation:'Participation', class_champion:'Class Champion', class_runner_up:'Class Runner-Up', univ_participation:'Participant', univ_quarterfinalist:'Quarterfinalist', univ_semifinalist:'Semifinalist', univ_runner_up:'Runner-Up', univ_champion:'University Champion', wc_participation:'WC Participant', wc_runner_up:'WC Finalist', wc_champion:'World Cup Champion' };
-    var typeIcons  = { participation:'🎓', winner:'🏆', runner_up:'🥈', playoff:'⭐', class_participation:'🎓', class_champion:'🏆', class_runner_up:'🥈', univ_participation:'🎓', univ_quarterfinalist:'⭐', univ_semifinalist:'🌟', univ_runner_up:'🥈', univ_champion:'🏆', wc_participation:'🌍', wc_runner_up:'🥈', wc_champion:'🏆' };
+    var typeLabels = { participation:'Participation', winner:'Champion', runner_up:'Runner-Up', playoff:'Playoff Qualifier', class_participation:'Participation', class_champion:'Class Champion', class_runner_up:'Class Runner-Up', oc_participation:'OC Participant', oc_champion:'OC Champion', oc_runner_up:'OC Runner-Up', univ_participation:'Participant', univ_quarterfinalist:'Quarterfinalist', univ_semifinalist:'Semifinalist', univ_runner_up:'Runner-Up', univ_champion:'University Champion', wc_participation:'WC Participant', wc_runner_up:'WC Finalist', wc_champion:'World Cup Champion' };
+    var typeIcons  = { participation:'🎓', winner:'🏆', runner_up:'🥈', playoff:'⭐', class_participation:'🎓', class_champion:'🏆', class_runner_up:'🥈', oc_participation:'🎓', oc_champion:'🏆', oc_runner_up:'🥈', univ_participation:'🎓', univ_quarterfinalist:'⭐', univ_semifinalist:'🌟', univ_runner_up:'🥈', univ_champion:'🏆', wc_participation:'🌍', wc_runner_up:'🥈', wc_champion:'🏆' };
     var typeBtns   = ''; var firstElig = null;
     for (var i = 0; i < typeKeys.length; i++) {
       var tk = typeKeys[i]; var isElig = eligible[tk];
