@@ -16020,25 +16020,51 @@ async function tbCheckAccess() {
     return false;
   }
 
-  // Students: must be in a paid team in a textbook-enabled tournament
-  var teams = [];
+  // Students: check any team they belong to (paid check + textbook_enabled)
+  var allTeams = [];
   try {
-    var cap  = await sbGet('teams', 'captain_id=eq.' + userId + '&fee_paid=eq.true&limit=50');
-    var mem  = await sbGet('teams', 'members=cs.{' + userId + '}&fee_paid=eq.true&limit=50');
-    teams = (cap || []).concat(mem || []);
+    var capTeams = await sbGet('teams', 'captain_id=eq.' + userId + '&limit=100&select=id,tournament_id,fee_paid');
+    if (capTeams && capTeams.length) allTeams = allTeams.concat(capTeams);
   } catch(e) {}
+  try {
+    var memTeams = await sbGet('teams', 'members=cs.{"' + userId + '"}&limit=100&select=id,tournament_id,fee_paid');
+    if (memTeams && memTeams.length) allTeams = allTeams.concat(memTeams);
+  } catch(e2) {
+    try {
+      var memTeams2 = await sbGet('teams', 'members=cs.{' + userId + '}&limit=100&select=id,tournament_id,fee_paid');
+      if (memTeams2 && memTeams2.length) allTeams = allTeams.concat(memTeams2);
+    } catch(e3) {}
+  }
 
-  for (var i = 0; i < teams.length; i++) {
-    var tid = teams[i].tournament_id;
+  for (var i = 0; i < allTeams.length; i++) {
+    var tid = allTeams[i].tournament_id;
     if (!tid) continue;
     try {
-      var t = await sbGetPublic('tournaments',
-        'id=eq.' + tid + '&textbook_enabled=eq.true&limit=1');
-      if (t && t.length > 0) return { access: true, tournId: tid };
-    } catch(e2) {}
+      var tourn = await sbGetPublic('tournaments',
+        'id=eq.' + tid + '&textbook_enabled=eq.true&limit=1&select=id,entry_fee');
+      if (tourn && tourn.length > 0) {
+        if (allTeams[i].fee_paid || !tourn[0].entry_fee || Number(tourn[0].entry_fee) === 0) {
+          return { access: true, tournId: tid };
+        }
+      }
+    } catch(e4) {}
   }
   return false;
 }
+
+// Listen for progress/navigation messages from the textbook iframe
+window.addEventListener('message', function(evt) {
+  if (!evt.data || typeof evt.data !== 'object') return;
+  if (evt.data.type === 'tb-progress' && currentUser) {
+    tbSaveProgress(currentUser.id, window._tbTournId || null, evt.data.ch, evt.data.scores || {});
+    tbReadProgress();
+    tbRenderSidebar();
+  }
+  if (evt.data.type === 'tb-navigate') {
+    TB_ACTIVE_CH = evt.data.ch || TB_ACTIVE_CH;
+    tbRenderSidebar();
+  }
+});
 
 // Inject/remove the textbook nav tab based on access
 async function tbUpdateNavVisibility() {
