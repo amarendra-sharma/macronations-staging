@@ -16296,12 +16296,46 @@ function tbSetDifficulty(level) {
 
 // Fetch the textbook file, extract its body content + styles + scripts,
 // inject into #tb-content, then run scripts in the main page context
+// Helper: load an external script and wait for it
+function _loadScript(src) {
+  return new Promise(function(resolve, reject) {
+    // If already loaded, resolve immediately
+    var existing = document.querySelector('script[src="' + src + '"]');
+    if (existing) { resolve(); return; }
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = function() { reject(new Error('Failed to load: ' + src)); };
+    document.head.appendChild(s);
+  });
+}
+
+// Helper: eval a JS string in TRUE window scope (not a closure)
+// by appending a <script> element — this is the only reliable way
+// to ensure var declarations and function declarations become window properties
+function _evalInWindowScope(code) {
+  return new Promise(function(resolve) {
+    var s = document.createElement('script');
+    s.setAttribute('data-tb-injected', '1');
+    s.textContent = code + '\n//# sourceURL=macronations-textbook-injected.js';
+    document.head.appendChild(s);
+    // Script executes synchronously when appended
+    resolve();
+  });
+}
+
 async function tbFetchAndInject() {
   if (_tbLoaded) {
-    // Already loaded — just show content
-    document.getElementById('tb-loading').style.display = 'none';
-    document.getElementById('tb-content').style.display = 'block';
+    // Already injected — show and navigate
+    // Re-inject body HTML because page navigation may have destroyed the DOM nodes
+    var loading2 = document.getElementById('tb-loading');
+    var content2 = document.getElementById('tb-content');
+    if (loading2) loading2.style.display = 'none';
+    if (content2) content2.style.display = 'block';
+    // Reset loadedCharts so FRED charts re-render on the fresh canvas elements
+    if (window.loadedCharts) { window.loadedCharts = {}; }
     if (window._tbShowChapter) window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
+    tbRenderSidebar();
     return;
   }
 
@@ -16309,63 +16343,54 @@ async function tbFetchAndInject() {
   var content = document.getElementById('tb-content');
 
   try {
+    // ── STEP 1: Load Chart.js FIRST before anything else ──────────
+    await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js');
+
+    // ── STEP 2: Fetch the textbook HTML ───────────────────────────
     var base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
     var tbUrl = base + 'macronations-textbook.html';
     var resp = await fetch(tbUrl);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status + ' fetching ' + tbUrl);
     var rawHtml = await resp.text();
 
-    // 1. Extract and inject <style> blocks from textbook
-    var styleMatches = rawHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
-    styleMatches.forEach(function(styleTag) {
-      var el = document.createElement('style');
-      el.setAttribute('data-tb', '1');
-      el.textContent = styleTag.replace(/<\/?style[^>]*>/gi, '');
-      document.head.appendChild(el);
-    });
-
-    // 2. Extract body content
-    var bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    var bodyHtml = bodyMatch ? bodyMatch[1] : rawHtml;
-
-    // 3. Strip the textbook's own nav (we use the platform sidebar)
-    bodyHtml = bodyHtml.replace(/<nav class="tb-nav"[\s\S]*?<\/nav>/i, '');
-
-    // 4. Inject body into #tb-content
-    content.innerHTML = bodyHtml;
-
-    // 5. Extract and eval inline script from textbook
-    var scriptMatches = rawHtml.match(/<script(?![^>]+src=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
-    scriptMatches.forEach(function(scriptTag) {
-      var code = scriptTag.replace(/<\/?script[^>]*>/gi, '').trim();
-      if (!code) return;
-      try {
-        // Run in window scope so functions become globally accessible
-        var fn = new Function(code);
-        fn.call(window);
-      } catch(e2) { console.warn('tb script eval:', e2.message); }
-    });
-
-    // 6. Load Chart.js if not already present (needed by textbook diagrams)
-    if (!window.Chart) {
-      await new Promise(function(resolve, reject) {
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
-        s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
+    // ── STEP 3: Inject textbook CSS into <head> ───────────────────
+    // Only do this once — check if already injected
+    if (!document.querySelector('style[data-tb]')) {
+      var styleMatches = rawHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+      styleMatches.forEach(function(styleTag) {
+        var el = document.createElement('style');
+        el.setAttribute('data-tb', '1');
+        el.textContent = styleTag.replace(/<\/?style[^>]*>/gi, '');
+        document.head.appendChild(el);
       });
     }
 
-    // 7. Expose textbook functions to platform
-    // The textbook's showChapter and setDifficulty are now in window scope
+    // ── STEP 4: Extract and inject body HTML ──────────────────────
+    var bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    var bodyHtml = bodyMatch ? bodyMatch[1] : rawHtml;
+    // Remove the textbook's own nav/progress bar (platform sidebar handles this)
+    bodyHtml = bodyHtml.replace(/<nav class="tb-nav"[\s\S]*?<\/nav>/i, '');
+    bodyHtml = bodyHtml.replace(/<div class="tb-progress-bar"[\s\S]*?<\/div>/i, '');
+    content.innerHTML = bodyHtml;
+
+    // ── STEP 5: Extract inline JS and run it in window scope ──────
+    // Use <script> injection (not new Function) so var/function declarations
+    // land on window — critical for fredFetch, makeChart, showChapter, etc.
+    var scriptMatches = rawHtml.match(/<script(?![^>]+src=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
+    for (var si = 0; si < scriptMatches.length; si++) {
+      var code = scriptMatches[si].replace(/<\/?script[^>]*>/gi, '').trim();
+      if (!code) continue;
+      await _evalInWindowScope(code);
+    }
+
+    // ── STEP 6: Wire up platform hooks ────────────────────────────
     window._tbShowChapter   = window.showChapter   || null;
     window._tbSetDifficulty = window.setDifficulty || null;
 
-    // 8. Patch textbook's markComplete to also save to Supabase
+    // Patch markComplete to also sync progress to Supabase
     var origMarkComplete = window.markComplete;
     window.markComplete = function(ch) {
       if (origMarkComplete) origMarkComplete(ch);
-      // Save to Supabase
       if (currentUser) {
         tbSaveProgress(currentUser.id, window._tbTournId || null, ch, {});
       }
@@ -16373,19 +16398,22 @@ async function tbFetchAndInject() {
       tbRenderSidebar();
     };
 
-    // 9. Show the content
+    // ── STEP 7: Show content ──────────────────────────────────────
     _tbLoaded = true;
     if (loading) loading.style.display = 'none';
     content.style.display = 'block';
 
-    // 10. Navigate to the current chapter
+    // ── STEP 8: Navigate to chapter (Chart.js is now guaranteed ready) ──
+    // Small delay to let the DOM settle after innerHTML injection
     setTimeout(function() {
-      if (window._tbShowChapter) window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
+      if (window._tbShowChapter) {
+        window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
+      }
       tbRenderSidebar();
-    }, 100);
+    }, 150);
 
   } catch(err) {
-    console.error('tbFetchAndInject error:', err);
+    console.error('[tbFetchAndInject]', err);
     if (loading) loading.style.display = 'none';
     if (content) {
       content.style.display = 'block';
@@ -16393,8 +16421,9 @@ async function tbFetchAndInject() {
         '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:1rem;text-align:center;padding:2rem;">' +
           '<div style="font-size:2rem;">📖</div>' +
           '<div style="font-size:1rem;font-weight:600;color:var(--text-700);">Could not load textbook</div>' +
-          '<div style="font-size:0.875rem;color:var(--text-500);">Make sure <code>macronations-textbook.html</code> is in the same directory.</div>' +
-          '<a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm">Open Standalone ↗</a>' +
+          '<div style="font-size:0.875rem;color:var(--text-500);margin-bottom:0.5rem;">' + err.message + '</div>' +
+          '<div style="font-size:0.8125rem;color:var(--text-400);">Make sure <code>macronations-textbook.html</code> is committed to the same repo folder.</div>' +
+          '<a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm" style="margin-top:0.5rem;">Open Standalone ↗</a>' +
         '</div>';
     }
   }
