@@ -2999,6 +2999,7 @@ h1, h2, h3, h4, h5 {
 .page-textbook.on { display: flex !important; }
 .page-textbook .page-header { flex: 0 0 auto; padding: 1rem 2rem; }
 .page-textbook.on .page-textbook__layout { display: flex; flex: 1 1 auto; overflow: hidden; min-height: 0; height: 100%; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Sidebar */
 .tb-sidebar {
@@ -3936,13 +3937,13 @@ h1, h2, h3, h4, h5 {
         <div style="display:flex;gap:0.625rem;flex-wrap:wrap;">
           <button class="btn btn--ghost btn--sm" style="border-color:rgba(255,255,255,0.35);color:#fff;" onclick="tbSetDifficulty('principles')">📘 Principles</button>
           <button class="btn btn--ghost btn--sm" style="border-color:rgba(255,255,255,0.35);color:#fff;" onclick="tbSetDifficulty('intermediate')">📗 Intermediate</button>
-          <a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);">↗ Open Full View</a>
+          <a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);">↗ Open Standalone ↗</a>
         </div>
       </div>
     </div>
 
     <div class="page-textbook__layout">
-      <!-- Sidebar: chapter list -->
+      <!-- Sidebar -->
       <aside class="tb-sidebar" id="tb-sidebar">
         <div class="tb-sidebar__header">
           <div class="tb-sidebar__progress-wrap">
@@ -3958,20 +3959,13 @@ h1, h2, h3, h4, h5 {
         <div class="tb-sidebar__chapters" id="tb-sb-chapters"></div>
       </aside>
 
-      <!-- Main: embedded textbook iframe -->
+      <!-- Main: textbook content injected here -->
       <main class="tb-main" id="tb-main">
-        <iframe
-          id="tb-frame"
-          src="macronations-textbook.html"
-          title="Applied Macroeconomics Textbook"
-          allowfullscreen
-          style="width:100%;height:100%;min-height:calc(100vh - 130px);border:none;display:block;"
-        >
-          <p style="padding:2rem;font-family:sans-serif;color:#475569;">
-            Your browser does not support iframes. 
-            <a href="macronations-textbook.html" target="_blank">Open the textbook here</a>.
-          </p>
-        </iframe>
+        <div id="tb-loading" style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;color:var(--text-400);">
+          <div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+          <div style="font-size:0.9375rem;">Loading textbook…</div>
+        </div>
+        <div id="tb-content" style="display:none;height:100%;overflow-y:auto;"></div>
       </main>
     </div>
   </div>
@@ -16283,77 +16277,181 @@ async function tbRenderProfProgress(tournId) {
   }
 }
 
+// ─── TEXTBOOK FETCH + INJECT HELPERS ────────────────────────────
+var _tbLoaded = false;
+
+function tbGoChapter(chId) {
+  TB_ACTIVE_CH = chId;
+  if (_tbLoaded && window._tbShowChapter) {
+    window._tbShowChapter(chId);
+  }
+  tbRenderSidebar();
+  var content = document.getElementById('tb-content');
+  if (content) content.scrollTop = 0;
+}
+
+function tbSetDifficulty(level) {
+  if (window._tbSetDifficulty) window._tbSetDifficulty(level);
+}
+
+// Fetch the textbook file, extract its body content + styles + scripts,
+// inject into #tb-content, then run scripts in the main page context
+async function tbFetchAndInject() {
+  if (_tbLoaded) {
+    // Already loaded — just show content
+    document.getElementById('tb-loading').style.display = 'none';
+    document.getElementById('tb-content').style.display = 'block';
+    if (window._tbShowChapter) window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
+    return;
+  }
+
+  var loading = document.getElementById('tb-loading');
+  var content = document.getElementById('tb-content');
+
+  try {
+    var base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
+    var tbUrl = base + 'macronations-textbook.html';
+    var resp = await fetch(tbUrl);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var rawHtml = await resp.text();
+
+    // 1. Extract and inject <style> blocks from textbook
+    var styleMatches = rawHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+    styleMatches.forEach(function(styleTag) {
+      var el = document.createElement('style');
+      el.setAttribute('data-tb', '1');
+      el.textContent = styleTag.replace(/<\/?style[^>]*>/gi, '');
+      document.head.appendChild(el);
+    });
+
+    // 2. Extract body content
+    var bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    var bodyHtml = bodyMatch ? bodyMatch[1] : rawHtml;
+
+    // 3. Strip the textbook's own nav (we use the platform sidebar)
+    bodyHtml = bodyHtml.replace(/<nav class="tb-nav"[\s\S]*?<\/nav>/i, '');
+
+    // 4. Inject body into #tb-content
+    content.innerHTML = bodyHtml;
+
+    // 5. Extract and eval inline script from textbook
+    var scriptMatches = rawHtml.match(/<script(?![^>]+src=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
+    scriptMatches.forEach(function(scriptTag) {
+      var code = scriptTag.replace(/<\/?script[^>]*>/gi, '').trim();
+      if (!code) return;
+      try {
+        // Run in window scope so functions become globally accessible
+        var fn = new Function(code);
+        fn.call(window);
+      } catch(e2) { console.warn('tb script eval:', e2.message); }
+    });
+
+    // 6. Load Chart.js if not already present (needed by textbook diagrams)
+    if (!window.Chart) {
+      await new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    // 7. Expose textbook functions to platform
+    // The textbook's showChapter and setDifficulty are now in window scope
+    window._tbShowChapter   = window.showChapter   || null;
+    window._tbSetDifficulty = window.setDifficulty || null;
+
+    // 8. Patch textbook's markComplete to also save to Supabase
+    var origMarkComplete = window.markComplete;
+    window.markComplete = function(ch) {
+      if (origMarkComplete) origMarkComplete(ch);
+      // Save to Supabase
+      if (currentUser) {
+        tbSaveProgress(currentUser.id, window._tbTournId || null, ch, {});
+      }
+      tbReadProgress();
+      tbRenderSidebar();
+    };
+
+    // 9. Show the content
+    _tbLoaded = true;
+    if (loading) loading.style.display = 'none';
+    content.style.display = 'block';
+
+    // 10. Navigate to the current chapter
+    setTimeout(function() {
+      if (window._tbShowChapter) window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
+      tbRenderSidebar();
+    }, 100);
+
+  } catch(err) {
+    console.error('tbFetchAndInject error:', err);
+    if (loading) loading.style.display = 'none';
+    if (content) {
+      content.style.display = 'block';
+      content.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:1rem;text-align:center;padding:2rem;">' +
+          '<div style="font-size:2rem;">📖</div>' +
+          '<div style="font-size:1rem;font-weight:600;color:var(--text-700);">Could not load textbook</div>' +
+          '<div style="font-size:0.875rem;color:var(--text-500);">Make sure <code>macronations-textbook.html</code> is in the same directory.</div>' +
+          '<a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm">Open Standalone ↗</a>' +
+        '</div>';
+    }
+  }
+}
+
 // ─── PAGE LOADER — with access gating ────────────────────────────
 PAGE_LOADERS['textbook'] = function() {
   tbReadProgress();
   tbRenderSidebar();
 
-  // Access gate
   tbCheckAccess().then(function(access) {
+    var main = document.getElementById('tb-main');
+
     if (!access) {
-      // No access - show locked state
-      var frame = document.getElementById('tb-frame');
-      var sidebar = document.getElementById('tb-sidebar');
-      if (frame) {
-        frame.style.display = 'none';
-        var main = document.getElementById('tb-main');
-        if (main) {
-          main.innerHTML =
-            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;text-align:center;padding:3rem;">' +
-              '<div style="font-size:3rem;">🔒</div>' +
-              '<div style="font-size:1.25rem;font-weight:700;color:var(--text-700);">Textbook Access Required</div>' +
-              '<div style="font-size:0.9375rem;color:var(--text-500);max-width:480px;line-height:1.6;">This textbook is available to students enrolled in a paid tournament where the professor has adopted the course textbook. Contact your professor or <a href="mailto:support@macronations.com">support@macronations.com</a> for access.</div>' +
-              '<button class="btn btn--primary" onclick="showPage(\'tournaments\')">Browse Tournaments</button>' +
-            '</div>';
-        }
+      if (main) {
+        main.innerHTML =
+          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;text-align:center;padding:3rem;">' +
+            '<div style="font-size:3rem;">🔒</div>' +
+            '<div style="font-size:1.25rem;font-weight:700;color:var(--text-700);">Textbook Access Required</div>' +
+            '<div style="font-size:0.9375rem;color:var(--text-500);max-width:480px;line-height:1.6;">Available to students in a paid tournament where the professor has adopted the textbook. Contact your professor or <a href="mailto:support@macronations.com">support@macronations.com</a>.</div>' +
+            '<button class="btn btn--primary" onclick="showPage(\'tournaments\')">Browse Tournaments</button>' +
+          '</div>';
       }
-      if (sidebar) sidebar.style.display = 'none';
+      var sb = document.getElementById('tb-sidebar');
+      if (sb) sb.style.display = 'none';
       return;
     }
 
-    // Has access — check if professor and show progress panel
+    // Show sidebar
+    var sb2 = document.getElementById('tb-sidebar');
+    if (sb2) sb2.style.display = 'flex';
+
+    // Professor progress panel
     var isProfOrAdmin = currentUser && (currentUser.role === 'professor' || currentUser.is_admin);
     var tournId = (typeof access === 'object') ? access.tournId : null;
+    window._tbTournId = tournId;
 
-    if (isProfOrAdmin && tournId) {
-      // Show prof progress panel below sidebar
-      var sb = document.getElementById('tb-sidebar');
-      if (sb && !document.getElementById('tb-prof-progress-wrap')) {
+    if (isProfOrAdmin && tournId && !document.getElementById('tb-prof-progress-wrap')) {
+      var sb3 = document.getElementById('tb-sidebar');
+      if (sb3) {
         var wrap = document.createElement('div');
         wrap.id = 'tb-prof-progress-wrap';
-        wrap.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);';
+        wrap.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0;';
         wrap.innerHTML =
-          '<button onclick="tbToggleProfPanel()" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0.75rem 1.125rem;background:none;border:none;color:#94a3b8;font-size:0.8125rem;font-weight:600;cursor:pointer;letter-spacing:0.03em;">' +
+          '<button onclick="tbToggleProfPanel()" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0.75rem 1.125rem;background:none;border:none;color:#94a3b8;font-size:0.8125rem;font-weight:600;cursor:pointer;">' +
             '<span>📊 Student Progress</span><span id="tb-prof-toggle-icon">▼</span>' +
           '</button>' +
-          '<div id="tb-prof-progress-panel" style="display:none;background:#fff;border-top:1px solid var(--border);padding:1rem;overflow-y:auto;max-height:320px;">' +
+          '<div id="tb-prof-progress-panel" style="display:none;background:#fff;border-top:1px solid var(--border);padding:1rem;overflow-y:auto;max-height:300px;">' +
             '<div id="tb-prof-progress"></div>' +
           '</div>';
-        sb.appendChild(wrap);
+        sb3.appendChild(wrap);
         window._tbProfTournId = tournId;
       }
     }
 
-    // Load iframe
-    var frame = document.getElementById('tb-frame');
-    if (frame) {
-      frame.style.display = 'block';
-      var sidebar2 = document.getElementById('tb-sidebar');
-      if (sidebar2) sidebar2.style.display = 'flex';
-      if (!frame.src || frame.src === 'about:blank' || frame.src === window.location.href) {
-        var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-        frame.src = base + 'macronations-textbook.html';
-      }
-      frame.onload = function() {
-        tbOnFrameLoad();
-        window._tbTournId = tournId;
-      };
-      try {
-        if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
-          tbOnFrameLoad();
-        }
-      } catch(e) {}
-    }
+    // Load textbook content
+    tbFetchAndInject();
   });
 };
 
@@ -16364,9 +16462,7 @@ function tbToggleProfPanel() {
   var open = panel.style.display !== 'none';
   panel.style.display = open ? 'none' : 'block';
   if (icon) icon.textContent = open ? '▼' : '▲';
-  if (!open && window._tbProfTournId) {
-    tbRenderProfProgress(window._tbProfTournId);
-  }
+  if (!open && window._tbProfTournId) tbRenderProfProgress(window._tbProfTournId);
 }
 
 </script>
