@@ -2990,65 +2990,7 @@ h1, h2, h3, h4, h5 {
   .lp-tiers-grid { grid-template-columns: 1fr; }
   .lp-prize-row { flex-direction: column; }
 }
-  
-/* ═══════════════════════════════════════════════════
-   TEXTBOOK PAGE
-═══════════════════════════════════════════════════ */
-.nav__tab--textbook { font-weight: 700; }
-.page-textbook { flex-direction: column; height: calc(100vh - 64px); overflow: hidden; }
-.page-textbook.on { display: flex !important; }
-.page-textbook .page-header { flex: 0 0 auto; padding: 1rem 2rem; }
-.page-textbook.on .page-textbook__layout { display: flex; flex: 1 1 auto; overflow: hidden; min-height: 0; height: 100%; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Sidebar */
-.tb-sidebar {
-  width: 260px; flex: 0 0 260px;
-  background: #0f172a; color: #e2e8f0;
-  display: flex; flex-direction: column;
-  overflow: hidden; min-height: 0; border-right: 1px solid rgba(255,255,255,0.06);
-}
-.tb-sidebar__header { padding: 1rem 1.125rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.tb-sidebar__progress-wrap { }
-.tb-sidebar__progress-label { display: flex; justify-content: space-between; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.375rem; }
-.tb-sidebar__progress-bar { background: rgba(255,255,255,0.08); border-radius: 999px; height: 6px; }
-.tb-sidebar__progress-fill { background: linear-gradient(90deg, #22c55e, #16a34a); border-radius: 999px; height: 6px; transition: width 0.4s ease; }
-.tb-sidebar__chapters { flex: 1 1 auto; overflow-y: auto; padding: 0.5rem 0; }
-.tb-sidebar__chapters::-webkit-scrollbar { width: 4px; }
-.tb-sidebar__chapters::-webkit-scrollbar-track { background: transparent; }
-.tb-sidebar__chapters::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
-
-/* Sidebar part headers */
-.tb-sb-part { font-size: 0.5875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; padding: 0.875rem 1.125rem 0.25rem; }
-/* Sidebar chapter buttons */
-.tb-sb-ch {
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.5rem 1.125rem;
-  font-size: 0.8125rem; color: #94a3b8;
-  cursor: pointer; border: none; background: none; width: 100%; text-align: left;
-  border-left: 3px solid transparent;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  line-height: 1.35;
-}
-.tb-sb-ch:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
-.tb-sb-ch.active { background: rgba(30,86,201,0.2); color: #93c5fd; border-left-color: #3b82f6; }
-.tb-sb-ch.done .tb-sb-ch__dot { background: #22c55e; }
-.tb-sb-ch__dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.15); flex: 0 0 7px; }
-.tb-sb-ch__num { font-size: 0.625rem; color: #475569; flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; }
-.tb-sb-ch__title { flex: 1 1 auto; }
-
-/* Main iframe area */
-.tb-main { flex: 1 1 auto; overflow: hidden; background: #f8fafc; min-height: 0; }
-
-/* Mobile: stack vertically, hide sidebar on small screens */
-@media (max-width: 768px) {
-  .page-textbook { height: auto; overflow: auto; }
-  .page-textbook__layout { flex-direction: column; overflow: visible; height: auto; }
-  .tb-sidebar { width: 100%; flex: 0 0 auto; height: auto; max-height: 220px; overflow-y: auto; }
-  .tb-main { height: 82vh; }
-}
-
-</style>
+  </style>
 </head>
 <body>
 
@@ -3192,7 +3134,6 @@ h1, h2, h3, h4, h5 {
       <span class="mobile-menu__link-icon">💡</span>
       How it works
     </a>
-
   </div>
 
   <div class="mobile-menu__cta">
@@ -3799,17 +3740,6 @@ h1, h2, h3, h4, h5 {
         </div>
         <div class="form-error" id="ct-error"></div>
 
-        <!-- Professor-only: textbook adoption -->
-        <div id="ct-textbook-wrap" style="display:none;margin-top:0.75rem;padding:1rem;background:var(--bg-subtle,#f8fafc);border-radius:var(--radius);border:1px solid var(--border);">
-          <label style="display:flex;align-items:flex-start;gap:0.75rem;cursor:pointer;">
-            <input type="checkbox" id="ct-textbook-enable" style="width:18px;height:18px;cursor:pointer;margin-top:2px;">
-            <div>
-              <div style="font-weight:600;font-size:0.9375rem;color:var(--text-700);">📖 Adopt Course Textbook</div>
-              <div style="font-size:0.8125rem;color:var(--text-500);margin-top:0.25rem;">Gives enrolled students access to <em>Applied Macroeconomics: From Theory to Policy Simulation</em>. Reading progress and quiz scores are tracked and visible in your professor dashboard. Only available alongside Global Tournament participation.</div>
-            </div>
-          </label>
-        </div>
-
         <!-- Professor-only: elect for global seasonal tournament -->
         <div id="ct-global-election-wrap" style="display:none;margin-top:0.5rem;">
           <div class="dash-alert dash-alert--info" style="margin-bottom:0.75rem;">
@@ -3922,51 +3852,6 @@ h1, h2, h3, h4, h5 {
     </div>
     <div class="container" style="padding-top:2.5rem;padding-bottom:4rem;">
       <div id="about-content"></div>
-    </div>
-  </div>
-
-
-  <!-- ── PAGE: TEXTBOOK ── -->
-  <div class="page page-textbook" id="page-textbook">
-    <div class="page-header" style="background:linear-gradient(135deg,#0f3d9e 0%,#1e56c9 100%);">
-      <div class="page-header__inner" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
-        <div>
-          <h1 class="page-header__title">Applied Macroeconomics</h1>
-          <p class="page-header__sub">From Theory to Policy Simulation — by Amarendra Sharma, PhD · Binghamton University (SUNY)</p>
-        </div>
-        <div style="display:flex;gap:0.625rem;flex-wrap:wrap;">
-          <button class="btn btn--ghost btn--sm" style="border-color:rgba(255,255,255,0.35);color:#fff;" onclick="tbSetDifficulty('principles')">📘 Principles</button>
-          <button class="btn btn--ghost btn--sm" style="border-color:rgba(255,255,255,0.35);color:#fff;" onclick="tbSetDifficulty('intermediate')">📗 Intermediate</button>
-          <a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);">↗ Open Standalone ↗</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="page-textbook__layout">
-      <!-- Sidebar -->
-      <aside class="tb-sidebar" id="tb-sidebar">
-        <div class="tb-sidebar__header">
-          <div class="tb-sidebar__progress-wrap">
-            <div class="tb-sidebar__progress-label">
-              <span>Progress</span>
-              <span id="tb-sb-pct">0%</span>
-            </div>
-            <div class="tb-sidebar__progress-bar">
-              <div class="tb-sidebar__progress-fill" id="tb-sb-fill" style="width:0%"></div>
-            </div>
-          </div>
-        </div>
-        <div class="tb-sidebar__chapters" id="tb-sb-chapters"></div>
-      </aside>
-
-      <!-- Main: textbook content injected here -->
-      <main class="tb-main" id="tb-main">
-        <div id="tb-loading" style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;color:var(--text-400);">
-          <div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-          <div style="font-size:0.9375rem;">Loading textbook…</div>
-        </div>
-        <div id="tb-content" style="display:none;height:100%;overflow-y:auto;"></div>
-      </main>
     </div>
   </div>
 
@@ -4228,7 +4113,6 @@ h1, h2, h3, h4, h5 {
         <li><a href="#" class="footer__link" onclick="openAuthModal('register');return false;">Professor Portal</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('tournaments');return false;">Class Tournaments</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('about');setTimeout(function(){var e=document.querySelector('[data-about-tab=\'curriculum\']');if(e){e.click();}},100);return false;">Curriculum Guide</a></li>
-        <li><a href="#" class="footer__link" onclick="showPage('textbook');return false;">📖 Course Textbook</a></li>
         <li><a href="/cdn-cgi/l/email-protection#d4a7a1a4a4bba6a094b9b5b7a6bbbab5a0bdbbbaa7fab7bbb9" class="footer__link">Contact Us</a></li>
       </ul>
     </div>
@@ -4737,7 +4621,6 @@ async function doLogin() {
     currentUser = rows[0];
     _saveSession(sess, currentUser);
     closeModal('modal-auth');
-    tbUpdateNavVisibility();
     afterLogin();
     flash('Welcome back, ' + esc(currentUser.name || currentUser.username || 'Economist') + '!', 'success');
   } catch(e) {
@@ -5123,7 +5006,6 @@ async function doLogout() {
 // currentTeamId is set here — it must be set before renderDashboard() loads team data.
 async function afterLogin() {
   _renderLoggedInNav();
-  tbUpdateNavVisibility(); // show/hide textbook tab based on access
   // Run DB setup check for admins/professors once
   if (currentUser && (currentUser.is_admin || currentUser.role === 'professor')) {
     dbSetupDefaults();
@@ -9644,15 +9526,7 @@ function openCreateTournament(isClass) {
           // Reset fee to 0 when de-elected
           var feeField = document.getElementById('ct-fee');
           if (feeField) { feeField.value = '0'; }
-          // Hide textbook option when de-electing
-          var tbWrapOff = document.getElementById('ct-textbook-wrap');
-          if (tbWrapOff) { tbWrapOff.style.display = 'none'; }
-          var tbCheckOff = document.getElementById('ct-textbook-enable');
-          if (tbCheckOff) { tbCheckOff.checked = false; }
         }
-        // Show textbook option when electing global
-        var tbWrapOn = document.getElementById('ct-textbook-wrap');
-        if (tbWrapOn) { tbWrapOn.style.display = electBox.checked ? 'block' : 'none'; }
       };
     }
     // Hide the Stripe field from admins too (professors never see it)
@@ -9693,7 +9567,6 @@ async function doCreateTournament() {
   // Check global election FIRST — elected professors are allowed to charge WORLD_CUP_ENTRY_FEE
   var electBox  = document.getElementById('ct-global-elect');
   var isElected = electBox ? electBox.checked : false;
-  var textbookEnabled = isElected && (document.getElementById('ct-textbook-enable') ? document.getElementById('ct-textbook-enable').checked : false);
   if (isElected) {
     fee = WORLD_CUP_ENTRY_FEE; // enforce World Cup entry fee
     var profLink = document.getElementById('ct-stripe-link-prof');
@@ -9728,8 +9601,7 @@ async function doCreateTournament() {
       schedule:         schedule,
       playoff_teams:    [],
       playoff_bracket:  {},
-      is_global_elected: isElected,
-      textbook_enabled:  textbookEnabled
+      is_global_elected: isElected
     });
     if (!newTourn || newTourn.code) {
       _setFormErr('ct-error', (newTourn && newTourn.message) || 'Failed to create tournament.');
@@ -15994,530 +15866,6 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', ocInit);
 } else {
   ocInit();
-}
-
-
-
-// ═══════════════════════════════════════════════════════════════════
-//  TEXTBOOK SYSTEM — Access control, progress sync, prof dashboard
-// ═══════════════════════════════════════════════════════════════════
-
-// Check if the current user has textbook access:
-// Must be in a paid tournament that has textbook_enabled = true
-// OR be the professor who created such a tournament
-async function tbCheckAccess() {
-  if (!currentUser) return false;
-  var role = currentUser.role || '';
-  var userId = currentUser.id;
-
-  // Professors: check if any of their tournaments have textbook_enabled
-  if (role === 'professor' || currentUser.is_admin) {
-    var myTourns = await sbGet('tournaments',
-      'created_by=eq.' + userId + '&textbook_enabled=eq.true&limit=1');
-    if (myTourns && myTourns.length > 0) return { access: true, tournId: myTourns[0].id };
-    // Admins always get access
-    if (currentUser.is_admin) return { access: true, tournId: null };
-    return false;
-  }
-
-  // Students: check any team they belong to (paid check + textbook_enabled)
-  var allTeams = [];
-  try {
-    var capTeams = await sbGet('teams', 'captain_id=eq.' + userId + '&limit=100&select=id,tournament_id,fee_paid');
-    if (capTeams && capTeams.length) allTeams = allTeams.concat(capTeams);
-  } catch(e) {}
-  try {
-    var memTeams = await sbGet('teams', 'members=cs.{"' + userId + '"}&limit=100&select=id,tournament_id,fee_paid');
-    if (memTeams && memTeams.length) allTeams = allTeams.concat(memTeams);
-  } catch(e2) {
-    try {
-      var memTeams2 = await sbGet('teams', 'members=cs.{' + userId + '}&limit=100&select=id,tournament_id,fee_paid');
-      if (memTeams2 && memTeams2.length) allTeams = allTeams.concat(memTeams2);
-    } catch(e3) {}
-  }
-
-  for (var i = 0; i < allTeams.length; i++) {
-    var tid = allTeams[i].tournament_id;
-    if (!tid) continue;
-    try {
-      var tourn = await sbGetPublic('tournaments',
-        'id=eq.' + tid + '&textbook_enabled=eq.true&limit=1&select=id,entry_fee');
-      if (tourn && tourn.length > 0) {
-        if (allTeams[i].fee_paid || !tourn[0].entry_fee || Number(tourn[0].entry_fee) === 0) {
-          return { access: true, tournId: tid };
-        }
-      }
-    } catch(e4) {}
-  }
-  return false;
-}
-
-// Listen for progress/navigation messages from the textbook iframe
-window.addEventListener('message', function(evt) {
-  if (!evt.data || typeof evt.data !== 'object') return;
-  if (evt.data.type === 'tb-progress' && currentUser) {
-    tbSaveProgress(currentUser.id, window._tbTournId || null, evt.data.ch, evt.data.scores || {});
-    tbReadProgress();
-    tbRenderSidebar();
-  }
-  if (evt.data.type === 'tb-navigate') {
-    TB_ACTIVE_CH = evt.data.ch || TB_ACTIVE_CH;
-    tbRenderSidebar();
-  }
-});
-
-// Inject/remove the textbook nav tab based on access
-async function tbUpdateNavVisibility() {
-  var existing = document.getElementById('nav-textbook-tab');
-  var existingMob = document.getElementById('nav-textbook-mobile');
-  var access = await tbCheckAccess();
-
-  if (access) {
-    // Inject desktop tab if not present
-    if (!existing) {
-      var nl = document.querySelector('.nav__links');
-      var divider = nl ? nl.querySelector('.nav__divider') : null;
-      if (divider) {
-        var a = document.createElement('a');
-        a.href = '#'; a.className = 'nav__tab nav__tab--textbook';
-        a.setAttribute('data-page', 'textbook');
-        a.id = 'nav-textbook-tab';
-        a.textContent = '📖 Textbook';
-        a.addEventListener('click', function(e) {
-          e.preventDefault(); showPage('textbook');
-        });
-        divider.parentNode.insertBefore(a, divider);
-      }
-    }
-    // Inject mobile link if not present
-    if (!existingMob) {
-      var mm = document.querySelector('.mobile-menu__links');
-      if (mm) {
-        var ml = document.createElement('a');
-        ml.href = '#'; ml.className = 'mobile-menu__link';
-        ml.setAttribute('data-page', 'textbook');
-        ml.id = 'nav-textbook-mobile';
-        ml.innerHTML = '<span class="mobile-menu__link-icon">📖</span>Textbook';
-        ml.addEventListener('click', function(e) {
-          e.preventDefault();
-          closeMobileMenu();
-          showPage('textbook');
-        });
-        mm.appendChild(ml);
-      }
-    }
-    // Store the tournament id for progress tracking
-    window._tbTournId = (typeof access === 'object') ? access.tournId : null;
-  } else {
-    // Remove tab if user lost access
-    if (existing) existing.remove();
-    if (existingMob) existingMob.remove();
-  }
-  return access;
-}
-
-// ─── PROGRESS SYNC ───────────────────────────────────────────────
-// Called from textbook iframe via postMessage
-async function tbSaveProgress(userId, tournId, chapterId, quizScores) {
-  if (!userId || !chapterId) return;
-  var payload = {
-    user_id:      userId,
-    tournament_id: tournId || null,
-    chapter_id:   chapterId,
-    completed:    true,
-    quiz_scores:  quizScores || {},
-    updated_at:   new Date().toISOString()
-  };
-  try {
-    // Upsert: use POST with prefer=resolution=merge-duplicates header equivalent
-    // Supabase REST upsert: POST with on_conflict param
-    await fetch(SUPA_URL + '/rest/v1/mn_textbook_progress' +
-      '?on_conflict=user_id,tournament_id,chapter_id', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (await _authToken()),
-        'apikey': SUPA_ANON,
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify(payload)
-    });
-  } catch(e) { console.warn('tbSaveProgress error', e); }
-}
-
-// Listen for messages from the textbook iframe
-window.addEventListener('message', function(evt) {
-  if (!evt.data || typeof evt.data !== 'object') return;
-
-  if (evt.data.type === 'tb-progress' && currentUser) {
-    // Student completed a chapter or submitted quiz
-    var chId = evt.data.ch;
-    var scores = evt.data.scores || {};
-    tbSaveProgress(currentUser.id, window._tbTournId, chId, scores);
-    tbReadProgress();
-    tbRenderSidebar();
-  }
-  if (evt.data.type === 'tb-navigate') {
-    TB_ACTIVE_CH = evt.data.ch || TB_ACTIVE_CH;
-    tbRenderSidebar();
-  }
-});
-
-// ─── PROFESSOR PROGRESS DASHBOARD ────────────────────────────────
-async function tbRenderProfProgress(tournId) {
-  var el = document.getElementById('tb-prof-progress');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--text-400);font-size:0.875rem;padding:1.5rem 0;">Loading student progress…</div>';
-
-  try {
-    // Fetch all teams in this tournament
-    var teams = await sbGet('teams',
-      'tournament_id=eq.' + tournId + '&fee_paid=eq.true&select=id,name,captain_id,members&limit=200');
-    if (!teams || teams.length === 0) {
-      el.innerHTML = '<div style="color:var(--text-400);font-size:0.875rem;padding:1.5rem 0;">No enrolled teams yet.</div>';
-      return;
-    }
-
-    // Collect all student user IDs
-    var userIds = [];
-    for (var i = 0; i < teams.length; i++) {
-      var t = teams[i];
-      if (t.captain_id) userIds.push(t.captain_id);
-      if (t.members && Array.isArray(t.members)) {
-        for (var j = 0; j < t.members.length; j++) {
-          if (t.members[j] && userIds.indexOf(t.members[j]) < 0) userIds.push(t.members[j]);
-        }
-      }
-    }
-
-    // Fetch progress records for all users in this tournament
-    var progress = await sbGet('mn_textbook_progress',
-      'tournament_id=eq.' + tournId + '&limit=5000&select=user_id,chapter_id,completed,quiz_scores,updated_at');
-
-    // Fetch user names
-    var userRows = await sbGet('mn_users',
-      'id=in.(' + userIds.slice(0,100).join(',') + ')&select=id,username,email&limit=100');
-    var userMap = {};
-    if (userRows) {
-      for (var u = 0; u < userRows.length; u++) {
-        userMap[userRows[u].id] = userRows[u];
-      }
-    }
-
-    // Build progress map: userId -> Set of completed chapter IDs
-    var progressMap = {};
-    var quizMap = {};
-    if (progress) {
-      for (var p = 0; p < progress.length; p++) {
-        var pr = progress[p];
-        if (!progressMap[pr.user_id]) progressMap[pr.user_id] = [];
-        if (pr.completed) progressMap[pr.user_id].push(pr.chapter_id);
-        if (pr.quiz_scores && Object.keys(pr.quiz_scores).length > 0) {
-          if (!quizMap[pr.user_id]) quizMap[pr.user_id] = {};
-          Object.assign(quizMap[pr.user_id], pr.quiz_scores);
-        }
-      }
-    }
-
-    var totalChs = TB_CHAPTERS.length;
-    var completedChs = TB_CHAPTERS.filter(function(c) {
-      return c.id !== 'ch23' && c.id !== 'ch24' && c.id !== 'ch25' && c.id !== 'ch26';
-    }).length; // only count published chapters
-
-    // Summary row
-    var avgPct = userIds.length > 0 ? Math.round(
-      userIds.reduce(function(sum, uid) {
-        return sum + ((progressMap[uid] || []).length / completedChs * 100);
-      }, 0) / userIds.length
-    ) : 0;
-
-    var html = '';
-    // Summary bar
-    html += '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">';
-    html += '<div style="flex:1;background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;">' +
-      '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-400);margin-bottom:0.25rem;">Students Enrolled</div>' +
-      '<div style="font-size:1.75rem;font-weight:700;color:var(--text-900);">' + userIds.length + '</div>' +
-    '</div>';
-    html += '<div style="flex:1;background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;">' +
-      '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-400);margin-bottom:0.25rem;">Published Chapters</div>' +
-      '<div style="font-size:1.75rem;font-weight:700;color:var(--text-900);">' + completedChs + '</div>' +
-    '</div>';
-    html += '<div style="flex:1;background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;">' +
-      '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-400);margin-bottom:0.25rem;">Avg. Completion</div>' +
-      '<div style="font-size:1.75rem;font-weight:700;color:' + (avgPct >= 70 ? '#16a34a' : avgPct >= 40 ? '#d97706' : '#dc2626') + ';">' + avgPct + '%</div>' +
-    '</div>';
-    html += '</div>';
-
-    // Chapter completion heatmap header
-    var pubChs = TB_CHAPTERS.filter(function(c){ return c.id !== 'ch23' && c.id !== 'ch24' && c.id !== 'ch25' && c.id !== 'ch26'; });
-
-    // Per-student table
-    html += '<div style="overflow-x:auto;">';
-    html += '<table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">';
-    html += '<thead><tr style="background:var(--bg-subtle);">';
-    html += '<th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);min-width:140px;">Student</th>';
-    html += '<th style="text-align:center;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);white-space:nowrap;">Completed</th>';
-    html += '<th style="text-align:center;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);white-space:nowrap;">Quiz Score</th>';
-    html += '<th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);">Chapter Progress</th>';
-    html += '</tr></thead><tbody>';
-
-    for (var ui = 0; ui < userIds.length; ui++) {
-      var uid = userIds[ui];
-      var user = userMap[uid] || {};
-      var name = user.username || user.email || uid.slice(0,8);
-      var done = (progressMap[uid] || []).length;
-      var pct = Math.round(done / completedChs * 100);
-      var qs = quizMap[uid] || {};
-      var qKeys = Object.keys(qs);
-      var qAvg = qKeys.length > 0 ? Math.round(qKeys.reduce(function(s,k){ return s + (Number(qs[k]) || 0); },0) / qKeys.length) : null;
-      var rowBg = ui % 2 === 0 ? '' : 'background:var(--bg-subtle);';
-
-      html += '<tr style="' + rowBg + '">';
-      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text-700);font-weight:500;">' + name + '</td>';
-      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:center;">' +
-        '<span style="font-weight:600;color:' + (pct >= 70 ? '#16a34a' : pct >= 30 ? '#d97706' : '#94a3b8') + ';">' + done + '/' + completedChs + '</span>' +
-        ' <span style="color:var(--text-400);font-size:0.75rem;">(' + pct + '%)</span>' +
-      '</td>';
-      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:center;">' +
-        (qAvg !== null ? '<span style="font-weight:600;color:' + (qAvg >= 70 ? '#16a34a' : qAvg >= 50 ? '#d97706' : '#dc2626') + ';">' + qAvg + '%</span>' : '<span style="color:var(--text-300);">—</span>') +
-      '</td>';
-
-      // Chapter dot heatmap
-      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);">';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
-      for (var ci = 0; ci < pubChs.length; ci++) {
-        var chDone = (progressMap[uid] || []).indexOf(pubChs[ci].id) >= 0;
-        html += '<div title="Ch.' + pubChs[ci].num + ' ' + pubChs[ci].title.replace(/&amp;/g,'&') + '" style="width:14px;height:14px;border-radius:3px;background:' + (chDone ? '#16a34a' : '#e2e8f0') + ';"></div>';
-      }
-      html += '</div></td>';
-      html += '</tr>';
-    }
-
-    html += '</tbody></table></div>';
-    html += '<div style="font-size:0.75rem;color:var(--text-400);margin-top:0.75rem;">🟩 Chapter completed &nbsp; ⬜ Not yet completed. Progress updates as students read and complete quiz questions.</div>';
-
-    el.innerHTML = html;
-  } catch(e) {
-    el.innerHTML = '<div style="color:#dc2626;font-size:0.875rem;padding:1rem 0;">Error loading progress: ' + (e.message || e) + '</div>';
-    console.error('tbRenderProfProgress error', e);
-  }
-}
-
-// ─── TEXTBOOK FETCH + INJECT HELPERS ────────────────────────────
-var _tbLoaded = false;
-
-function tbGoChapter(chId) {
-  TB_ACTIVE_CH = chId;
-  if (_tbLoaded && window._tbShowChapter) {
-    window._tbShowChapter(chId);
-  }
-  tbRenderSidebar();
-  var content = document.getElementById('tb-content');
-  if (content) content.scrollTop = 0;
-}
-
-function tbSetDifficulty(level) {
-  if (window._tbSetDifficulty) window._tbSetDifficulty(level);
-}
-
-// Fetch the textbook file, extract its body content + styles + scripts,
-// inject into #tb-content, then run scripts in the main page context
-// Helper: load an external script and wait for it
-function _loadScript(src) {
-  return new Promise(function(resolve, reject) {
-    // If already loaded, resolve immediately
-    var existing = document.querySelector('script[src="' + src + '"]');
-    if (existing) { resolve(); return; }
-    var s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = function() { reject(new Error('Failed to load: ' + src)); };
-    document.head.appendChild(s);
-  });
-}
-
-// Helper: eval a JS string in TRUE window scope (not a closure)
-// by appending a <script> element — this is the only reliable way
-// to ensure var declarations and function declarations become window properties
-function _evalInWindowScope(code) {
-  return new Promise(function(resolve) {
-    var s = document.createElement('script');
-    s.setAttribute('data-tb-injected', '1');
-    s.textContent = code + '\n//# sourceURL=macronations-textbook-injected.js';
-    document.head.appendChild(s);
-    // Script executes synchronously when appended
-    resolve();
-  });
-}
-
-async function tbFetchAndInject() {
-  if (_tbLoaded) {
-    // Already injected — show and navigate
-    // Re-inject body HTML because page navigation may have destroyed the DOM nodes
-    var loading2 = document.getElementById('tb-loading');
-    var content2 = document.getElementById('tb-content');
-    if (loading2) loading2.style.display = 'none';
-    if (content2) content2.style.display = 'block';
-    // Reset loadedCharts so FRED charts re-render on the fresh canvas elements
-    if (window.loadedCharts) { window.loadedCharts = {}; }
-    if (window._tbShowChapter) window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
-    tbRenderSidebar();
-    return;
-  }
-
-  var loading = document.getElementById('tb-loading');
-  var content = document.getElementById('tb-content');
-
-  try {
-    // ── STEP 1: Load Chart.js FIRST before anything else ──────────
-    await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js');
-
-    // ── STEP 2: Fetch the textbook HTML ───────────────────────────
-    var base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
-    var tbUrl = base + 'macronations-textbook.html';
-    var resp = await fetch(tbUrl);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status + ' fetching ' + tbUrl);
-    var rawHtml = await resp.text();
-
-    // ── STEP 3: Inject textbook CSS into <head> ───────────────────
-    // Only do this once — check if already injected
-    if (!document.querySelector('style[data-tb]')) {
-      var styleMatches = rawHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
-      styleMatches.forEach(function(styleTag) {
-        var el = document.createElement('style');
-        el.setAttribute('data-tb', '1');
-        el.textContent = styleTag.replace(/<\/?style[^>]*>/gi, '');
-        document.head.appendChild(el);
-      });
-    }
-
-    // ── STEP 4: Extract and inject body HTML ──────────────────────
-    var bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    var bodyHtml = bodyMatch ? bodyMatch[1] : rawHtml;
-    // Remove the textbook's own nav/progress bar (platform sidebar handles this)
-    bodyHtml = bodyHtml.replace(/<nav class="tb-nav"[\s\S]*?<\/nav>/i, '');
-    bodyHtml = bodyHtml.replace(/<div class="tb-progress-bar"[\s\S]*?<\/div>/i, '');
-    content.innerHTML = bodyHtml;
-
-    // ── STEP 5: Extract inline JS and run it in window scope ──────
-    // Use <script> injection (not new Function) so var/function declarations
-    // land on window — critical for fredFetch, makeChart, showChapter, etc.
-    var scriptMatches = rawHtml.match(/<script(?![^>]+src=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
-    for (var si = 0; si < scriptMatches.length; si++) {
-      var code = scriptMatches[si].replace(/<\/?script[^>]*>/gi, '').trim();
-      if (!code) continue;
-      await _evalInWindowScope(code);
-    }
-
-    // ── STEP 6: Wire up platform hooks ────────────────────────────
-    window._tbShowChapter   = window.showChapter   || null;
-    window._tbSetDifficulty = window.setDifficulty || null;
-
-    // Patch markComplete to also sync progress to Supabase
-    var origMarkComplete = window.markComplete;
-    window.markComplete = function(ch) {
-      if (origMarkComplete) origMarkComplete(ch);
-      if (currentUser) {
-        tbSaveProgress(currentUser.id, window._tbTournId || null, ch, {});
-      }
-      tbReadProgress();
-      tbRenderSidebar();
-    };
-
-    // ── STEP 7: Show content ──────────────────────────────────────
-    _tbLoaded = true;
-    if (loading) loading.style.display = 'none';
-    content.style.display = 'block';
-
-    // ── STEP 8: Navigate to chapter (Chart.js is now guaranteed ready) ──
-    // Small delay to let the DOM settle after innerHTML injection
-    setTimeout(function() {
-      if (window._tbShowChapter) {
-        window._tbShowChapter(TB_ACTIVE_CH || 'ch1');
-      }
-      tbRenderSidebar();
-    }, 150);
-
-  } catch(err) {
-    console.error('[tbFetchAndInject]', err);
-    if (loading) loading.style.display = 'none';
-    if (content) {
-      content.style.display = 'block';
-      content.innerHTML =
-        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:1rem;text-align:center;padding:2rem;">' +
-          '<div style="font-size:2rem;">📖</div>' +
-          '<div style="font-size:1rem;font-weight:600;color:var(--text-700);">Could not load textbook</div>' +
-          '<div style="font-size:0.875rem;color:var(--text-500);margin-bottom:0.5rem;">' + err.message + '</div>' +
-          '<div style="font-size:0.8125rem;color:var(--text-400);">Make sure <code>macronations-textbook.html</code> is committed to the same repo folder.</div>' +
-          '<a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm" style="margin-top:0.5rem;">Open Standalone ↗</a>' +
-        '</div>';
-    }
-  }
-}
-
-// ─── PAGE LOADER — with access gating ────────────────────────────
-PAGE_LOADERS['textbook'] = function() {
-  tbReadProgress();
-  tbRenderSidebar();
-
-  tbCheckAccess().then(function(access) {
-    var main = document.getElementById('tb-main');
-
-    if (!access) {
-      if (main) {
-        main.innerHTML =
-          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;text-align:center;padding:3rem;">' +
-            '<div style="font-size:3rem;">🔒</div>' +
-            '<div style="font-size:1.25rem;font-weight:700;color:var(--text-700);">Textbook Access Required</div>' +
-            '<div style="font-size:0.9375rem;color:var(--text-500);max-width:480px;line-height:1.6;">Available to students in a paid tournament where the professor has adopted the textbook. Contact your professor or <a href="mailto:support@macronations.com">support@macronations.com</a>.</div>' +
-            '<button class="btn btn--primary" onclick="showPage(\'tournaments\')">Browse Tournaments</button>' +
-          '</div>';
-      }
-      var sb = document.getElementById('tb-sidebar');
-      if (sb) sb.style.display = 'none';
-      return;
-    }
-
-    // Show sidebar
-    var sb2 = document.getElementById('tb-sidebar');
-    if (sb2) sb2.style.display = 'flex';
-
-    // Professor progress panel
-    var isProfOrAdmin = currentUser && (currentUser.role === 'professor' || currentUser.is_admin);
-    var tournId = (typeof access === 'object') ? access.tournId : null;
-    window._tbTournId = tournId;
-
-    if (isProfOrAdmin && tournId && !document.getElementById('tb-prof-progress-wrap')) {
-      var sb3 = document.getElementById('tb-sidebar');
-      if (sb3) {
-        var wrap = document.createElement('div');
-        wrap.id = 'tb-prof-progress-wrap';
-        wrap.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0;';
-        wrap.innerHTML =
-          '<button onclick="tbToggleProfPanel()" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0.75rem 1.125rem;background:none;border:none;color:#94a3b8;font-size:0.8125rem;font-weight:600;cursor:pointer;">' +
-            '<span>📊 Student Progress</span><span id="tb-prof-toggle-icon">▼</span>' +
-          '</button>' +
-          '<div id="tb-prof-progress-panel" style="display:none;background:#fff;border-top:1px solid var(--border);padding:1rem;overflow-y:auto;max-height:300px;">' +
-            '<div id="tb-prof-progress"></div>' +
-          '</div>';
-        sb3.appendChild(wrap);
-        window._tbProfTournId = tournId;
-      }
-    }
-
-    // Load textbook content
-    tbFetchAndInject();
-  });
-};
-
-function tbToggleProfPanel() {
-  var panel = document.getElementById('tb-prof-progress-panel');
-  var icon  = document.getElementById('tb-prof-toggle-icon');
-  if (!panel) return;
-  var open = panel.style.display !== 'none';
-  panel.style.display = open ? 'none' : 'block';
-  if (icon) icon.textContent = open ? '▼' : '▲';
-  if (!open && window._tbProfTournId) tbRenderProfProgress(window._tbProfTournId);
 }
 
 </script>
