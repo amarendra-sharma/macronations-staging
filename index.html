@@ -10350,7 +10350,11 @@ function renderAdminTournaments(el) {
     var actions = _tournamentActionBtns(t);
     rows +=
       '<tr>' +
-      '<td><strong>' + esc(t.name || '') + '</strong><br>' +
+      '<td><strong>' + esc(t.name || '') + '</strong>' +
+        (_isAdmin() && t.textbook_enabled
+          ? ' <span class="badge badge--gold badge--no-dot" style="font-size:0.625rem;padding:2px 6px;vertical-align:middle;" title="Textbook access enabled — students in this tournament can read the textbook">📖 Textbook ON</span>'
+          : '') +
+        '<br>' +
         '<span style="font-size:0.75rem;color:var(--text-400);">' + esc(t.tier || '') + ' · Season ' + esc(String(t.season_year || '')) + '</span>' +
         (t.schedule && t.schedule._crisis_rounds
           ? '<br><span style="font-size:0.75rem;color:var(--warning);">⚡ Crisis rounds: ' + t.schedule._crisis_rounds.join(', ') + '</span>'
@@ -10378,6 +10382,37 @@ function renderAdminTournaments(el) {
     '</div>';
 }
 
+
+// ── Super-admin override: enable/disable textbook for any tournament ──
+// Admins can flip this on for ANY tournament (including free class tournaments)
+// to grant students textbook access without requiring a paid entry.
+async function doToggleTextbookEnabled(tournId) {
+  if (!_isAdmin()) { flash('Admin privileges required.', 'error'); return; }
+  var t = _getTournById(tournId);
+  if (!t) { flash('Tournament not found.', 'error'); return; }
+  var current = !!t.textbook_enabled;
+  var nextVal = !current;
+  var verb = nextVal ? 'enable' : 'disable';
+  var msg = nextVal
+    ? 'Enable textbook access for "' + (t.name || 'this tournament') + '"?\n\nAll students on every team in this tournament will gain access to the textbook — regardless of whether they paid an entry fee. This is intended for free class tournaments where you want to bundle the textbook as a courtesy.'
+    : 'Disable textbook access for "' + (t.name || 'this tournament') + '"?\n\nStudents currently relying on this admin override will lose textbook access. Students in paid tournaments retain their normal access.';
+  if (!confirm(msg)) { return; }
+  try {
+    var updated = await sbPatch('tournaments', 'id=eq.' + tournId, { textbook_enabled: nextVal });
+    // Update local cache
+    for (var i = 0; i < _adminTournaments.length; i++) {
+      if (_adminTournaments[i].id === tournId) {
+        _adminTournaments[i].textbook_enabled = nextVal;
+        break;
+      }
+    }
+    flash('Textbook access ' + (nextVal ? 'enabled' : 'disabled') + ' for "' + (t.name || 'tournament') + '".', 'success');
+    _renderAdminTab('tournaments');
+  } catch(e) {
+    flash('Could not ' + verb + ' textbook: ' + (e.message || 'unknown error'), 'error');
+  }
+}
+
 function _tournamentActionBtns(t) {
   var btns = '';
   var id   = t.id;
@@ -10403,6 +10438,14 @@ function _tournamentActionBtns(t) {
   if (_isAdmin()) {
     btns += '<button class="btn btn--ghost btn--sm" onclick="openIndividualCrisisModal(\'' + id + '\')" title="Assign crisis to individual team">⚡ Assign Crisis</button>';
     btns += '<button class="btn btn--ghost btn--sm" onclick="doSetCrisisRounds(\'' + id + '\')" title="Set crisis rounds">⚡ Crisis Rounds</button>';
+    // Super-admin override: enable/disable textbook access for ANY tournament (incl. free class)
+    var tbOn = !!t.textbook_enabled;
+    var tbBtnClass = tbOn ? 'btn btn--gold btn--sm' : 'btn btn--ghost btn--sm';
+    var tbBtnLabel = tbOn ? '📖 Textbook ON' : '📖 Enable Textbook';
+    var tbBtnTitle = tbOn
+      ? 'Textbook access is currently ON for this tournament. Click to disable.'
+      : 'Grant all students in this tournament free textbook access (admin override — works on free class tournaments too).';
+    btns += '<button class="' + tbBtnClass + '" onclick="doToggleTextbookEnabled(\'' + id + '\')" title="' + tbBtnTitle + '">' + tbBtnLabel + '</button>';
     btns += '<button class="btn btn--danger btn--sm" onclick="doDeleteTournament(\'' + id + '\')" title="Delete permanently">🗑</button>';
   }
   return btns || '<span class="text-muted text-sm">—</span>';
@@ -13058,171 +13101,725 @@ async function doSaveChampionshipSchedule(year) {
   }
 }
 
+// ───────────────────────────────────────────────────────────────────
+// Country centroids for the world map: ISO-2 → [longitude, latitude]
+// Compact data file inline — ~200 countries, ~5KB
+// ───────────────────────────────────────────────────────────────────
+var COUNTRY_CENTROIDS = {
+'AD':[1.5,42.5],'AE':[54,24],'AF':[65,33],'AG':[-61.8,17.05],'AI':[-63.05,18.22],
+'AL':[20,41],'AM':[45,40],'AO':[18.5,-12.5],'AR':[-65,-35],'AS':[-170.7,-14.3],
+'AT':[14.5,47.5],'AU':[133,-25],'AW':[-69.97,12.5],'AZ':[48,40.5],'BA':[18,44],
+'BB':[-59.55,13.18],'BD':[90,24],'BE':[4.5,50.5],'BF':[-1.5,12.5],'BG':[25,43],
+'BH':[50.55,26.05],'BI':[30,-3.5],'BJ':[2.25,9.5],'BM':[-64.78,32.32],'BN':[114.5,4.5],
+'BO':[-65,-17],'BR':[-53,-10],'BS':[-77.5,24.25],'BT':[90.5,27.5],'BW':[24,-22],
+'BY':[28,53],'BZ':[-88.75,17.25],'CA':[-95,60],'CD':[25,0],'CF':[21,7],
+'CG':[15,-1],'CH':[8.2,46.8],'CI':[-5.5,7.5],'CL':[-71,-30],'CM':[12,6],
+'CN':[105,35],'CO':[-72,4],'CR':[-84,10],'CU':[-79,21],'CV':[-23.5,16],
+'CY':[33,35],'CZ':[15.5,49.75],'DE':[10.5,51],'DJ':[42.5,11.5],'DK':[10,56],
+'DM':[-61.33,15.42],'DO':[-70.7,19],'DZ':[3,28],'EC':[-79,-1.5],'EE':[26,59],
+'EG':[30,26],'ER':[39,15],'ES':[-4,40],'ET':[40,8],'FI':[26,64],
+'FJ':[178,-18],'FM':[158.25,6.92],'FO':[-7,62],'FR':[2,46],'GA':[11.75,-1],
+'GB':[-3,54],'GD':[-61.67,12.12],'GE':[43.5,42],'GG':[-2.58,49.45],'GH':[-1.5,8],
+'GI':[-5.35,36.13],'GL':[-42,72],'GM':[-15.5,13.5],'GN':[-10,11],'GP':[-61.55,16.25],
+'GQ':[10,2],'GR':[22,39],'GT':[-90.25,15.5],'GU':[144.78,13.45],'GW':[-15,12],
+'GY':[-59,5],'HK':[114.18,22.32],'HN':[-86.5,15],'HR':[15.5,45.17],'HT':[-72.42,19],
+'HU':[19.5,47],'ID':[114,-3],'IE':[-8,53],'IL':[34.8,31],'IM':[-4.55,54.23],
+'IN':[78,21],'IO':[72.5,-7.32],'IQ':[44,33],'IR':[53,32],'IS':[-19,65],
+'IT':[12,42],'JE':[-2.13,49.22],'JM':[-77.5,18.1],'JO':[36,31],'JP':[138,36],
+'KE':[37.9,-0.5],'KG':[75,41],'KH':[105,13],'KI':[173,1.42],'KM':[44.25,-12.17],
+'KN':[-62.77,17.33],'KP':[127,40],'KR':[127.5,36],'KW':[47.97,29.5],'KY':[-80.57,19.5],
+'KZ':[68,48],'LA':[105,18],'LB':[35.83,33.83],'LC':[-61,13.88],'LI':[9.53,47.27],
+'LK':[81,7],'LR':[-9.5,6.5],'LS':[28.25,-29.5],'LT':[24,56],'LU':[6.17,49.75],
+'LV':[25,57],'LY':[17,27],'MA':[-7,32],'MC':[7.4,43.73],'MD':[28.5,47.25],
+'ME':[19.25,42.5],'MG':[47,-20],'MH':[171,7.12],'MK':[21.83,41.83],'ML':[-4,17.5],
+'MM':[96,21],'MN':[105,46],'MO':[113.55,22.17],'MP':[145.72,15.18],'MQ':[-61,14.67],
+'MR':[-12,20],'MS':[-62.23,16.75],'MT':[14.43,35.9],'MU':[57.5,-20.3],'MV':[73.5,3.25],
+'MW':[34,-13.5],'MX':[-102,23],'MY':[112,2.5],'MZ':[35,-18.25],'NA':[18,-22],
+'NC':[165.5,-21.5],'NE':[9,17],'NG':[8,10],'NI':[-85,13],'NL':[5.5,52],
+'NO':[10,62],'NP':[84,28],'NR':[166.92,-0.53],'NZ':[174,-41],'OM':[57,21],
+'PA':[-80,9],'PE':[-76,-10],'PF':[-149.5,-17.67],'PG':[147,-6],'PH':[122,12],
+'PK':[70,30],'PL':[19,52],'PM':[-56.33,46.83],'PR':[-66.5,18.25],'PS':[35.25,32],
+'PT':[-8,39],'PW':[134.5,7.5],'PY':[-58,-23],'QA':[51.25,25.5],'RE':[55.5,-21.1],
+'RO':[25,46],'RS':[21,44],'RU':[100,60],'RW':[30,-2],'SA':[45,24],
+'SB':[159,-8],'SC':[55.5,-4.58],'SD':[30,15],'SE':[15,62],'SG':[103.8,1.4],
+'SI':[14.5,46.12],'SK':[19.5,48.67],'SL':[-11.5,8.5],'SM':[12.42,43.93],'SN':[-14,14],
+'SO':[46,6],'SR':[-56,4],'SS':[31,8],'ST':[6.7,0.25],'SV':[-88.92,13.83],
+'SY':[38,35],'SZ':[31.5,-26.5],'TC':[-71.78,21.75],'TD':[19,15],'TG':[1.17,8],
+'TH':[101,15],'TJ':[71,39],'TL':[125.5,-8.5],'TM':[60,40],'TN':[9.55,34],
+'TO':[-175.2,-20.42],'TR':[35,39],'TT':[-61.27,10.67],'TV':[178,-8.5],'TW':[121,23.5],
+'TZ':[35,-6.37],'UA':[32,49],'UG':[32,1],'US':[-98.5,39.8],'UY':[-56,-33],
+'UZ':[64,41],'VA':[12.45,41.9],'VC':[-61.2,13.25],'VE':[-67,8],'VG':[-64.5,18.5],
+'VI':[-64.83,18.33],'VN':[107,16],'VU':[167,-16],'WS':[-172.42,-13.58],'YE':[48,15],
+'YT':[45.17,-12.83],'ZA':[24,-29],'ZM':[28,-13.5],'ZW':[29.75,-19]
+};
+
+// Simplified continent silhouettes — gives the world map context
+// Each path is a single Polygon approximating land masses (low fidelity, ~5KB total)
+// Generated by simplifying public-domain Natural Earth coastlines at ~1deg resolution.
+var WORLD_CONTINENTS_PATH = 'M-167,68L-160,71L-145,71L-128,70L-122,69L-105,69L-95,73L-83,74L-70,73L-60,82L-32,82L-25,75L-15,75L-9,71L-5,68L8,72L20,70L35,71L55,73L70,77L100,77L130,73L150,72L160,69L175,69L175,65L170,60L165,55L155,52L150,45L145,42L142,46L140,40L135,34L131,32L130,27L125,22L115,20L110,18L108,12L100,7L95,8L90,6L85,11L77,10L70,15L65,22L52,18L48,12L45,10L43,15L38,12L35,8L32,12L30,15L27,22L22,32L15,32L10,35L0,35L-5,35L-8,32L-10,28L-15,22L-17,18L-15,12L-10,8L-3,5L5,5L10,2L8,-2L5,-5L0,-8L-5,-12L-8,-15L-10,-20L-13,-25L-15,-32L-18,-34L-20,-35L-22,-32L-18,-25L-13,-15L-10,-8L-8,-3L-12,0L-18,5L-20,12L-22,18L-25,22L-28,28L-32,32L-30,35L-25,35L-20,38L-15,42L-10,45L-5,48L0,50L5,52L8,54L5,58L0,60L-5,62L-12,60L-22,58L-30,55L-35,52L-40,55L-48,58L-55,60L-65,65L-75,67L-85,68L-95,67L-105,65L-115,60L-125,55L-135,55L-145,60L-155,62L-165,65L-167,68Z';
+
+// Combined: Africa + S America + Australia. Simpler to embed all as one shape.
+// For simplicity, we'll instead use just continent dot-grid backdrop drawn with JS.
+// END inline data.
+
 async function renderAdminAnalytics(el) {
-  var totalRevenue = 0;
-  var paidCount = 0;
-  var completedCount = 0;
-  for (var i = 0; i < _adminTournaments.length; i++) {
-    if (_adminTournaments[i].status === 'completed') { completedCount++; }
+  // Show loading
+  el.innerHTML =
+    '<div class="card"><div class="card__body" style="text-align:center;padding:3rem;">' +
+      '<div class="spinner" style="width:32px;height:32px;margin:0 auto;"></div>' +
+      '<p class="text-sm text-muted" style="margin-top:1rem;">Crunching platform analytics since inception…</p>' +
+    '</div></div>';
+
+  // Pull data sets we don't already have in admin cache
+  var allUsers      = _adminUsers || [];
+  var allTournaments= _adminTournaments || [];
+  var allTeams      = _adminTeams || [];
+  var allWaivers    = _adminWaivers || [];
+  var allViews      = [];
+  var allDecisions  = [];
+
+  try {
+    // Pull views in pages so we don't OOM
+    allViews = await sbGet('page_views', 'order=visited_at.desc&limit=10000') || [];
+  } catch(e) { allViews = []; }
+  try {
+    allDecisions = await sbGet('decisions', 'limit=2000&select=id,team_id,tournament_id,submitted_at') || [];
+  } catch(e) { allDecisions = []; }
+
+  // ── Compute every metric ──────────────────────────────────────────
+  // Users
+  var profCount  = 0, studCount = 0, adminCount = 0;
+  for (var ui = 0; ui < allUsers.length; ui++) {
+    var u = allUsers[ui];
+    if (u.is_admin) { adminCount++; }
+    else if ((u.role || '') === 'professor') { profCount++; }
+    else { studCount++; }
   }
-  for (var j = 0; j < _adminTeams.length; j++) {
-    if (_adminTeams[j].fee_paid) {
-      paidCount++;
-      var t = _getTournById(_adminTeams[j].tournament_id);
-      if (t) { totalRevenue += Number(t.entry_fee) || 0; }
+
+  // Tournaments by status
+  var statusCount = { upcoming:0, registration:0, active:0, completed:0, draft:0 };
+  var paidTournaments = 0;
+  for (var ti = 0; ti < allTournaments.length; ti++) {
+    var tn = allTournaments[ti];
+    var st = tn.status || 'upcoming';
+    if (statusCount[st] !== undefined) { statusCount[st]++; }
+    if (Number(tn.entry_fee) > 0) { paidTournaments++; }
+  }
+
+  // Teams + revenue
+  var paidTeams = 0, totalRevenue = 0;
+  for (var tj = 0; tj < allTeams.length; tj++) {
+    if (allTeams[tj].fee_paid) {
+      paidTeams++;
+      var tt = _getTournById(allTeams[tj].tournament_id);
+      if (tt) { totalRevenue += Number(tt.entry_fee) || 0; }
     }
   }
-  var avgTeamsPerTournament = _adminTournaments.length
-    ? Math.round(_adminTeams.length / _adminTournaments.length * 10) / 10
+  var paidTeamPct = allTeams.length ? Math.round(paidTeams / allTeams.length * 100) : 0;
+
+  // Total rounds played across all tournaments
+  var totalRoundsPlayed = 0;
+  for (var tk = 0; tk < allTournaments.length; tk++) {
+    totalRoundsPlayed += Number(allTournaments[tk].current_round || 0);
+  }
+
+  // Engagement: avg teams / tournament, avg decisions / team
+  var avgTeams = allTournaments.length ? Math.round(allTeams.length / allTournaments.length * 10) / 10 : 0;
+  var avgDec   = allTeams.length ? Math.round(allDecisions.length / allTeams.length * 10) / 10 : 0;
+
+  // Tournament completion rate
+  var completionRate = allTournaments.length
+    ? Math.round(statusCount.completed / allTournaments.length * 100)
     : 0;
 
-  el.innerHTML =
-    '<div class="admin-metric-grid">' +
-      _metricCard('👤', _adminUsers.length,        'Total Users') +
-      _metricCard('🏆', _adminTournaments.length,   'Tournaments Created') +
-      _metricCard('✅', completedCount,             'Tournaments Completed') +
-      _metricCard('👥', _adminTeams.length,         'Total Teams') +
-      _metricCard('💰', fmt$(totalRevenue),          'Revenue Collected', 'stat-card__icon--green') +
-      _metricCard('📋', _adminWaivers.length,        'Waivers Issued') +
-      _metricCard('📊', avgTeamsPerTournament,       'Avg Teams / Tournament') +
-      _metricCard('🔄', _adminTournaments.filter(function(t){ return t.status === 'active'; }).length, 'Active Now') +
-    '</div>' +
-    '<div id="analytics-visitor-section" style="margin:1.25rem 0;">' +
-      '<div class="card"><div class="card__body" style="text-align:center;">' +
-        '<div class="spinner" style="width:20px;height:20px;margin:0 auto;"></div>' +
-        '<p class="text-sm text-muted" style="margin-top:0.5rem;">Loading visitor stats...</p>' +
-      '</div></div>' +
-    '</div>' +
+  // Anonymous vs logged-in
+  var loggedInViews = 0;
+  for (var vi = 0; vi < allViews.length; vi++) {
+    if (allViews[vi].user_id) { loggedInViews++; }
+  }
+
+  // Days since launch (oldest record across users/tournaments/views)
+  var earliestStamp = Date.now();
+  function _maybeEarliest(stamp) {
+    if (!stamp) { return; }
+    var ts = new Date(stamp).getTime();
+    if (!isNaN(ts) && ts < earliestStamp) { earliestStamp = ts; }
+  }
+  for (var ek = 0; ek < allUsers.length; ek++) { _maybeEarliest(allUsers[ek].created_at); }
+  for (var em = 0; em < allTournaments.length; em++) { _maybeEarliest(allTournaments[em].created_at); }
+  for (var en = 0; en < allViews.length; en++) { _maybeEarliest(allViews[en].visited_at); }
+  var daysSinceLaunch = Math.floor((Date.now() - earliestStamp) / 86400000);
+  if (daysSinceLaunch < 0) { daysSinceLaunch = 0; }
+
+  // Geographic distribution (by country_code for the map; country name for the list)
+  var countryByCode = {};
+  var countryByName = {};
+  var cityCount     = {};
+  for (var vj = 0; vj < allViews.length; vj++) {
+    var vw = allViews[vj];
+    var cc = (vw.country_code || '').toUpperCase();
+    if (cc) { countryByCode[cc] = (countryByCode[cc] || 0) + 1; }
+    var cn = vw.country || 'Unknown';
+    countryByName[cn] = (countryByName[cn] || 0) + 1;
+    var ci = vw.city;
+    if (ci) {
+      var cnLabel = ci + (vw.country ? ', ' + vw.country : '');
+      cityCount[cnLabel] = (cityCount[cnLabel] || 0) + 1;
+    }
+  }
+  var countryList = Object.keys(countryByName).map(function(k){ return { country:k, count:countryByName[k] }; })
+    .sort(function(a,b){ return b.count - a.count; });
+  var cityList = Object.keys(cityCount).map(function(k){ return { city:k, count:cityCount[k] }; })
+    .sort(function(a,b){ return b.count - a.count; });
+
+  // Unique sessions
+  function uniq(arr) { var s = {}; for (var i=0;i<arr.length;i++) { if(arr[i].session_id) s[arr[i].session_id]=1; } return Object.keys(s).length; }
+  var allUniq = uniq(allViews);
+  var now = new Date();
+  var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  var weekStart  = new Date(now.getTime() - 7  * 86400000).toISOString();
+  var monthStart = new Date(now.getTime() - 30 * 86400000).toISOString();
+  var todayV = allViews.filter(function(v){ return v.visited_at >= todayStart; });
+  var weekV  = allViews.filter(function(v){ return v.visited_at >= weekStart; });
+  var monthV = allViews.filter(function(v){ return v.visited_at >= monthStart; });
+
+  // 30-day daily trend
+  var dayMap = {};
+  for (var dd = 0; dd < allViews.length; dd++) {
+    var key = (allViews[dd].visited_at || '').slice(0, 10);
+    if (key) { dayMap[key] = (dayMap[key] || 0) + 1; }
+  }
+  var days30 = [];
+  for (var d30 = 29; d30 >= 0; d30--) {
+    var dt  = new Date(now.getTime() - d30 * 86400000);
+    var key = _fmtDate(dt);
+    days30.push({ date: key.slice(5), count: dayMap[key] || 0 });
+  }
+  var maxDay30 = Math.max.apply(null, days30.map(function(d){ return d.count; })) || 1;
+
+  // 12-month user signup trend
+  var monthUserMap = {};
+  for (var u2 = 0; u2 < allUsers.length; u2++) {
+    var k2 = (allUsers[u2].created_at || '').slice(0, 7);
+    if (k2) { monthUserMap[k2] = (monthUserMap[k2] || 0) + 1; }
+  }
+  var monthTournMap = {};
+  for (var tm2 = 0; tm2 < allTournaments.length; tm2++) {
+    var k3 = (allTournaments[tm2].created_at || '').slice(0, 7);
+    if (k3) { monthTournMap[k3] = (monthTournMap[k3] || 0) + 1; }
+  }
+  var months12 = [];
+  for (var m12 = 11; m12 >= 0; m12--) {
+    var mDate = new Date(now.getFullYear(), now.getMonth() - m12, 1);
+    var mKey  = mDate.getFullYear() + '-' + String(mDate.getMonth()+1).padStart(2,'0');
+    months12.push({
+      month: mKey.slice(2),
+      newUsers: monthUserMap[mKey] || 0,
+      newTourns: monthTournMap[mKey] || 0
+    });
+  }
+  var maxNewUsers = Math.max.apply(null, months12.map(function(m){ return m.newUsers; })) || 1;
+  var maxNewTourns= Math.max.apply(null, months12.map(function(m){ return m.newTourns; })) || 1;
+
+  // Cumulative user growth
+  var sortedUsers = allUsers.slice().filter(function(u){ return u.created_at; })
+    .sort(function(a,b){ return new Date(a.created_at) - new Date(b.created_at); });
+  var cumulative = [];
+  for (var sc = 0; sc < sortedUsers.length; sc++) {
+    cumulative.push({
+      date: sortedUsers[sc].created_at.slice(0,10),
+      n: sc + 1
+    });
+  }
+
+  // Top universities (extract domain from user emails)
+  var domainCount = {};
+  for (var ud = 0; ud < allUsers.length; ud++) {
+    var em2 = allUsers[ud].email || '';
+    var atIdx = em2.indexOf('@');
+    if (atIdx < 0) { continue; }
+    var dom = em2.slice(atIdx + 1).toLowerCase();
+    domainCount[dom] = (domainCount[dom] || 0) + 1;
+  }
+  var domainList = Object.keys(domainCount).map(function(k){ return { dom:k, n:domainCount[k] }; })
+    .filter(function(r){ return r.n >= 1; })
+    .sort(function(a,b){ return b.n - a.n; });
+
+  // Top professors by tournaments created
+  var profByCreator = {};
+  for (var tc = 0; tc < allTournaments.length; tc++) {
+    var cby = allTournaments[tc].created_by;
+    if (cby) { profByCreator[cby] = (profByCreator[cby] || 0) + 1; }
+  }
+  var userByIdMap = {};
+  for (var um = 0; um < allUsers.length; um++) { userByIdMap[allUsers[um].id] = allUsers[um]; }
+  var topProfs = Object.keys(profByCreator).map(function(uid) {
+    var us = userByIdMap[uid] || {};
+    return {
+      uid: uid,
+      name: us.name || us.email || 'Unknown',
+      email: us.email || '',
+      n: profByCreator[uid]
+    };
+  }).sort(function(a,b){ return b.n - a.n; }).slice(0, 10);
+
+  // ── Recent activity (last 10 of each) ─────────────────────────────
+  function _byCreatedAtDesc(a, b) {
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  }
+  var recentSignups = allUsers.slice().sort(_byCreatedAtDesc).slice(0, 10);
+  var recentTournaments = allTournaments.slice().sort(_byCreatedAtDesc).slice(0, 10);
+  var recentPaidTeams = allTeams.slice().filter(function(t){ return t.fee_paid; }).sort(_byCreatedAtDesc).slice(0, 10);
+
+  // ── Build HTML ────────────────────────────────────────────────────
+  function pct(x) { return Math.round(x * 100) / 100 + '%'; }
+
+  var html = '';
+
+  // Section 1: Platform Health (since inception)
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header">' +
+        '<span class="card__title">📊 Platform Health · Since Inception</span>' +
+        '<span class="text-sm text-muted">' + daysSinceLaunch + ' days of operation</span>' +
+        '<button class="btn btn--ghost btn--sm" onclick="renderAdminAnalytics(document.getElementById(\'admin-panel-content\'))">↻ Refresh</button>' +
+      '</div>' +
+      '<div class="card__body">' +
+        '<div class="admin-metric-grid">' +
+          _metricCard('👤', allUsers.length,         'Total Users') +
+          _metricCard('🎓', studCount,                'Students') +
+          _metricCard('👨‍🏫', profCount,                'Professors') +
+          _metricCard('🛡', adminCount,               'Admins') +
+          _metricCard('🏆', allTournaments.length,    'Total Tournaments') +
+          _metricCard('✅', statusCount.completed,    'Completed Tournaments') +
+          _metricCard('🔄', statusCount.active,       'Active Tournaments') +
+          _metricCard('📝', statusCount.registration, 'In Registration') +
+          _metricCard('👥', allTeams.length,          'Total Teams') +
+          _metricCard('💳', paidTeams,                'Paid Teams (' + paidTeamPct + '%)') +
+          _metricCard('💰', fmt$(totalRevenue),       'Revenue Collected', 'stat-card__icon--green') +
+          _metricCard('🎯', totalRoundsPlayed,        'Total Rounds Played') +
+          _metricCard('📋', allDecisions.length,      'Decisions Submitted') +
+          _metricCard('🌐', allUniq,                  'Unique Visitors All-Time') +
+          _metricCard('👁', allViews.length,          'Total Page Views') +
+          _metricCard('🎟️', allWaivers.length,        'Waivers Issued') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Section 2: Engagement & Conversion
+  var anonViews = allViews.length - loggedInViews;
+  var conversionPct = allViews.length ? Math.round(loggedInViews / allViews.length * 100) : 0;
+  var revenuePerPaidTournament = paidTournaments ? Math.round(totalRevenue / paidTournaments) : 0;
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header"><span class="card__title">🎯 Engagement &amp; Conversion</span></div>' +
+      '<div class="card__body">' +
+        '<div class="admin-metric-grid">' +
+          _metricCard('🔑', loggedInViews,             'Logged-in Visits') +
+          _metricCard('👻', anonViews,                  'Anonymous Visits') +
+          _metricCard('🚪', conversionPct + '%',        'Logged-in / Total') +
+          _metricCard('📊', avgTeams,                   'Avg Teams / Tournament') +
+          _metricCard('🧮', avgDec,                     'Avg Decisions / Team') +
+          _metricCard('🏁', completionRate + '%',       'Tournament Completion Rate') +
+          _metricCard('💎', paidTournaments,            'Paid Tournaments') +
+          _metricCard('💵', fmt$(revenuePerPaidTournament), 'Avg Revenue / Paid Tourn.') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Section 3: Growth Trends
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header"><span class="card__title">📈 Growth Trends</span></div>' +
+      '<div class="card__body">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">New Users · Last 12 Months</div>' +
+            _renderBarChart(months12, 'newUsers', maxNewUsers, 'month', '#0f3d9e') +
+          '</div>' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">New Tournaments · Last 12 Months</div>' +
+            _renderBarChart(months12, 'newTourns', maxNewTourns, 'month', '#c9920a') +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:1.25rem;">' +
+          '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Daily Visits · Last 30 Days</div>' +
+          _renderDailyBars(days30, maxDay30) +
+        '</div>' +
+        (cumulative.length > 1
+          ? '<div style="margin-top:1.25rem;">' +
+              '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Cumulative User Growth · Since Inception</div>' +
+              _renderCumulativeLine(cumulative) +
+            '</div>'
+          : '') +
+      '</div>' +
+    '</div>';
+
+  // Section 4: Geographic Reach (with world map)
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header">' +
+        '<span class="card__title">🌍 Geographic Reach</span>' +
+        '<span class="text-sm text-muted">' + Object.keys(countryByCode).length + ' countries · geo via ipapi.co</span>' +
+      '</div>' +
+      '<div class="card__body">' +
+        _renderWorldMap(countryByCode) +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem;">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Top 20 Countries</div>' +
+            _renderRankedList(countryList.slice(0, 20), 'country', 'count') +
+          '</div>' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Top 20 Cities</div>' +
+            (cityList.length
+              ? _renderRankedList(cityList.slice(0, 20), 'city', 'count')
+              : '<p class="text-sm text-muted">No city data yet.</p>') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Section 5: Top Universities & Top Professors
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header"><span class="card__title">🏫 Top Universities &amp; Top Professors</span></div>' +
+      '<div class="card__body">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Top 15 Email Domains (likely universities)</div>' +
+            (domainList.length
+              ? _renderRankedList(domainList.slice(0, 15), 'dom', 'n')
+              : '<p class="text-sm text-muted">No user data yet.</p>') +
+          '</div>' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Top 10 Professors (by tournaments created)</div>' +
+            (topProfs.length
+              ? topProfs.map(function(p) {
+                  return '<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;align-items:center;">' +
+                    '<span style="color:var(--text-700);"><strong>' + esc(p.name) + '</strong><br>' +
+                    '<span style="font-size:0.6875rem;color:var(--text-400);">' + esc(p.email) + '</span></span>' +
+                    '<span class="text-mono">' + p.n + '</span>' +
+                  '</div>';
+                }).join('')
+              : '<p class="text-sm text-muted">No professor data yet.</p>') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Section 6: Visitor windows (Today / Week / Month)
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header"><span class="card__title">⏱ Visitor Windows</span></div>' +
+      '<div class="card__body">' +
+        '<div class="admin-metric-grid">' +
+          _metricCard('☀️', uniq(todayV),  'Unique Today') +
+          _metricCard('📅', uniq(weekV),   'Unique This Week') +
+          _metricCard('📆', uniq(monthV),  'Unique This Month') +
+          _metricCard('🌐', allUniq,       'All-Time Unique') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Section 7: Recent Activity Feed
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header"><span class="card__title">🕒 Recent Activity (Last 10 of Each)</span></div>' +
+      '<div class="card__body">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Recent Signups</div>' +
+            (recentSignups.length
+              ? recentSignups.map(function(u) {
+                  var role = u.is_admin ? 'admin' : (u.role || 'student');
+                  var when = u.created_at ? new Date(u.created_at).toLocaleDateString() : '—';
+                  return '<div style="padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.75rem;line-height:1.4;">' +
+                    '<strong>' + esc(u.name || u.email || 'Unknown') + '</strong>' +
+                    ' <span style="font-size:0.625rem;color:var(--text-400);">' + esc(role) + '</span><br>' +
+                    '<span style="color:var(--text-400);font-size:0.6875rem;">' + esc(when) + '</span>' +
+                  '</div>';
+                }).join('')
+              : '<p class="text-sm text-muted">No signups yet.</p>') +
+          '</div>' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Recent Tournaments</div>' +
+            (recentTournaments.length
+              ? recentTournaments.map(function(t) {
+                  var creator = userByIdMap[t.created_by] || {};
+                  var when2 = t.created_at ? new Date(t.created_at).toLocaleDateString() : '—';
+                  return '<div style="padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.75rem;line-height:1.4;">' +
+                    '<strong>' + esc(t.name || 'Unnamed') + '</strong>' +
+                    ' <span style="font-size:0.625rem;color:var(--text-400);">' + esc(t.tier || '') + '</span><br>' +
+                    '<span style="color:var(--text-400);font-size:0.6875rem;">by ' + esc(creator.name || creator.email || '—') + ' · ' + esc(when2) + '</span>' +
+                  '</div>';
+                }).join('')
+              : '<p class="text-sm text-muted">No tournaments yet.</p>') +
+          '</div>' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:0.5rem;color:var(--text-700);">Recent Paid Teams</div>' +
+            (recentPaidTeams.length
+              ? recentPaidTeams.map(function(tm) {
+                  var tn2 = _getTournById(tm.tournament_id) || {};
+                  var when3 = tm.created_at ? new Date(tm.created_at).toLocaleDateString() : '—';
+                  return '<div style="padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.75rem;line-height:1.4;">' +
+                    '<strong>' + esc(tm.name || 'Unnamed') + '</strong><br>' +
+                    '<span style="color:var(--text-400);font-size:0.6875rem;">' + esc(tn2.name || '—') + ' · ' + esc(when3) + '</span>' +
+                  '</div>';
+                }).join('')
+              : '<p class="text-sm text-muted">No paid teams yet.</p>') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Section 8: Data Exports
+  html +=
     '<div class="card">' +
-      '<div class="card__header"><span class="card__title">Data Exports</span></div>' +
+      '<div class="card__header"><span class="card__title">📦 Data Exports</span></div>' +
       '<div class="card__body">' +
         '<div class="admin-action-row">' +
           '<button class="btn btn--ghost" onclick="exportCSV()">📥 Export Grades (CSV)</button>' +
           '<button class="btn btn--ghost" onclick="exportJSON()">📦 Export JSON Snapshot</button>' +
+          '<button class="btn btn--ghost" onclick="exportAnalyticsCSV()">📊 Export Visitor Analytics (CSV)</button>' +
         '</div>' +
-        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">Grades CSV includes team scores, pillar breakdowns, rankings, and all round rationale. JSON includes full economy snapshots.</p>' +
+        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">Grades CSV includes team scores, pillar breakdowns, rankings, and round rationale. JSON includes full economy snapshots. Visitor Analytics CSV exports the raw page_views data including geo info.</p>' +
       '</div>' +
     '</div>';
 
-  // Load visitor stats
+  el.innerHTML = html;
+}
+
+// ── Helper renderers for the analytics tab ────────────────────────────
+function _renderBarChart(data, valueKey, maxVal, labelKey, color) {
+  var bars = data.map(function(d) {
+    var v = d[valueKey] || 0;
+    var h = Math.max(2, Math.round((v / maxVal) * 80));
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0;">' +
+      '<div style="font-size:0.625rem;color:var(--text-400);">' + (v || '') + '</div>' +
+      '<div style="width:100%;background:' + color + ';border-radius:2px 2px 0 0;height:' + h + 'px;"></div>' +
+      '<div style="font-size:0.5625rem;color:var(--text-400);margin-top:2px;white-space:nowrap;">' + d[labelKey] + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div style="display:flex;align-items:flex-end;gap:3px;height:108px;padding-bottom:18px;border-bottom:1px solid var(--border);">' + bars + '</div>';
+}
+
+function _renderDailyBars(data, maxVal) {
+  var bars = data.map(function(d) {
+    var h = Math.max(2, Math.round((d.count / maxVal) * 60));
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;min-width:0;">' +
+      '<div style="font-size:0.5625rem;color:var(--text-400);height:10px;">' + (d.count || '') + '</div>' +
+      '<div style="width:100%;background:var(--blue);border-radius:2px 2px 0 0;height:' + h + 'px;"></div>' +
+      '<div style="font-size:0.5rem;color:var(--text-400);transform:rotate(-50deg);transform-origin:top left;margin-top:6px;white-space:nowrap;">' + d.date + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div style="display:flex;align-items:flex-end;gap:1px;height:90px;padding-bottom:22px;border-bottom:1px solid var(--border);">' + bars + '</div>';
+}
+
+function _renderCumulativeLine(data) {
+  // Render as inline SVG sparkline-style
+  if (data.length < 2) { return ''; }
+  var W = 800, H = 120;
+  var pad = { top:10, right:20, bottom:24, left:40 };
+  var iw = W - pad.left - pad.right;
+  var ih = H - pad.top - pad.bottom;
+  var maxN = data[data.length - 1].n;
+
+  // x: index, y: cumulative count
+  var pts = data.map(function(d, i) {
+    var x = pad.left + (i / Math.max(1, data.length - 1)) * iw;
+    var y = pad.top + ih - (d.n / maxN) * ih;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+
+  // Build label markers (first, last, midpoint)
+  var firstD = data[0], lastD = data[data.length - 1];
+  var midIdx = Math.floor(data.length / 2);
+  var midD = data[midIdx];
+
+  // Y-axis ticks
+  var yTicks = [];
+  for (var t = 0; t <= 4; t++) {
+    var val = Math.round((maxN / 4) * t);
+    var y = pad.top + ih - (t / 4) * ih;
+    yTicks.push(
+      '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (W - pad.right) + '" y2="' + y + '" stroke="#e5e7eb" stroke-width="1"/>' +
+      '<text x="' + (pad.left - 6) + '" y="' + (y + 3) + '" font-size="9" fill="#9ca3af" text-anchor="end" font-family="DM Mono">' + val + '</text>'
+    );
+  }
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;background:#fafbfc;border-radius:4px;">' +
+    yTicks.join('') +
+    '<polyline fill="none" stroke="#0f3d9e" stroke-width="2" points="' + pts.join(' ') + '"/>' +
+    '<polyline fill="rgba(15,61,158,0.1)" stroke="none" points="' +
+      pad.left + ',' + (pad.top + ih) + ' ' + pts.join(' ') + ' ' + (W - pad.right) + ',' + (pad.top + ih) +
+    '"/>' +
+    '<text x="' + pad.left + '" y="' + (H - 6) + '" font-size="10" fill="#6b7280" font-family="DM Mono">' + firstD.date + '</text>' +
+    '<text x="' + (pad.left + iw / 2) + '" y="' + (H - 6) + '" font-size="10" fill="#6b7280" text-anchor="middle" font-family="DM Mono">' + midD.date + '</text>' +
+    '<text x="' + (W - pad.right) + '" y="' + (H - 6) + '" font-size="10" fill="#6b7280" text-anchor="end" font-family="DM Mono">' + lastD.date + '</text>' +
+  '</svg>';
+}
+
+function _renderRankedList(items, labelKey, countKey) {
+  if (!items.length) { return '<p class="text-sm text-muted">No data.</p>'; }
+  var maxN = items[0][countKey] || 1;
+  return items.map(function(r, i) {
+    var pctBar = Math.max(2, Math.round((r[countKey] / maxN) * 100));
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;gap:0.5rem;">' +
+      '<span style="color:var(--text-400);min-width:18px;font-family:DM Mono;font-size:0.6875rem;">' + (i + 1) + '.</span>' +
+      '<span style="flex:1;color:var(--text-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(r[labelKey] || '?') + '</span>' +
+      '<span style="flex-basis:80px;height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;position:relative;">' +
+        '<span style="display:block;height:100%;width:' + pctBar + '%;background:#0f3d9e;"></span>' +
+      '</span>' +
+      '<span class="text-mono" style="min-width:40px;text-align:right;">' + r[countKey] + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function _renderWorldMap(countryByCode) {
+  if (!countryByCode || !Object.keys(countryByCode).length) {
+    return '<p class="text-sm text-muted">No geographic data yet. Visitor countries appear here once data is collected.</p>';
+  }
+  // SVG dimensions; equirectangular projection from lat/long
+  // x = (lon + 180) / 360 * W, y = (90 - lat) / 180 * H
+  var W = 900, H = 460;
+  function project(lon, lat) {
+    var x = (lon + 180) / 360 * W;
+    var y = (90 - lat) / 180 * H;
+    return [x, y];
+  }
+
+  // Find max for sizing
+  var maxC = 0;
+  for (var k in countryByCode) { if (countryByCode[k] > maxC) { maxC = countryByCode[k]; } }
+  if (!maxC) { maxC = 1; }
+
+  // Build dots
+  var dots = '';
+  var hoverData = []; // for label tooltips
+  for (var iso in countryByCode) {
+    var c = COUNTRY_CENTROIDS[iso];
+    if (!c) { continue; }
+    var count = countryByCode[iso];
+    var p = project(c[0], c[1]);
+    // Radius: log-scaled so big countries don't dwarf small ones
+    var r = Math.max(3, Math.min(28, 3 + Math.log(count + 1) * 5));
+    // Color intensity proportional to count
+    var alpha = 0.45 + 0.50 * (count / maxC);
+    if (alpha > 0.95) { alpha = 0.95; }
+    var title = iso + ': ' + count + ' visit' + (count === 1 ? '' : 's');
+    dots += '<g><title>' + esc(title) + '</title>' +
+      '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + r.toFixed(1) +
+      '" fill="rgba(15,61,158,' + alpha.toFixed(2) + ')" stroke="#fff" stroke-width="1"/>' +
+      '<text x="' + p[0].toFixed(1) + '" y="' + (p[1] + 3).toFixed(1) + '" font-size="9" fill="#fff" ' +
+        'text-anchor="middle" font-family="DM Mono" font-weight="700" pointer-events="none">' +
+        (r >= 10 ? esc(iso) : '') +
+      '</text></g>';
+  }
+
+  // Continent backdrop — simplified dot grid showing land
+  // We render small gray dots at a 4-degree grid over continental land using a
+  // hand-curated bitmask. To keep this lightweight, we approximate land with
+  // a coarse polygon-fill approach: draw soft rectangles covering the major
+  // continent bounding boxes lightly, so the user sees "land vs ocean"
+  var landBoxes = [
+    // North America
+    [-170, 72, -50, 12],
+    // South America
+    [-82, 12, -34, -56],
+    // Europe + Asia
+    [-12, 72, 180, 8],
+    // Africa
+    [-18, 38, 52, -36],
+    // Australia
+    [112, -10, 155, -40]
+  ];
+  var land = '';
+  for (var lb = 0; lb < landBoxes.length; lb++) {
+    var b = landBoxes[lb];
+    var p1 = project(b[0], b[1]);
+    var p2 = project(b[2], b[3]);
+    land += '<rect x="' + p1[0].toFixed(1) + '" y="' + p1[1].toFixed(1) +
+      '" width="' + (p2[0] - p1[0]).toFixed(1) +
+      '" height="' + (p2[1] - p1[1]).toFixed(1) +
+      '" fill="rgba(192,205,224,0.22)" stroke="rgba(192,205,224,0.4)" stroke-width="1" rx="8"/>';
+  }
+
+  // Equator + Tropics + grid
+  var eqY = project(0, 0)[1];
+  var grid = '';
+  for (var ln = -180; ln <= 180; ln += 30) {
+    var gx = project(ln, 0)[0];
+    grid += '<line x1="' + gx.toFixed(1) + '" y1="0" x2="' + gx.toFixed(1) + '" y2="' + H + '" stroke="#eef0f5" stroke-width="1"/>';
+  }
+  for (var lt = -60; lt <= 60; lt += 30) {
+    var gy = project(0, lt)[1];
+    grid += '<line x1="0" y1="' + gy.toFixed(1) + '" x2="' + W + '" y2="' + gy.toFixed(1) + '" stroke="#eef0f5" stroke-width="1"/>';
+  }
+
+  // Legend
+  var legendVals = [1, Math.max(2, Math.round(maxC / 4)), Math.max(4, Math.round(maxC / 2)), maxC];
+  var legend = '';
+  var legendX = W - 200;
+  var legendY = H - 80;
+  legend += '<rect x="' + legendX + '" y="' + legendY + '" width="180" height="64" fill="rgba(255,255,255,0.92)" stroke="#dce2ef" stroke-width="1" rx="4"/>';
+  legend += '<text x="' + (legendX + 8) + '" y="' + (legendY + 14) + '" font-size="9" fill="#5a6a88" font-family="DM Sans" font-weight="700">VISITS PER COUNTRY</text>';
+  for (var li = 0; li < legendVals.length; li++) {
+    var rv = legendVals[li];
+    var rr = Math.max(3, Math.min(28, 3 + Math.log(rv + 1) * 5));
+    var lx = legendX + 18 + li * 42;
+    var ly = legendY + 38;
+    legend += '<circle cx="' + lx + '" cy="' + ly + '" r="' + rr.toFixed(1) + '" fill="rgba(15,61,158,0.7)" stroke="#fff" stroke-width="1"/>';
+    legend += '<text x="' + lx + '" y="' + (ly + 22) + '" font-size="9" fill="#5a6a88" text-anchor="middle" font-family="DM Mono">' + rv + '</text>';
+  }
+
+  return '<div style="background:#fafbfc;border:1px solid var(--border);border-radius:6px;padding:0.5rem;">' +
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+      grid + land +
+      '<line x1="0" y1="' + eqY.toFixed(1) + '" x2="' + W + '" y2="' + eqY.toFixed(1) + '" stroke="#d0d5e0" stroke-width="1" stroke-dasharray="4,3"/>' +
+      dots +
+      legend +
+    '</svg>' +
+    '<p style="font-size:0.75rem;color:var(--text-400);margin:0.5rem 0 0;text-align:center;">' +
+      'Equirectangular projection · circle size and color intensity scale with visits · hover for details' +
+    '</p>' +
+  '</div>';
+}
+
+// CSV export of all visitor analytics
+async function exportAnalyticsCSV() {
   try {
-    var now      = new Date();
-    var today    = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    var week     = new Date(now.getTime() - 7  * 86400000).toISOString();
-    var month    = new Date(now.getTime() - 30 * 86400000).toISOString();
-    var allViews = await sbGet('page_views', 'order=visited_at.desc&limit=2000') || [];
-
-    var todayV = allViews.filter(function(v) { return v.visited_at >= today; });
-    var weekV  = allViews.filter(function(v) { return v.visited_at >= week; });
-    var monthV = allViews.filter(function(v) { return v.visited_at >= month; });
-
-    function uniq(arr) { return new Set(arr.map(function(v) { return v.session_id; })).size; }
-    var loggedIn = allViews.filter(function(v) { return v.user_id; }).length;
-
-    // Referrers
-    var refMap = {};
-    for (var ri = 0; ri < allViews.length; ri++) {
-      var ref = allViews[ri].referrer;
-      if (!ref) { ref = 'Direct / None'; }
-      else { try { ref = new URL(ref).hostname; } catch(e) {} }
-      refMap[ref] = (refMap[ref] || 0) + 1;
+    var views = await sbGet('page_views', 'order=visited_at.desc&limit=10000') || [];
+    if (!views.length) { flash('No visitor data to export.', 'info'); return; }
+    var rows = [['visited_at','session_id','user_id','country','country_code','city','region','referrer']];
+    for (var i = 0; i < views.length; i++) {
+      var v = views[i];
+      rows.push([
+        v.visited_at || '',
+        v.session_id || '',
+        v.user_id    || '',
+        (v.country || '').replace(/"/g, '""'),
+        v.country_code || '',
+        (v.city    || '').replace(/"/g, '""'),
+        (v.region  || '').replace(/"/g, '""'),
+        (v.referrer|| '').replace(/"/g, '""')
+      ]);
     }
-    var refList = Object.keys(refMap).map(function(k) { return { ref: k, count: refMap[k] }; })
-      .sort(function(a, b) { return b.count - a.count; });
-
-    // Countries
-    var countryMap = {};
-    for (var ci2 = 0; ci2 < allViews.length; ci2++) {
-      var co = allViews[ci2].country || 'Unknown';
-      countryMap[co] = (countryMap[co] || 0) + 1;
-    }
-    var countryList = Object.keys(countryMap).map(function(k) { return { country: k, count: countryMap[k] }; })
-      .sort(function(a, b) { return b.count - a.count; });
-    var countryHtml = countryList.slice(0, 10).map(function(r) {
-      return '<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;">' +
-        '<span style="color:var(--text-700);">' + esc(r.country) + '</span>' +
-        '<span class="text-mono">' + r.count + '</span>' +
-      '</div>';
-    }).join('');
-
-    // 14-day trend
-    var dayMap = {};
-    for (var di = 0; di < allViews.length; di++) {
-      var day = (allViews[di].visited_at || '').slice(0, 10);
-      if (day) { dayMap[day] = (dayMap[day] || 0) + 1; }
-    }
-    var days = [];
-    for (var d = 13; d >= 0; d--) {
-      var dt  = new Date(now.getTime() - d * 86400000);
-      var key = dt.toISOString().slice(0, 10);
-      days.push({ date: key.slice(5), count: dayMap[key] || 0 });
-    }
-    var maxDay = Math.max.apply(null, days.map(function(d) { return d.count; })) || 1;
-
-    var trendHtml = days.map(function(d) {
-      var h = Math.max(2, Math.round((d.count / maxDay) * 72));
-      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0;">' +
-        '<div style="font-size:0.625rem;color:var(--text-400);">' + (d.count || '') + '</div>' +
-        '<div style="width:100%;background:var(--blue);border-radius:2px 2px 0 0;height:' + h + 'px;"></div>' +
-        '<div style="font-size:0.5625rem;color:var(--text-400);transform:rotate(-40deg);transform-origin:top left;margin-top:4px;white-space:nowrap;">' + d.date + '</div>' +
-      '</div>';
-    }).join('');
-
-    var refHtml = refList.slice(0, 8).map(function(r) {
-      return '<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.8125rem;">' +
-        '<span style="color:var(--text-700);">' + esc(r.ref) + '</span>' +
-        '<span class="text-mono">' + r.count + '</span>' +
-      '</div>';
-    }).join('');
-
-    var visEl = document.getElementById('analytics-visitor-section');
-    if (!visEl) { return; }
-    visEl.innerHTML =
-      '<div class="card" style="margin-bottom:1.25rem;">' +
-        '<div class="card__header"><span class="card__title">Visitor Analytics</span>' +
-          '<span class="text-sm text-muted">' + allViews.length + ' total visits recorded</span>' +
-          '<button class="btn btn--ghost btn--sm" onclick="renderAdminAnalytics(document.getElementById(\'admin-panel-content\'))">Refresh</button>' +
-        '</div>' +
-        '<div class="card__body">' +
-          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.25rem;">' +
-            _metricCard('👁', uniq(todayV),  'Unique Today') +
-            _metricCard('📅', uniq(weekV),   'Unique This Week') +
-            _metricCard('📆', uniq(monthV),  'Unique This Month') +
-            _metricCard('🌐', uniq(allViews),'All-Time Unique Sessions') +
-          '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' +
-            _metricCard('🔑', loggedIn,              'Logged-in Visits') +
-            _metricCard('👻', allViews.length - loggedIn, 'Anonymous Visits') +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="card" style="margin-bottom:1.25rem;">' +
-        '<div class="card__header"><span class="card__title">Daily Visits — Last 14 Days</span></div>' +
-        '<div class="card__body">' +
-          '<div style="display:flex;align-items:flex-end;gap:1px;height:96px;padding-bottom:24px;">' + trendHtml + '</div>' +
-        '</div>' +
-      '</div>' +
-      (refList.length
-        ? '<div class="card" style="margin-bottom:1.25rem;"><div class="card__header"><span class="card__title">Top Referrers</span></div>' +
-          '<div class="card__body" style="padding-top:0;">' + (refHtml || '') + '</div></div>'
-        : '') +
-      (countryList.length > 1 || (countryList.length === 1 && countryList[0].country !== 'Unknown')
-        ? '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span>' +
-            '<span class="text-sm text-muted">geo tracked via ipapi.co</span></div>' +
-          '<div class="card__body" style="padding-top:0;">' + countryHtml + '</div></div>'
-        : '<div class="card"><div class="card__header"><span class="card__title">Top Countries</span></div>' +
-          '<div class="card__body"><p class="text-sm text-muted">Country data will appear after new visits — run the ALTER TABLE SQL to add geo columns to existing table.</p></div></div>');
-
+    var csv = rows.map(function(r){
+      return r.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(',');
+    }).join('\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'macronations-analytics-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    flash('Analytics export started.', 'success');
   } catch(e) {
-    var vEl2 = document.getElementById('analytics-visitor-section');
-    if (vEl2) {
-      vEl2.innerHTML = '<div class="dash-alert dash-alert--info"><div class="dash-alert__icon">i</div>' +
-        '<div class="dash-alert__body"><div class="dash-alert__title">Visitor tracking table not found</div>' +
-        'Run this SQL in Supabase to enable visitor analytics:<br><code style="font-size:0.75rem;">CREATE TABLE page_views (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, session_id text, user_id text, referrer text, country text, country_code text, city text, region text, visited_at timestamptz DEFAULT now()); ALTER TABLE page_views ENABLE ROW LEVEL SECURITY; CREATE POLICY "insert_anon" ON page_views FOR INSERT WITH CHECK (true);</code>' +
-        '</div></div>';
-    }
+    flash('Export failed: ' + (e.message || 'unknown'), 'error');
   }
 }
+
 
 async function exportCSV() {
   // Fetch decisions and economies for all professor's tournaments for grading export
@@ -16854,7 +17451,8 @@ async function tbCheckAccess() {
     }
   }
 
-  // Students: access if they have paid for any team in any tournament
+  // Students: access if they have paid for any team OR are in any tournament
+  // where an admin has flipped on the textbook_enabled override.
   try {
     var capTeams = await sbGet('teams',
       'captain_id=eq.' + userId + '&fee_paid=eq.true&limit=1&select=id,tournament_id');
@@ -16878,6 +17476,32 @@ async function tbCheckAccess() {
       }
     }
   } catch(e2) {}
+
+  // ── Super-admin textbook override ──
+  // If the student is in ANY tournament (any team, paid or not) where
+  // textbook_enabled=true was set by an admin, grant access. This is the
+  // path for free class tournaments where the admin has activated textbook.
+  try {
+    var tbTourns = await sbGetPublic('tournaments',
+      'textbook_enabled=eq.true&limit=500&select=id');
+    if (tbTourns && tbTourns.length > 0) {
+      var tbIds = [];
+      for (var ti = 0; ti < tbTourns.length; ti++) { tbIds.push(tbTourns[ti].id); }
+      // Find any team in those tournaments that contains this user
+      var tournIdParam = tbIds.join(',');
+      var inTeams = await sbGetPublic('teams',
+        'tournament_id=in.(' + tournIdParam + ')&limit=500&select=id,tournament_id,captain_id,members');
+      if (inTeams) {
+        for (var ii = 0; ii < inTeams.length; ii++) {
+          var team = inTeams[ii];
+          var mems = team.members || [];
+          if (team.captain_id === userId || mems.indexOf(userId) >= 0) {
+            return { access: true, tournId: team.tournament_id || null };
+          }
+        }
+      }
+    }
+  } catch(e3) {}
 
   return false;
 }
@@ -17739,66 +18363,81 @@ function sbxResetTeam() {
 // ── Student Step 2: Play a round (mini simulator) ──
 function sbxSceneStudPlay(state) {
   if (!state.student.joinedTournament) {
-    return '<div class="sbx-scene"><h2 class="sbx-scene__title">Join a tournament first</h2><button class="sbx-btn-primary" onclick="sbxGoToStep(1)">← Back to Step 1</button></div>';
+    return '<div class="sbx-scene"><h2 class="sbx-scene__title">Join a tournament first</h2><button class="sbx-btn-primary" onclick="sbxGoToStep(1)">\u2190 Back to Step 1</button></div>';
   }
   return '' +
     '<div class="sbx-scene">' +
-      '<h2 class="sbx-scene__title">Step 2 · Play a Round</h2>' +
+      '<h2 class="sbx-scene__title">Step 2 \u00B7 Play a Round</h2>' +
       '<div class="sbx-scene__hint">' +
-        '<span class="sbx-scene__hint-icon">💡</span>' +
-        '<strong>Each round:</strong> you set six policy levers, the engine simulates how your country performs across five pillars (GDP, Stability, Equality, Sustainability, Innovation), and you get scored out of 1,000.' +
+        '<span class="sbx-scene__hint-icon">\uD83D\uDCA1</span>' +
+        '<strong>Each round:</strong> you set all 10 policy levers \u2014 the same set used in the real tournament. The engine simulates how your country performs across the five pillars (GDP, Stability, Equality, Sustainability, Innovation), each worth up to 200 points. Total possible score: 1,000.' +
       '</div>' +
       '<div class="sbx-sim">' +
         '<div class="sbx-sim__panel">' +
-          '<div class="sbx-sim__panel-title">Your Policy Levers</div>' +
+          '<div class="sbx-sim__panel-title">Your 10 Policy Levers</div>' +
           '<div class="sbx-lever">' +
-            '<div class="sbx-lever__label"><span>Tax rate</span><span class="sbx-lever__value" id="sbx-v-tax">25%</span></div>' +
-            '<input type="range" id="sbx-l-tax" min="10" max="50" value="25">' +
+            '<div class="sbx-lever__label"><span>\uD83C\uDFE6 Interest rate</span><span class="sbx-lever__value" id="sbx-v-rate">4.5%</span></div>' +
+            '<input type="range" id="sbx-l-rate" min="0" max="20" step="0.5" value="4.5">' +
           '</div>' +
           '<div class="sbx-lever">' +
-            '<div class="sbx-lever__label"><span>Government spending</span><span class="sbx-lever__value" id="sbx-v-spend">30%</span></div>' +
-            '<input type="range" id="sbx-l-spend" min="15" max="50" value="30">' +
+            '<div class="sbx-lever__label"><span>\uD83C\uDFDB\uFE0F Government spending</span><span class="sbx-lever__value" id="sbx-v-spend">27%</span></div>' +
+            '<input type="range" id="sbx-l-spend" min="10" max="60" step="1" value="27">' +
           '</div>' +
           '<div class="sbx-lever">' +
-            '<div class="sbx-lever__label"><span>Interest rate</span><span class="sbx-lever__value" id="sbx-v-rate">3.0%</span></div>' +
-            '<input type="range" id="sbx-l-rate" min="0" max="10" step="0.5" value="3">' +
+            '<div class="sbx-lever__label"><span>\uD83D\uDCB0 Tax rate</span><span class="sbx-lever__value" id="sbx-v-tax">25%</span></div>' +
+            '<input type="range" id="sbx-l-tax" min="5" max="60" step="1" value="25">' +
           '</div>' +
           '<div class="sbx-lever">' +
-            '<div class="sbx-lever__label"><span>R&D investment</span><span class="sbx-lever__value" id="sbx-v-rd">3%</span></div>' +
-            '<input type="range" id="sbx-l-rd" min="0" max="10" step="0.5" value="3">' +
+            '<div class="sbx-lever__label"><span>\uD83C\uDF0D Trade openness</span><span class="sbx-lever__value" id="sbx-v-trade">65%</span></div>' +
+            '<input type="range" id="sbx-l-trade" min="0" max="100" step="5" value="65">' +
           '</div>' +
           '<div class="sbx-lever">' +
-            '<div class="sbx-lever__label"><span>Education spending</span><span class="sbx-lever__value" id="sbx-v-edu">5%</span></div>' +
-            '<input type="range" id="sbx-l-edu" min="0" max="15" step="0.5" value="5">' +
+            '<div class="sbx-lever__label"><span>\uD83D\uDD2C R&amp;D investment</span><span class="sbx-lever__value" id="sbx-v-rd">2%</span></div>' +
+            '<input type="range" id="sbx-l-rd" min="0" max="10" step="0.5" value="2">' +
           '</div>' +
           '<div class="sbx-lever">' +
-            '<div class="sbx-lever__label"><span>Green energy</span><span class="sbx-lever__value" id="sbx-v-green">2%</span></div>' +
-            '<input type="range" id="sbx-l-green" min="0" max="10" step="0.5" value="2">' +
+            '<div class="sbx-lever__label"><span>\uD83C\uDF31 Green energy mix</span><span class="sbx-lever__value" id="sbx-v-green">30%</span></div>' +
+            '<input type="range" id="sbx-l-green" min="0" max="100" step="5" value="30">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>\uD83E\uDD1D Welfare</span><span class="sbx-lever__value" id="sbx-v-welf">5%</span></div>' +
+            '<input type="range" id="sbx-l-welf" min="0" max="30" step="1" value="5">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>\u2696\uFE0F Regulation</span><span class="sbx-lever__value" id="sbx-v-reg">50%</span></div>' +
+            '<input type="range" id="sbx-l-reg" min="0" max="100" step="5" value="50">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>\u2708\uFE0F Foreign aid</span><span class="sbx-lever__value" id="sbx-v-aid">0.5%</span></div>' +
+            '<input type="range" id="sbx-l-aid" min="0" max="5" step="0.25" value="0.5">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>\uD83C\uDFD7\uFE0F Infrastructure</span><span class="sbx-lever__value" id="sbx-v-infra">5%</span></div>' +
+            '<input type="range" id="sbx-l-infra" min="0" max="20" step="1" value="5">' +
           '</div>' +
         '</div>' +
         '<div class="sbx-sim__panel">' +
-          '<div class="sbx-sim__panel-title">Your Pillar Scores</div>' +
+          '<div class="sbx-sim__panel-title">Your Pillar Scores (Max 200 each)</div>' +
           '<div class="sbx-pillars">' +
-            '<div class="sbx-pillar"><div class="sbx-pillar__name">GDP</div><div class="sbx-pillar__score" id="sbx-p-gdp">120</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-gdp" style="width:60%;"></div></div></div>' +
-            '<div class="sbx-pillar"><div class="sbx-pillar__name">Stability</div><div class="sbx-pillar__score" id="sbx-p-sta">130</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-sta" style="width:65%;"></div></div></div>' +
-            '<div class="sbx-pillar"><div class="sbx-pillar__name">Equality</div><div class="sbx-pillar__score" id="sbx-p-eq">110</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-eq" style="width:55%;"></div></div></div>' +
-            '<div class="sbx-pillar"><div class="sbx-pillar__name">Sustainability</div><div class="sbx-pillar__score" id="sbx-p-sus">100</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-sus" style="width:50%;"></div></div></div>' +
-            '<div class="sbx-pillar"><div class="sbx-pillar__name">Innovation</div><div class="sbx-pillar__score" id="sbx-p-inn">115</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-inn" style="width:58%;"></div></div></div>' +
-            '<div class="sbx-pillar"><div class="sbx-pillar__name">Bonus</div><div class="sbx-pillar__score" id="sbx-p-bon">25</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-bon" style="width:50%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">GDP</div><div class="sbx-pillar__score" id="sbx-p-gdp">108</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-gdp" style="width:60%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Stability</div><div class="sbx-pillar__score" id="sbx-p-sta">124</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-sta" style="width:65%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Equality</div><div class="sbx-pillar__score" id="sbx-p-eq">115</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-eq" style="width:55%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Sustainability</div><div class="sbx-pillar__score" id="sbx-p-sus">79</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-sus" style="width:50%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Innovation</div><div class="sbx-pillar__score" id="sbx-p-inn">78</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-inn" style="width:58%;"></div></div></div>' +
           '</div>' +
-          '<div class="sbx-total"><div class="sbx-total__label">Total Round Score</div><div class="sbx-total__value" id="sbx-p-total">600</div></div>' +
+          '<div class="sbx-total"><div class="sbx-total__label">Total Round Score (/ 1000)</div><div class="sbx-total__value" id="sbx-p-total">504</div></div>' +
         '</div>' +
       '</div>' +
       '<div class="sbx-callout">' +
-        '<strong>Move the sliders</strong> and watch the pillar scores update in real time. There is no single "right" answer — high taxes hurt GDP but help Equality; high R&amp;D helps Innovation but takes money away from other priorities. The challenge is finding a balance for your country profile.' +
+        '<strong>Move any slider</strong> and watch the pillar scores update in real time. There is no single "right" answer \u2014 high taxes hurt GDP but help Equality; high R&amp;D and green energy push up Sustainability and Innovation; high welfare improves equality but strains the budget. The challenge is finding a balance.' +
       '</div>' +
-      '<button class="sbx-btn-secondary" onclick="sbxGoToStep(1)">← Back</button> ' +
-      '<button class="sbx-btn-primary" onclick="sbxSubmitRound()">Submit Round →</button>' +
+      '<button class="sbx-btn-secondary" onclick="sbxGoToStep(1)">\u2190 Back</button> ' +
+      '<button class="sbx-btn-primary" onclick="sbxSubmitRound()">Submit Round \u2192</button>' +
     '</div>';
 }
 
 function sbxWireSim() {
-  var ids = ['tax','spend','rate','rd','edu','green'];
+  var ids = ['rate','spend','tax','trade','rd','green','welf','reg','aid','infra'];
   for (var i = 0; i < ids.length; i++) {
     var el = document.getElementById('sbx-l-' + ids[i]);
     if (el) { el.addEventListener('input', sbxComputeSim); }
@@ -17807,61 +18446,123 @@ function sbxWireSim() {
 }
 
 function sbxComputeSim() {
-  var tax    = parseFloat(document.getElementById('sbx-l-tax').value);
-  var spend  = parseFloat(document.getElementById('sbx-l-spend').value);
+  // Read all 10 levers
   var rate   = parseFloat(document.getElementById('sbx-l-rate').value);
+  var spend  = parseFloat(document.getElementById('sbx-l-spend').value);
+  var tax    = parseFloat(document.getElementById('sbx-l-tax').value);
+  var trade  = parseFloat(document.getElementById('sbx-l-trade').value);
   var rd     = parseFloat(document.getElementById('sbx-l-rd').value);
-  var edu    = parseFloat(document.getElementById('sbx-l-edu').value);
   var green  = parseFloat(document.getElementById('sbx-l-green').value);
+  var welf   = parseFloat(document.getElementById('sbx-l-welf').value);
+  var reg    = parseFloat(document.getElementById('sbx-l-reg').value);
+  var aid    = parseFloat(document.getElementById('sbx-l-aid').value);
+  var infra  = parseFloat(document.getElementById('sbx-l-infra').value);
 
   // Update value labels
-  document.getElementById('sbx-v-tax').textContent   = tax + '%';
-  document.getElementById('sbx-v-spend').textContent = spend + '%';
   document.getElementById('sbx-v-rate').textContent  = rate.toFixed(1) + '%';
+  document.getElementById('sbx-v-spend').textContent = spend + '%';
+  document.getElementById('sbx-v-tax').textContent   = tax + '%';
+  document.getElementById('sbx-v-trade').textContent = trade + '%';
   document.getElementById('sbx-v-rd').textContent    = rd + '%';
-  document.getElementById('sbx-v-edu').textContent   = edu + '%';
   document.getElementById('sbx-v-green').textContent = green + '%';
+  document.getElementById('sbx-v-welf').textContent  = welf + '%';
+  document.getElementById('sbx-v-reg').textContent   = reg + '%';
+  document.getElementById('sbx-v-aid').textContent   = aid.toFixed(2) + '%';
+  document.getElementById('sbx-v-infra').textContent = infra + '%';
 
-  // Simple but plausible scoring (max 200 per pillar)
-  // GDP: encouraged by low taxes, moderate spending, low rates, R&D, education
-  var gdp = 100 - (tax - 25) * 1.5 + (spend - 25) * 0.6 - (rate - 3) * 6 + rd * 6 + edu * 4;
-  // Stability: hurt by extreme rates, very low taxes (deficit), very high spending
-  var sta = 140 - Math.abs(rate - 3) * 8 - Math.abs(tax - 28) * 1.2 - Math.abs(spend - 30) * 1.0;
-  // Equality: helped by high taxes, education spending, gov spending
-  var eq  = 80 + (tax - 20) * 1.8 + edu * 5 + spend * 0.6;
-  // Sustainability: green energy, education, lower deficit
-  var sus = 60 + green * 10 + edu * 2 + (tax - spend) * 0.8;
-  // Innovation: R&D, education, low rates
-  var inn = 70 + rd * 9 + edu * 3.5 - rate * 4;
-  // Bonus: balance — penalize extremes
-  var bon = 50 - Math.max(0, (spend - tax) - 8) * 1.5;
+  // --- Scoring model (derived from real engine's qualitative relationships) ---
+  // Each pillar: 0 to 200. Base around 100, modified by levers.
 
-  // Clip each to [0, 200]
-  var pillars = { gdp:gdp, sta:sta, eq:eq, sus:sus, inn:inn, bon:bon };
-  var total = 0;
-  for (var k in pillars) {
-    var v = Math.max(0, Math.min(200, Math.round(pillars[k])));
-    pillars[k] = v;
-    total += v;
-  }
+  // GDP Performance
+  //   Hurt by rates too far from neutral (4%), Laffer (tax >40), regulation extremes
+  //   Helped by R&D, infrastructure, moderate spending, trade openness near 65, green energy (mild)
+  var gdp = 110
+    - Math.abs(rate - 4.0) * 4.5                // rates away from neutral
+    + (spend - 27) * 0.8                         // mild Keynesian boost; but offset via deficit
+    - Math.max(0, tax - 40) * 2.0                // Laffer penalty
+    - Math.max(0, 12 - tax) * 1.5                // underfunding penalty
+    - Math.abs(trade - 65) * 0.3                 // trade openness optimum ~65
+    + (rd - 2) * 5                               // R&D boosts potential growth
+    + (green - 30) * 0.15                        // green energy mild GDP through potential
+    + (infra - 5) * 4                            // infrastructure raises potential
+    - Math.abs(reg - 50) * 0.4                   // regulation optimum near 50
+    + (aid - 0.5) * 1                            // tiny aid effect
+    - Math.max(0, welf - 10) * 1.2;              // very high welfare crowds out
 
-  document.getElementById('sbx-p-gdp').textContent = pillars.gdp;
-  document.getElementById('sbx-p-sta').textContent = pillars.sta;
-  document.getElementById('sbx-p-eq').textContent  = pillars.eq;
-  document.getElementById('sbx-p-sus').textContent = pillars.sus;
-  document.getElementById('sbx-p-inn').textContent = pillars.inn;
-  document.getElementById('sbx-p-bon').textContent = pillars.bon;
-  document.getElementById('sbx-pb-gdp').style.width = (pillars.gdp / 2) + '%';
-  document.getElementById('sbx-pb-sta').style.width = (pillars.sta / 2) + '%';
-  document.getElementById('sbx-pb-eq').style.width  = (pillars.eq  / 2) + '%';
-  document.getElementById('sbx-pb-sus').style.width = (pillars.sus / 2) + '%';
-  document.getElementById('sbx-pb-inn').style.width = (pillars.inn / 2) + '%';
-  document.getElementById('sbx-pb-bon').style.width = (pillars.bon / 2) + '%';
+  // Stability (inflation, debt, deficits, financial health)
+  //   Helped by rates 2-6, balanced budget, moderate regulation
+  //   Hurt by extreme rates, deficits, very high debt
+  var deficit = spend - tax;                     // approx primary deficit
+  var sta = 130
+    - Math.abs(rate - 4.0) * 3.0                 // away from neutral hurts inflation control
+    - Math.max(0, rate - 10) * 4                 // very high rates hurt fin health
+    - Math.max(0, deficit - 0) * 2.2             // deficits raise debt risk
+    + Math.max(0, -deficit) * 1.0                // small benefit from surplus
+    - Math.abs(reg - 50) * 0.5                   // regulation away from 50 -> financial instability
+    - Math.max(0, spend - 45) * 1.5;             // very high spending strains stability
+
+  // Equality (Gini, unemployment, HDI)
+  //   Helped strongly by welfare; helped by progressive taxes (above 25); hurt by very low taxes
+  //   Helped a bit by R&D/welfare via HDI
+  var eq = 90
+    + welf * 4.5                                 // PRIMARY driver
+    + Math.max(0, tax - 25) * 0.9                // progressive taxes
+    - Math.max(0, 15 - tax) * 2.5                // regressive (very low tax) hurts
+    + (spend - 27) * 0.4                         // gov services help
+    + rd * 1.2                                   // R&D -> HDI
+    + (green - 30) * 0.05;                       // small HDI via green
+
+  // Sustainability (debt, HDI, long-run potential)
+  //   Helped strongly by green energy (PRIMARY), R&D, infrastructure, education-equivalent (welfare/HDI), foreign aid
+  //   Hurt by high debt risk (proxied via deficits)
+  var sus = 70
+    + (green - 30) * 1.2                         // PRIMARY driver: strong effect (was missing before)
+    + (rd - 2) * 6                               // R&D raises potential
+    + (infra - 5) * 3                            // infrastructure raises potential
+    + welf * 1.6                                 // welfare -> HDI -> sustainability
+    + aid * 6                                    // foreign aid -> HDI
+    - Math.max(0, deficit) * 1.2                 // deficits raise debt -> hurts sus
+    - Math.max(0, rate - 8) * 1.5                // extremely high rates can hurt fin/sustainability
+    + Math.max(0, 50 - trade) * (-0.1)           // very closed economies miss out on green tech transfer
+    + (trade - 65) * 0.05;                       // openness mild positive
+
+  // Innovation (productivity, HDI, financial health)
+  //   Helped strongly by R&D, infrastructure, trade openness (knowledge transfer)
+  //   Helped by green energy (transition push for new tech)
+  //   Hurt by very high regulation or very high rates (kill investment)
+  var inn = 75
+    + (rd - 2) * 9                               // PRIMARY driver
+    + (infra - 5) * 3.5                          // infrastructure -> productivity
+    + (green - 30) * 0.4                         // green transition -> new tech
+    + (trade - 65) * 0.25                        // openness -> knowledge transfer
+    - Math.max(0, reg - 65) * 1.8                // overregulation kills innovation
+    - Math.max(0, rate - 8) * 2.5                // very high rates kill investment
+    + welf * 0.5                                 // human capital
+    + (spend - 27) * 0.15;                       // public R&D channels
+
+  // Clip each pillar to [0, 200]
+  function clip(v) { return Math.max(0, Math.min(200, Math.round(v))); }
+  gdp = clip(gdp);
+  sta = clip(sta);
+  eq  = clip(eq);
+  sus = clip(sus);
+  inn = clip(inn);
+  var total = gdp + sta + eq + sus + inn;
+
+  document.getElementById('sbx-p-gdp').textContent = gdp;
+  document.getElementById('sbx-p-sta').textContent = sta;
+  document.getElementById('sbx-p-eq').textContent  = eq;
+  document.getElementById('sbx-p-sus').textContent = sus;
+  document.getElementById('sbx-p-inn').textContent = inn;
+  document.getElementById('sbx-pb-gdp').style.width = (gdp / 2) + '%';
+  document.getElementById('sbx-pb-sta').style.width = (sta / 2) + '%';
+  document.getElementById('sbx-pb-eq').style.width  = (eq  / 2) + '%';
+  document.getElementById('sbx-pb-sus').style.width = (sus / 2) + '%';
+  document.getElementById('sbx-pb-inn').style.width = (inn / 2) + '%';
   document.getElementById('sbx-p-total').textContent = total;
 }
 
 function sbxSubmitRound() {
-  // Capture current total
   var totalEl = document.getElementById('sbx-p-total');
   var total = totalEl ? parseInt(totalEl.textContent, 10) || 0 : 0;
   var state = sbxLoadState();
