@@ -190,21 +190,21 @@ h1, h2, h3, h4, h5 {
   position: sticky;
   top: 0;
   z-index: 200;
-  height: var(--nav-h);
+  min-height: var(--nav-h);
   background: var(--bg-white);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-xs);
 }
 
 .nav__inner {
-  height: 100%;
+  min-height: var(--nav-h);
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   max-width: var(--max-w);
   margin-inline: auto;
-  padding-inline: 1rem;
-  overflow: hidden;
+  padding: 0.5rem 1rem;
+  flex-wrap: wrap;
   min-width: 0;
 }
 
@@ -216,24 +216,26 @@ h1, h2, h3, h4, h5 {
   display: flex;
   align-items: center;
   gap: 0.125rem;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
 }
 
 .nav__tab {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  height: 38px;
-  padding: 0 0.875rem;
+  gap: 0.25rem;
+  height: 32px;
+  padding: 0 0.5rem;
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-500);
   transition: color var(--t-fast), background var(--t-fast);
   white-space: nowrap;
-  min-width: 44px;
+  min-width: 0;
+  flex-shrink: 0;
   justify-content: center;
 }
 .nav__tab:hover {
@@ -272,6 +274,7 @@ h1, h2, h3, h4, h5 {
   margin-left: auto;
   padding-left: 0.375rem;
 }
+.nav__cta { flex-shrink: 0; }
 .nav__cta .btn { white-space: nowrap; flex-shrink: 0; }
 .nav__cta .nav-user-pill {
   display: flex;
@@ -1894,6 +1897,9 @@ h1, h2, h3, h4, h5 {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+
+
+
 /* ═══════════════════════════════════════════
    25. RESPONSIVE
 ═══════════════════════════════════════════ */
@@ -2990,7 +2996,692 @@ h1, h2, h3, h4, h5 {
   .lp-tiers-grid { grid-template-columns: 1fr; }
   .lp-prize-row { flex-direction: column; }
 }
-  </style>
+  
+/* ═══════════════════════════════════════════════════
+   TEXTBOOK PAGE
+═══════════════════════════════════════════════════ */
+/* Textbook nav tab — subtle book icon style */
+.nav__tab--textbook { }
+.page-textbook { flex-direction: column; height: calc(100vh - 64px); max-height: calc(100vh - 64px); overflow: hidden; }
+.page-textbook.on { display: flex !important; }
+.page-textbook .page-header { flex: 0 0 auto; padding: 1rem 2rem; }
+.page-textbook.on .page-textbook__layout { display: flex; flex: 1 1 auto; overflow: hidden; min-height: 0; height: 100%; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Sidebar */
+.tb-sidebar {
+  width: 260px; flex: 0 0 260px;
+  background: #0f172a; color: #e2e8f0;
+  display: flex; flex-direction: column;
+  overflow: hidden; min-height: 0; border-right: 1px solid rgba(255,255,255,0.06);
+}
+.tb-sidebar__header { padding: 1rem 1.125rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.tb-sidebar__progress-wrap { }
+.tb-sidebar__progress-label { display: flex; justify-content: space-between; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.375rem; }
+.tb-sidebar__progress-bar { background: rgba(255,255,255,0.08); border-radius: 999px; height: 6px; }
+.tb-sidebar__progress-fill { background: linear-gradient(90deg, #22c55e, #16a34a); border-radius: 999px; height: 6px; transition: width 0.4s ease; }
+.tb-sidebar__chapters { flex: 1 1 auto; overflow-y: auto; padding: 0.5rem 0; }
+.tb-sidebar__chapters::-webkit-scrollbar { width: 4px; }
+.tb-sidebar__chapters::-webkit-scrollbar-track { background: transparent; }
+.tb-sidebar__chapters::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+
+/* Sidebar part headers */
+.tb-sb-part { font-size: 0.5875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; padding: 0.875rem 1.125rem 0.25rem; }
+/* Sidebar chapter buttons */
+.tb-sb-ch {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1.125rem;
+  font-size: 0.8125rem; color: #94a3b8;
+  cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1.35;
+}
+.tb-sb-ch:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+.tb-sb-ch.active { background: rgba(30,86,201,0.2); color: #93c5fd; border-left-color: #3b82f6; }
+.tb-sb-ch.done .tb-sb-ch__dot { background: #22c55e; }
+.tb-sb-ch__dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.15); flex: 0 0 7px; }
+.tb-sb-ch__num { font-size: 0.625rem; color: #475569; flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; }
+.tb-sb-ch__title { flex: 1 1 auto; }
+
+/* Main iframe area */
+.tb-main { flex: 1 1 auto; overflow: hidden; background: #f8fafc; min-height: 0; display: flex; flex-direction: column; }
+
+/* Mobile: stack vertically, hide sidebar on small screens */
+@media (max-width: 768px) {
+  .page-textbook { height: auto; overflow: auto; }
+  .page-textbook__layout { flex-direction: column; overflow: visible; height: auto; }
+  .tb-sidebar { width: 100%; flex: 0 0 auto; height: auto; max-height: 220px; overflow-y: auto; }
+  .tb-main { height: 82vh; }
+}
+
+
+/* ═══════════════════════════════════════════
+   SANDBOX MODE — frictionless tour for professors
+   Isolated styles; does not affect any other feature.
+═══════════════════════════════════════════ */
+.sbx-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: linear-gradient(90deg, #c9920a, #f5a623);
+  color: #fff;
+  padding: 0.4rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 8px rgba(201, 146, 10, 0.25);
+}
+.sbx-banner__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sbx-banner__dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: sbxPulse 1.4s ease-in-out infinite;
+}
+@keyframes sbxPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.sbx-banner__msg {
+  font-weight: 500;
+  font-size: 0.75rem;
+  opacity: 0.95;
+}
+.sbx-banner__actions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+.sbx-banner__btn {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.sbx-banner__btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+.sbx-banner__btn--exit {
+  background: rgba(255,255,255,0.95);
+  color: #b07c08;
+}
+.sbx-banner__btn--exit:hover {
+  background: #fff;
+}
+body.sandbox-mode {
+  padding-top: 40px;
+}
+@media (max-width: 600px) {
+  body.sandbox-mode { padding-top: 64px; }
+  .sbx-banner { padding: 0.5rem 0.75rem; gap: 0.5rem; }
+}
+
+/* Sandbox page layout */
+.sbx-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+.sbx-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+.sbx-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  background: var(--gold-light);
+  padding: 0.375rem 0.875rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+.sbx-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--text-900);
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+}
+.sbx-sub {
+  font-size: 1.0625rem;
+  color: var(--text-500);
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Role switcher (Pro / Student toggle) */
+.sbx-role-switcher {
+  display: inline-flex;
+  background: var(--bg-white);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  margin: 1.5rem 0 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.sbx-role-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-500);
+  background: transparent;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+.sbx-role-btn:hover {
+  color: var(--text-900);
+}
+.sbx-role-btn.active {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(15, 61, 158, 0.25);
+}
+.sbx-role-btn__icon {
+  font-size: 1.05rem;
+}
+
+/* Step cards */
+.sbx-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin: 0 0 2.5rem;
+}
+@media (max-width: 880px) {
+  .sbx-grid { grid-template-columns: 1fr; }
+}
+.sbx-step {
+  background: var(--bg-white);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.18s ease;
+}
+.sbx-step--done {
+  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+  border-color: #86efac;
+}
+.sbx-step--current {
+  border-color: var(--blue);
+  box-shadow: 0 4px 14px rgba(15, 61, 158, 0.15);
+}
+.sbx-step__num {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-subtle);
+  color: var(--text-500);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+.sbx-step--current .sbx-step__num {
+  background: var(--blue);
+  color: #fff;
+}
+.sbx-step--done .sbx-step__num {
+  background: var(--success);
+  color: #fff;
+}
+.sbx-step__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.125rem;
+  color: var(--text-900);
+  margin-bottom: 0.375rem;
+  line-height: 1.3;
+}
+.sbx-step__desc {
+  font-size: 0.875rem;
+  color: var(--text-500);
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+.sbx-step__btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-light);
+  border: 1px solid var(--blue-mid);
+  padding: 0.5rem 0.875rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sbx-step__btn:hover {
+  background: var(--blue);
+  color: #fff;
+}
+.sbx-step__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sbx-step__check {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--success);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Sandbox scene (the active scene for the current step) */
+.sbx-scene {
+  background: var(--bg-white);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.sbx-scene__title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  color: var(--text-900);
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+.sbx-scene__hint {
+  font-size: 0.9375rem;
+  color: var(--text-500);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--blue-light);
+  border-left: 3px solid var(--blue);
+  border-radius: 6px;
+}
+.sbx-scene__hint strong {
+  color: var(--blue-dark);
+}
+.sbx-scene__hint-icon {
+  display: inline-block;
+  margin-right: 0.375rem;
+}
+
+/* Tournament card (sandbox) */
+.sbx-tcard {
+  background: linear-gradient(135deg, #fafbff, #ffffff);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.sbx-tcard__name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  color: var(--text-900);
+  margin-bottom: 0.25rem;
+}
+.sbx-tcard__meta {
+  font-size: 0.8125rem;
+  color: var(--text-500);
+  margin-bottom: 0.75rem;
+}
+.sbx-tcard__pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  margin-right: 0.5rem;
+}
+.sbx-tcard__pill--active {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.sbx-tcard__pill--upcoming {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+/* Leaderboard preview */
+.sbx-leaderboard {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sbx-leaderboard__row {
+  display: grid;
+  grid-template-columns: 40px 1fr 80px 100px;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-size: 0.9375rem;
+}
+.sbx-leaderboard__row:last-child {
+  border-bottom: none;
+}
+.sbx-leaderboard__row--header {
+  background: var(--bg-subtle);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-500);
+}
+.sbx-leaderboard__row--you {
+  background: var(--gold-light);
+}
+.sbx-leaderboard__rank {
+  font-weight: 700;
+  color: var(--text-900);
+  font-family: 'DM Mono', monospace;
+}
+.sbx-leaderboard__rank--gold { color: #c9920a; }
+.sbx-leaderboard__rank--silver { color: #6b7785; }
+.sbx-leaderboard__rank--bronze { color: #985f29; }
+.sbx-leaderboard__team {
+  font-weight: 600;
+  color: var(--text-900);
+}
+.sbx-leaderboard__country {
+  font-size: 0.75rem;
+  color: var(--text-500);
+  margin-left: 0.5rem;
+  font-weight: 400;
+}
+.sbx-leaderboard__pts {
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: var(--text-900);
+  text-align: right;
+}
+
+/* Sandbox simulator (mini round play) */
+.sbx-sim {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+@media (max-width: 800px) {
+  .sbx-sim { grid-template-columns: 1fr; }
+}
+.sbx-sim__panel {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+.sbx-sim__panel-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-500);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.sbx-lever {
+  margin-bottom: 1rem;
+}
+.sbx-lever__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--text-700);
+  margin-bottom: 0.25rem;
+}
+.sbx-lever__value {
+  font-family: 'DM Mono', monospace;
+  color: var(--blue);
+  font-weight: 700;
+}
+.sbx-lever input[type="range"] {
+  width: 100%;
+  accent-color: var(--blue);
+}
+.sbx-pillars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.sbx-pillar {
+  padding: 0.75rem;
+  background: var(--bg-subtle);
+  border-radius: 6px;
+  text-align: center;
+}
+.sbx-pillar__name {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-500);
+  margin-bottom: 0.375rem;
+}
+.sbx-pillar__score {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--blue);
+}
+.sbx-pillar__bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+.sbx-pillar__bar-fill {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.4s ease;
+}
+.sbx-total {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+  color: #fff;
+  border-radius: 8px;
+  text-align: center;
+}
+.sbx-total__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+  margin-bottom: 0.25rem;
+}
+.sbx-total__value {
+  font-family: 'DM Mono', monospace;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Bottom nav buttons */
+.sbx-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+.sbx-actions__left, .sbx-actions__right {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.sbx-btn-primary {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: var(--blue);
+  color: #fff;
+  border: 1px solid var(--blue);
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sbx-btn-primary:hover {
+  background: var(--blue-hover);
+  border-color: var(--blue-hover);
+}
+.sbx-btn-secondary {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: var(--bg-white);
+  color: var(--text-700);
+  border: 1px solid var(--border-strong);
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sbx-btn-secondary:hover {
+  background: var(--bg-subtle);
+  color: var(--text-900);
+}
+.sbx-btn-gold {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: var(--gold);
+  color: #fff;
+  border: 1px solid var(--gold);
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.sbx-btn-gold:hover {
+  background: #b07c08;
+}
+
+/* Home-page sandbox CTA */
+.sbx-home-cta {
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--gold-light), #fff5d1);
+  border: 1.5px solid #f5cf75;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  max-width: 560px;
+}
+.sbx-home-cta__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.sbx-home-cta__body {
+  flex: 1;
+  min-width: 200px;
+}
+.sbx-home-cta__title {
+  font-weight: 700;
+  color: #6f4a05;
+  font-size: 0.9375rem;
+  margin-bottom: 0.125rem;
+}
+.sbx-home-cta__sub {
+  font-size: 0.8125rem;
+  color: #8a6010;
+  line-height: 1.4;
+}
+.sbx-home-cta__btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: #b07c08;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.sbx-home-cta__btn:hover {
+  background: #8a6010;
+}
+
+/* Form inputs inside sandbox (mini create-tournament form) */
+.sbx-form-group {
+  margin-bottom: 0.875rem;
+}
+.sbx-form-group label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-700);
+  margin-bottom: 0.375rem;
+}
+.sbx-form-group input,
+.sbx-form-group select {
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  color: var(--text-900);
+  background: var(--bg-white);
+  border: 1.5px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+.sbx-form-group input:focus,
+.sbx-form-group select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.sbx-callout {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #ecfeff, #ffffff);
+  border-left: 3px solid #0891b2;
+  border-radius: 6px;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-700);
+  line-height: 1.55;
+}
+.sbx-callout strong { color: var(--text-900); }
+
+
+</style>
 </head>
 <body>
 
@@ -3048,7 +3739,7 @@ h1, h2, h3, h4, h5 {
       <a href="#" class="nav__tab" data-page="champions">Champions</a>
       <a href="#" class="nav__tab" data-page="about">About</a>
       <span class="nav__divider" aria-hidden="true"></span>
-      <a href="#" class="nav__tab nav__tab--how" data-page="how">How it works ↗</a>
+      <a href="#" class="nav__tab nav__tab--how" data-page="how">How it works</a>
     </nav>
 
     <!-- Desktop CTA -->
@@ -3134,6 +3825,7 @@ h1, h2, h3, h4, h5 {
       <span class="mobile-menu__link-icon">💡</span>
       How it works
     </a>
+
   </div>
 
   <div class="mobile-menu__cta">
@@ -3175,6 +3867,17 @@ h1, h2, h3, h4, h5 {
               <span class="hero__learn-arrow" aria-hidden="true">→</span>
             </a>
           </div>
+
+          <!-- Sandbox CTA — frictionless tour -->
+          <div class="sbx-home-cta">
+            <span class="sbx-home-cta__icon" aria-hidden="true">🧪</span>
+            <div class="sbx-home-cta__body">
+              <div class="sbx-home-cta__title">Try the Sandbox first</div>
+              <div class="sbx-home-cta__sub">See how MacroNations works from both the professor and student side — no signup, no email, no commitment.</div>
+            </div>
+            <button class="sbx-home-cta__btn" onclick="sbxEnter()">Launch sandbox →</button>
+          </div>
+
           <div class="hero__stats" role="list">
             <div role="listitem">
               <span class="hero__stat-value">Free</span>
@@ -3325,6 +4028,7 @@ h1, h2, h3, h4, h5 {
               <li>Year-long season standings</li>
               <li>Participation certificates for all · Winner certificate for champion</li>
               <li>Cash awards — top finalists share the fund</li>
+              <li>📖 <strong>Free textbook access</strong> — <em>Applied Macroeconomics</em>, both Principles &amp; Intermediate levels</li>
             </ul>
             <button class="btn btn--gold" style="margin-top:1.25rem;width:100%;" onclick="openAuthModal('register')">Join the Championship</button>
           </div>
@@ -3366,21 +4070,22 @@ h1, h2, h3, h4, h5 {
           <div>
             <span class="section__eyebrow">Open to Everyone</span>
             <h2 class="section__title" id="oc-landing-heading">Open Championship</h2>
-            <p class="section__desc" style="text-align:left;max-width:none;">No professor required. Register your team, pay the entry fee, and compete in a 10-day rolling simulation. Your personal clock starts when you submit your first round — start any time before November 21.</p>
+            <p class="section__desc" style="text-align:left;max-width:none;"><strong>Open year-round.</strong> Register and start any day from January 1 through November 20 — no fixed schedule. Once you submit your first round, you have 10 days to complete the simulation. The only hard deadline is November 30, the close of the season.</p>
             <ul style="list-style:none;padding:0;margin:1.5rem 0;display:flex;flex-direction:column;gap:0.75rem;">
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">1</span><span><strong>Register your team</strong> — up to 5 members, <span id="lp-fee-oc-step">$50</span> entry fee per team</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">2</span><span><strong>Submit Round 1</strong> — once fee is confirmed, your 10-day clock starts on first submission</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">3</span><span><strong>Complete 10 rounds</strong> — one every 24 hours, auto-advancing</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">4</span><span><strong>Qualify for the World Cup</strong> — finish by Nov 30 to enter the playoff bracket</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">📖</span><span><strong>Free textbook access</strong> — <em>Applied Macroeconomics: From Theory to Policy Simulation</em> at both Principles and Intermediate levels, included with your entry fee</span></li>
             </ul>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
               <button class="btn btn--gold" onclick="ocLandingRegister()">Register for Open Championship</button>
-              <span style="align-self:center;font-size:0.875rem;color:var(--text-400);">Open Jan 1 – Nov 20 · Must finish by Nov 30</span>
+              <span style="align-self:center;font-size:0.875rem;color:var(--text-400);">Available year-round · Start any day Jan 1 – Nov 20 · Season closes Nov 30</span>
             </div>
           </div>
           <div>
             <div style="background:#0D1F3C;border:1.5px solid rgba(255,215,0,0.4);border-radius:var(--radius-xl);padding:1.75rem;">
-              <div style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,215,0,0.6);margin-bottom:0.875rem;">Season 2026 · Open Now</div>
+              <div style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,215,0,0.6);margin-bottom:0.875rem;">Season 2026 · Open Now · Year-Round Entry</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
                 <div>
                   <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Entry fee</div>
@@ -3393,12 +4098,21 @@ h1, h2, h3, h4, h5 {
                   <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);">1 per day</div>
                 </div>
                 <div>
-                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Register by</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:1.125rem;color:#fff;">Before Nov 21, 2026</div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Start any day</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:1.125rem;color:#fff;">Jan 1 – Nov 20, 2026</div>
                 </div>
                 <div>
-                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Complete by</div>
+                  <div style="font-size:0.75rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">Season ends</div>
                   <div style="font-family:'DM Mono',monospace;font-size:1.125rem;color:#fff;">Nov 30, 2026</div>
+                </div>
+              </div>
+              <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1rem;margin-top:0.25rem;margin-bottom:1rem;">
+                <div style="display:flex;gap:0.625rem;align-items:flex-start;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:0.75rem 0.875rem;">
+                  <div style="font-size:1.25rem;flex-shrink:0;line-height:1.2;">📖</div>
+                  <div>
+                    <div style="font-size:0.8125rem;color:#FFD700;font-weight:600;margin-bottom:0.25rem;">Course Textbook Included</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);line-height:1.5;"><em>Applied Macroeconomics: From Theory to Policy Simulation</em> — both Principles and Intermediate levels, free with your entry fee.</div>
+                  </div>
                 </div>
               </div>
               <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1rem;margin-top:0.25rem;">
@@ -3740,6 +4454,17 @@ h1, h2, h3, h4, h5 {
         </div>
         <div class="form-error" id="ct-error"></div>
 
+        <!-- Professor-only: textbook adoption -->
+        <div id="ct-textbook-wrap" style="display:none;margin-top:0.75rem;padding:1rem;background:var(--bg-subtle,#f8fafc);border-radius:var(--radius);border:1px solid var(--border);">
+          <label style="display:flex;align-items:flex-start;gap:0.75rem;cursor:pointer;">
+            <input type="checkbox" id="ct-textbook-enable" style="width:18px;height:18px;cursor:pointer;margin-top:2px;">
+            <div>
+              <div style="font-weight:600;font-size:0.9375rem;color:var(--text-700);">📖 Adopt Course Textbook</div>
+              <div style="font-size:0.8125rem;color:var(--text-500);margin-top:0.25rem;">Gives enrolled students access to <em>Applied Macroeconomics: From Theory to Policy Simulation</em>. Reading progress and quiz scores are tracked and visible in your professor dashboard. Only available alongside Global Tournament participation.</div>
+            </div>
+          </label>
+        </div>
+
         <!-- Professor-only: elect for global seasonal tournament -->
         <div id="ct-global-election-wrap" style="display:none;margin-top:0.5rem;">
           <div class="dash-alert dash-alert--info" style="margin-bottom:0.75rem;">
@@ -3852,6 +4577,51 @@ h1, h2, h3, h4, h5 {
     </div>
     <div class="container" style="padding-top:2.5rem;padding-bottom:4rem;">
       <div id="about-content"></div>
+    </div>
+  </div>
+
+
+  <!-- ── PAGE: TEXTBOOK ── -->
+  <div class="page page-textbook" id="page-textbook">
+    <div class="page-header" style="background:linear-gradient(135deg,#0f3d9e 0%,#1e56c9 100%);">
+      <div class="page-header__inner" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1 class="page-header__title">Applied Macroeconomics</h1>
+          <p class="page-header__sub">From Theory to Policy Simulation — by Amarendra Sharma, PhD · Binghamton University (SUNY)</p>
+        </div>
+        <div style="display:flex;gap:0.625rem;flex-wrap:wrap;">
+          <button class="btn btn--ghost btn--sm" style="border-color:rgba(255,255,255,0.35);color:#fff;" onclick="tbSetDifficulty('principles')">📘 Principles</button>
+          <button class="btn btn--ghost btn--sm" style="border-color:rgba(255,255,255,0.35);color:#fff;" onclick="tbSetDifficulty('intermediate')">📗 Intermediate</button>
+          <a href="macronations-textbook.html" target="_blank" class="btn btn--primary btn--sm" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);">↗ Open Standalone ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-textbook__layout">
+      <!-- Sidebar -->
+      <aside class="tb-sidebar" id="tb-sidebar">
+        <div class="tb-sidebar__header">
+          <div class="tb-sidebar__progress-wrap">
+            <div class="tb-sidebar__progress-label">
+              <span>Progress</span>
+              <span id="tb-sb-pct">0%</span>
+            </div>
+            <div class="tb-sidebar__progress-bar">
+              <div class="tb-sidebar__progress-fill" id="tb-sb-fill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tb-sidebar__chapters" id="tb-sb-chapters"></div>
+      </aside>
+
+      <!-- Main: textbook content injected here -->
+      <main class="tb-main" id="tb-main">
+        <div id="tb-loading" style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;color:var(--text-400);">
+          <div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+          <div style="font-size:0.9375rem;">Loading textbook…</div>
+        </div>
+        <div id="tb-content" style="display:none;height:100%;overflow-y:auto;"></div>
+      </main>
     </div>
   </div>
 
@@ -4063,6 +4833,47 @@ h1, h2, h3, h4, h5 {
 <!-- ════════════════════════════════════════
      FOOTER
 ════════════════════════════════════════ -->
+
+  <!-- ============ SANDBOX PAGE ============ -->
+  <div class="page page-sandbox" id="page-sandbox">
+
+    <div class="sbx-page">
+      <div class="sbx-header">
+        <span class="sbx-eyebrow">🧪 Sandbox · No signup required</span>
+        <h1 class="sbx-title">Take MacroNations for a Spin</h1>
+        <p class="sbx-sub">A frictionless walkthrough that lets you experience MacroNations from both sides — as a <strong>professor</strong> setting up a class tournament, and as a <strong>student</strong> playing a round. Nothing here touches the real platform, your email, or any real tournament. Click around, break things, reset, repeat.</p>
+
+        <div class="sbx-role-switcher" role="tablist" aria-label="Choose a role to experience">
+          <button class="sbx-role-btn active" id="sbx-role-prof" onclick="sbxSwitchRole('professor')" role="tab" aria-selected="true">
+            <span class="sbx-role-btn__icon">👨‍🏫</span> View as Professor
+          </button>
+          <button class="sbx-role-btn" id="sbx-role-stud" onclick="sbxSwitchRole('student')" role="tab" aria-selected="false">
+            <span class="sbx-role-btn__icon">🎓</span> View as Student
+          </button>
+        </div>
+      </div>
+
+      <!-- Step progress (changes by role) -->
+      <div id="sbx-steps-container"></div>
+
+      <!-- Active scene -->
+      <div id="sbx-scene-container"></div>
+
+      <!-- Bottom actions -->
+      <div class="sbx-actions">
+        <div class="sbx-actions__left">
+          <button class="sbx-btn-secondary" onclick="sbxReset()" title="Clear sandbox progress and start over">↻ Reset Sandbox</button>
+        </div>
+        <div class="sbx-actions__right">
+          <button class="sbx-btn-secondary" onclick="sbxExit()">Exit Sandbox</button>
+          <button class="sbx-btn-primary" onclick="openAuthModal('register')">Done exploring? Sign up for real →</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-sandbox -->
+
+
 <footer class="footer" role="contentinfo">
   <div class="footer__main">
 
@@ -4113,6 +4924,7 @@ h1, h2, h3, h4, h5 {
         <li><a href="#" class="footer__link" onclick="openAuthModal('register');return false;">Professor Portal</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('tournaments');return false;">Class Tournaments</a></li>
         <li><a href="#" class="footer__link" onclick="showPage('about');setTimeout(function(){var e=document.querySelector('[data-about-tab=\'curriculum\']');if(e){e.click();}},100);return false;">Curriculum Guide</a></li>
+        <li><a href="#" class="footer__link" onclick="showPage('textbook');return false;">📖 Course Textbook</a></li>
         <li><a href="/cdn-cgi/l/email-protection#d4a7a1a4a4bba6a094b9b5b7a6bbbab5a0bdbbbaa7fab7bbb9" class="footer__link">Contact Us</a></li>
       </ul>
     </div>
@@ -5031,6 +5843,7 @@ async function afterLogin() {
 }
 
 function _renderLoggedOutNav() {
+  if (typeof _resetMobileMenuForLogout === 'function') _resetMobileMenuForLogout();
   var cta = document.querySelector('.nav__cta');
   if (!cta) { return; }
   cta.innerHTML =
@@ -5076,7 +5889,9 @@ function _renderLoggedInNav() {
 
   var dyn = document.getElementById('nav-dynamic-links');
   if (dyn) {
-    var html = '<a href="#" class="nav__tab" data-page="dashboard">Dashboard</a>';
+    // Textbook tab opens standalone file in a new tab — bypasses iframe issues
+    var html = '<a href="macronations-textbook.html" target="_blank" rel="noopener" class="nav__tab" data-page="textbook-external">📖 Textbook</a>';
+    html += '<a href="#" class="nav__tab" data-page="dashboard">Dashboard</a>';
     if (isAdmin || role === 'professor') {
       html += '<a href="#" class="nav__tab" data-page="admin">Admin</a>';
     }
@@ -5085,11 +5900,95 @@ function _renderLoggedInNav() {
     for (var i = 0; i < newTabs.length; i++) {
       (function(tab) {
         tab.addEventListener('click', function(e) {
+          if (tab.getAttribute('target') === '_blank') return;
           e.preventDefault();
           showPage(tab.getAttribute('data-page'));
         });
       })(newTabs[i]);
     }
+  }
+  // Update mobile menu with authenticated links
+  _updateMobileMenuForUser(isAdmin, role);
+}
+
+// Inject Textbook / Dashboard / Admin into the mobile menu after login
+function _updateMobileMenuForUser(isAdmin, role) {
+  var mm = document.querySelector('.mobile-menu__links');
+  if (!mm) return;
+
+  // Remove any previously injected authenticated links
+  var prev = mm.querySelectorAll('[data-mn-auth-link]');
+  for (var p = 0; p < prev.length; p++) prev[p].remove();
+
+  // Build new links
+  var items = [
+    { href: 'macronations-textbook.html', target: '_blank', icon: '📖', label: 'Textbook ↗' },
+    { page: 'dashboard', icon: '📊', label: 'Dashboard' }
+  ];
+  if (isAdmin || role === 'professor') {
+    items.push({ page: 'admin', icon: '⚙️', label: 'Admin' });
+  }
+
+  // Insert before the existing 'how' link if present, otherwise append
+  var howLink = mm.querySelector('[data-page="how"]');
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var a = document.createElement('a');
+    a.href = it.href || '#';
+    a.className = 'mobile-menu__link';
+    a.setAttribute('data-mn-auth-link', '1');
+    if (it.target) { a.target = it.target; a.rel = 'noopener'; }
+    if (it.page) a.setAttribute('data-page', it.page);
+    a.innerHTML = '<span class="mobile-menu__link-icon">' + it.icon + '</span>' + it.label;
+    a.addEventListener('click', function(ev) {
+      // External link — let it open in new tab and just close menu
+      if (this.getAttribute('target') === '_blank') {
+        closeMobileMenu();
+        return;
+      }
+      ev.preventDefault();
+      var pg = this.getAttribute('data-page');
+      closeMobileMenu();
+      if (pg) showPage(pg);
+    });
+    if (howLink) {
+      mm.insertBefore(a, howLink);
+    } else {
+      mm.appendChild(a);
+    }
+  }
+
+  // Replace the mobile CTA buttons with a "Sign Out" when logged in
+  var cta = document.querySelector('.mobile-menu__cta');
+  if (cta && currentUser) {
+    cta.innerHTML =
+      '<div style="font-size:0.875rem;color:var(--text-500);text-align:center;margin-bottom:0.5rem;">' +
+        'Signed in as <strong style="color:var(--text-900);">' + (currentUser.name || currentUser.username || 'User') + '</strong>' +
+      '</div>' +
+      '<button class="btn btn--ghost btn--full btn--lg" id="mobile-btn-signout">Sign Out</button>';
+    var signOutBtn = document.getElementById('mobile-btn-signout');
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', function() { closeMobileMenu(); doLogout(); });
+    }
+  }
+}
+
+// Reset mobile menu to logged-out state
+function _resetMobileMenuForLogout() {
+  var mm = document.querySelector('.mobile-menu__links');
+  if (mm) {
+    var auth = mm.querySelectorAll('[data-mn-auth-link]');
+    for (var p = 0; p < auth.length; p++) auth[p].remove();
+  }
+  var cta = document.querySelector('.mobile-menu__cta');
+  if (cta) {
+    cta.innerHTML =
+      '<button class="btn btn--primary btn--full btn--lg" id="mobile-btn-join">Join Free</button>' +
+      '<button class="btn btn--ghost btn--full btn--lg" id="mobile-btn-signin">Sign In</button>';
+    var j = document.getElementById('mobile-btn-join');
+    var s = document.getElementById('mobile-btn-signin');
+    if (j) j.addEventListener('click', function() { closeMobileMenu(); openAuthModal('register'); });
+    if (s) s.addEventListener('click', function() { closeMobileMenu(); openAuthModal('login'); });
   }
 }
 
@@ -5126,7 +6025,8 @@ function _renderLoggedInNav() {
     var s = document.createElement('span');
     s.id = 'nav-dynamic-links';
     s.style.display = 'contents';
-    nl.appendChild(s);
+    var divider = nl.querySelector('.nav__divider');
+    if (divider) { nl.insertBefore(s, divider); } else { nl.appendChild(s); }
   }
 })();
 
@@ -5134,6 +6034,8 @@ function _renderLoggedInNav() {
 (function() {
   function wireNavTab(tab) {
     tab.addEventListener('click', function(e) {
+      // External tabs (target=_blank, real href) — let the browser handle them
+      if (tab.getAttribute('target') === '_blank') { return; }
       e.preventDefault();
       var pg = tab.getAttribute('data-page');
       if (!pg || pg === 'how') {
@@ -5153,6 +6055,7 @@ function _renderLoggedInNav() {
   for (var j = 0; j < mlinks.length; j++) {
     (function(link) {
       link.addEventListener('click', function(e) {
+        if (link.getAttribute('target') === '_blank') { closeMobileMenu(); return; }
         e.preventDefault();
         var pg = link.getAttribute('data-page');
         closeMobileMenu();
@@ -5825,13 +6728,30 @@ var CRISES = {
 // Changing it requires also updating: prize pool widget label, legal prize rules text,
 // How It Works step 7, and the legal math example strings (5 locations total).
 // The 70%/30% winner/runner-up split is also hardcoded here AND separately in legal text.
-function calcPrizePool(entryFee, numTeams) {
+function calcPrizePool(entryFee, numTeams, tier) {
   entryFee = Number(entryFee) || 0;
   numTeams = Number(numTeams) || 0;
   var SEED      = (typeof AWARD_SEED !== 'undefined' ? AWARD_SEED : 1000);
-  var CAP       = 10000;  // Maximum award fund
-  var MIN_TEAMS = 20;     // Minimum paid teams for awards to be distributed
-  var FEE_PCT   = 0.20;   // internal — not disclosed publicly
+  var CAP       = 10000;
+  var MIN_TEAMS = 20;
+  var FEE_PCT   = 0.20;
+
+  // Only paid Global Championships earn a prize pool.
+  // Class tournaments and university tournaments have no prize.
+  var tierStr = tier || '';
+  var isPaidGlobal = entryFee > 0 && (tierStr === 'global' || tierStr === 'open_championship' || tierStr === '');
+  if (!isPaidGlobal || tierStr === 'class' || tierStr === 'university') {
+    return {
+      total_collected: 0,
+      pool:            0,
+      winner:          0,
+      runner_up:       0,
+      eligible:        false,
+      min_teams:       MIN_TEAMS,
+      seed:            0
+    };
+  }
+
   var feesTotal = entryFee * numTeams;
   var pool      = Math.min(_round2(SEED + feesTotal * FEE_PCT), CAP);
   var eligible  = numTeams >= MIN_TEAMS;
@@ -6058,7 +6978,7 @@ async function _renderWCBanner() {
         globalPaidCount += gtPaid.length;
       }
       var pp = (typeof calcPrizePool === 'function')
-        ? calcPrizePool(WORLD_CUP_ENTRY_FEE, globalPaidCount)
+        ? calcPrizePool(WORLD_CUP_ENTRY_FEE, globalPaidCount, 'global')
         : { pool: Math.min((AWARD_SEED||1000) + globalPaidCount * (WORLD_CUP_ENTRY_FEE||50) * FEE_PCT, 10000) };
       prizePool = pp.pool || 1000;
     } catch(pe) { prizePool = 1000; }
@@ -6196,7 +7116,7 @@ function _buildTournamentCard(t) {
   var prizeHtml = '';
   if (fee > 0) {
     // We'll estimate from teams count — embed placeholder, update async
-    var pp       = calcPrizePool(fee, 0);
+    var pp       = calcPrizePool(fee, 0, (typeof t !== 'undefined' && t && t.tier) ? t.tier : null);
     var poolId   = 'pool-' + t.id;
     prizeHtml =
       '<div class="prize-pool-widget">' +
@@ -6373,7 +7293,7 @@ async function _fetchPrizePool(tournamentId, fee, poolId) {
   try {
     var teams = await sbGet('teams', 'tournament_id=eq.' + tournamentId + '&fee_paid=eq.true&select=id');
     var count = (teams && teams.length) ? teams.length : 0;
-    var pp    = calcPrizePool(fee, count);
+    var pp    = calcPrizePool(fee, count, (typeof t !== 'undefined' && t && t.tier) ? t.tier : null);
     var totalEl  = document.getElementById(poolId + '-total');
     var firstEl  = document.getElementById(poolId + '-first');
     var secondEl = document.getElementById(poolId + '-second');
@@ -7286,7 +8206,7 @@ function renderDashOverview() {
   // Prize pool (if paid)
   var prizeHtml = '';
   if (fee > 0) {
-    var pp = calcPrizePool(fee, _dashAllTeams.length);
+    var pp = calcPrizePool(fee, _dashAllTeams.length, (typeof t !== 'undefined' && t && t.tier) ? t.tier : null);
     prizeHtml =
       '<div class="card" style="margin-bottom:1.5rem;">' +
         '<div class="card__header"><span class="card__title">Award Fund</span>' +
@@ -9426,7 +10346,7 @@ function renderAdminTournaments(el) {
       }
     }
     var fee = Number(t.entry_fee) || 0;
-    var pp  = fee > 0 ? calcPrizePool(fee, paidCount) : null;
+    var pp  = fee > 0 ? calcPrizePool(fee, paidCount, (typeof t !== 'undefined' && t && t.tier) ? t.tier : null) : null;
     var actions = _tournamentActionBtns(t);
     rows +=
       '<tr>' +
@@ -9526,7 +10446,15 @@ function openCreateTournament(isClass) {
           // Reset fee to 0 when de-elected
           var feeField = document.getElementById('ct-fee');
           if (feeField) { feeField.value = '0'; }
+          // Hide textbook option when de-electing
+          var tbWrapOff = document.getElementById('ct-textbook-wrap');
+          if (tbWrapOff) { tbWrapOff.style.display = 'none'; }
+          var tbCheckOff = document.getElementById('ct-textbook-enable');
+          if (tbCheckOff) { tbCheckOff.checked = false; }
         }
+        // Show textbook option when electing global
+        var tbWrapOn = document.getElementById('ct-textbook-wrap');
+        if (tbWrapOn) { tbWrapOn.style.display = electBox.checked ? 'block' : 'none'; }
       };
     }
     // Hide the Stripe field from admins too (professors never see it)
@@ -9567,6 +10495,7 @@ async function doCreateTournament() {
   // Check global election FIRST — elected professors are allowed to charge WORLD_CUP_ENTRY_FEE
   var electBox  = document.getElementById('ct-global-elect');
   var isElected = electBox ? electBox.checked : false;
+  var textbookEnabled = isElected && (document.getElementById('ct-textbook-enable') ? document.getElementById('ct-textbook-enable').checked : false);
   if (isElected) {
     fee = WORLD_CUP_ENTRY_FEE; // enforce World Cup entry fee
     var profLink = document.getElementById('ct-stripe-link-prof');
@@ -9601,7 +10530,8 @@ async function doCreateTournament() {
       schedule:         schedule,
       playoff_teams:    [],
       playoff_bracket:  {},
-      is_global_elected: isElected
+      is_global_elected: isElected,
+      textbook_enabled:  textbookEnabled
     });
     if (!newTourn || newTourn.code) {
       _setFormErr('ct-error', (newTourn && newTourn.message) || 'Failed to create tournament.');
@@ -12825,18 +13755,21 @@ async function crownChampion(tournId) {
     var captain     = (captainRows && captainRows.length) ? captainRows[0] : null;
 
     // Prize
-    var pp = calcPrizePool(Number(tourn.entry_fee) || 0, await _countTeams(tournId));
+    var pp = calcPrizePool(Number(tourn.entry_fee) || 0, await _countTeams(tournId), tourn.tier);
 
     // Insert champion record
     await sbPost('champions', {
-      season:      tourn.season_year,
-      team:        team.name || 'Unknown',
-      captain:     (captain && captain.name) ? captain.name : '',
-      country:     (captain && captain.country) ? captain.country : '',
-      institution: (captain && captain.institution) ? captain.institution : '',
-      score:       bestScore,
-      year:        new Date().getFullYear(),
-      prize_won:   pp.winner
+      season:          tourn.season_year,
+      team:            team.name || 'Unknown',
+      captain:         (captain && captain.name) ? captain.name : '',
+      country:         (captain && captain.country) ? captain.country : '',
+      institution:     (captain && captain.institution) ? captain.institution : '',
+      score:           bestScore,
+      year:            new Date().getFullYear(),
+      prize_won:       pp.winner,
+      tournament_id:   tournId,
+      tier:            tourn.tier || 'class',
+      tournament_name: tourn.name || ''
     });
 
     flash('Champion crowned: ' + (team.name || 'Team') + '!', 'success');
@@ -12958,7 +13891,7 @@ async function renderRankings() {
           totalPaidTeams += gTf.length;
         }
         var seasonPp = (typeof calcPrizePool === 'function')
-          ? calcPrizePool(WORLD_CUP_ENTRY_FEE, totalPaidTeams)
+          ? calcPrizePool(WORLD_CUP_ENTRY_FEE, totalPaidTeams, 'global')
           : { pool: Math.min((AWARD_SEED||1000) + totalPaidTeams * (WORLD_CUP_ENTRY_FEE||50) * FEE_PCT, 10000) };
         seasonPool = seasonPp.pool || 0;
       } catch(se) { seasonPool = 1000; }
@@ -13067,7 +14000,7 @@ async function renderRankings() {
 
       var prizeInfo = '';
       if (Number(t.entry_fee) > 0) {
-        var pp = calcPrizePool(t.entry_fee, teams.length);
+        var pp = calcPrizePool(t.entry_fee, teams.length, t.tier);
         prizeInfo = ' · Award fund: ' + fmt$(pp.pool);
       }
 
@@ -14558,94 +15491,122 @@ afterLogin = async function() {
 
 async function renderChampions() {
   var el = document.getElementById('champions-content');
-  if (!el) { return; }
+  if (!el) return;
   el.innerHTML =
     '<div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 0.75rem;"></div>' +
-    '<div class="empty-state__title">Loading champions…</div></div>';
+    '<div class="empty-state__title">Loading champions...</div></div>';
 
   try {
-    var champs = await sbGetPublic('champions', 'order=year.desc,score.desc&limit=100');
+    var champs = await sbGetPublic('champions', 'order=year.desc,season.desc&limit=200');
     champs = champs || [];
 
     if (!champs.length) {
       el.innerHTML =
         '<div class="empty-state"><div class="empty-state__icon">🏆</div>' +
         '<div class="empty-state__title">No champions yet</div>' +
-        '<div class="empty-state__desc">The Hall of Champions will be populated when the first tournament concludes.</div></div>';
+        '<div class="empty-state__desc">The Hall of Champions will be populated when the Global Championship season concludes.</div></div>';
       return;
     }
 
-    // Fetch profile images — public endpoint, match by name case-insensitively
+    // STRICT FILTER: only show records explicitly marked as global tier
+    function isGlobalChampion(c) {
+      return c.tier === 'global' || c.tier === 'open_championship';
+    }
+
+    var globalChamps = champs.filter(isGlobalChampion);
+
+    // One winner per season (highest score in that season)
+    var bySeason = {};
+    for (var i = 0; i < globalChamps.length; i++) {
+      var c = globalChamps[i];
+      var seasonKey = String(c.year || '') + '_' + String(c.season || '');
+      if (!bySeason[seasonKey] || (c.score || 0) > (bySeason[seasonKey].score || 0)) {
+        bySeason[seasonKey] = c;
+      }
+    }
+
+    var winners = Object.keys(bySeason).map(function(k){ return bySeason[k]; });
+    winners.sort(function(a, b) {
+      if ((b.year||0) !== (a.year||0)) return (b.year||0) - (a.year||0);
+      return (b.season||0) - (a.season||0);
+    });
+
+    if (!winners.length) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">🏆</div>' +
+        '<div class="empty-state__title">No Global Champions yet</div>' +
+        '<div class="empty-state__desc">The Hall of Champions displays the winner of each Global Championship season after the playoffs conclude.</div></div>';
+      return;
+    }
+
     var profileMap = {};
     try {
       var allUsers = await sbGetPublic('mn_users', 'select=id,name,profile_image_url&limit=500');
       if (allUsers) {
         for (var ui = 0; ui < allUsers.length; ui++) {
           var u = allUsers[ui];
-          if (u.name && u.profile_image_url) {
-            // Index by full name normalised
+          if (u.name) {
             profileMap[u.name.toLowerCase().trim()] = u;
-            // Also index first+last only (handles middle names)
-            var parts = u.name.trim().split(/\s+/);
-            if (parts.length > 2) {
-              profileMap[(parts[0] + ' ' + parts[parts.length-1]).toLowerCase()] = u;
-            }
+            var np = u.name.trim().split(/\s+/);
+            if (np.length > 2) profileMap[(np[0]+' '+np[np.length-1]).toLowerCase()] = u;
           }
         }
       }
     } catch(ex) {}
 
-    // Build grid
-    var cards = '';
-    for (var i = 0; i < champs.length; i++) {
-      var c    = champs[i];
-      var rank = i + 1;
-      var rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '<span style="font-size:1rem;font-weight:700;color:var(--text-400);">#' + rank + '</span>';
-      var userRec   = profileMap[(c.captain || '').toLowerCase().trim()] || profileMap[(c.team || '').toLowerCase().trim()] || null;
-      var imgUrl    = (userRec && userRec.profile_image_url) ? userRec.profile_image_url : '';
-      var nameParts = (c.captain || c.team || '?').split(' ');
-      var initials  = nameParts.length >= 2
-        ? nameParts[0][0] + nameParts[nameParts.length-1][0]
-        : (nameParts[0][0] || '?');
-      initials = initials.toUpperCase();
+    var isAdmin = currentUser && currentUser.is_admin;
+    var out = '<div class="champions-leaderboard">';
 
+    for (var ci = 0; ci < winners.length; ci++) {
+      var c = winners[ci];
+      var userRec = profileMap[(c.captain||'').toLowerCase().trim()]
+                 || profileMap[(c.team||'').toLowerCase().trim()] || null;
+      var imgUrl  = (userRec && userRec.profile_image_url) ? userRec.profile_image_url : '';
+      var np2 = (c.captain||c.team||'?').split(' ');
+      var ini = (np2.length >= 2 ? np2[0][0]+np2[np2.length-1][0] : (np2[0][0]||'?')).toUpperCase();
       var avatarHtml = imgUrl
-        ? '<img src="' + esc(imgUrl) + '" class="champ-card-new__avatar-img" alt="' + esc(c.captain || '') + '">'
-        : '<div class="champ-card-new__avatar-initials">' + esc(initials) + '</div>';
+        ? '<img src="' + esc(imgUrl) + '" class="champ-card-new__avatar-img" alt="' + esc(c.captain||'') + '">'
+        : '<div class="champ-card-new__avatar-initials">' + esc(ini) + '</div>';
 
-      var isAdmin = currentUser && currentUser.is_admin;
-
-      cards +=
+      out +=
         '<article class="champ-card-new">' +
-          '<div class="champ-card-new__rank">' + rankBadge + '</div>' +
+          '<div class="champ-card-new__rank">🥇</div>' +
           '<div class="champ-card-new__avatar">' + avatarHtml + '</div>' +
           '<div class="champ-card-new__body">' +
-            '<div class="champ-card-new__season">Season ' + esc(String(c.season || c.year || '')) + '</div>' +
-            '<h2 class="champ-card-new__team">' + esc(c.team || 'Unknown') + '</h2>' +
-            '<p class="champ-card-new__captain">' + esc(c.captain || '') + '</p>' +
-            '<p class="champ-card-new__meta">' + esc(c.institution || '') + (c.country ? ' · ' + esc(c.country) : '') + '</p>' +
+            '<div class="champ-card-new__season">🏆 Global Championship · ' +
+              (c.season ? 'Season ' + esc(String(c.season)) : '') +
+              (c.year ? (c.season ? ' · ' : '') + esc(String(c.year)) : '') +
+            '</div>' +
+            '<h2 class="champ-card-new__team">' + esc(c.team||'Unknown') + '</h2>' +
+            '<p class="champ-card-new__captain">' + esc(c.captain||'') + '</p>' +
+            '<p class="champ-card-new__meta">' + esc(c.institution||'') +
+              (c.country ? ' · ' + esc(c.country) : '') + '</p>' +
             '<div class="champ-card-new__stats">' +
-              '<div class="champ-card-new__score">' + esc(String(c.score || '—')) + '<span>/1000</span></div>' +
-              (c.prize_won ? '<div class="champ-card-new__prize">💰 ' + fmt$(c.prize_won) + '</div>' : '') +
+              '<div class="champ-card-new__score">' +
+                esc(String(Math.round(c.score||0))) + '<span>/1000</span>' +
+              '</div>' +
+              (c.prize_won && Number(c.prize_won) > 0
+                ? '<div class="champ-card-new__prize">💰 ' + fmt$(c.prize_won) + '</div>'
+                : '') +
             '</div>' +
           '</div>' +
           (isAdmin
-            ? '<button class="btn btn--danger btn--sm champ-card-new__revoke" onclick="revokeChampion(\'' + esc(c.id) + '\')">Revoke</button>'
+            ? '<button class="btn btn--danger btn--sm champ-card-new__revoke"' +
+              ' onclick="revokeChampion(\'' + esc(c.id) + '\')">Revoke</button>'
             : '') +
         '</article>';
     }
+    out += '</div>';
 
-    el.innerHTML = '<div class="champions-leaderboard">' + cards + '</div>';
+    el.innerHTML = out;
 
   } catch(e) {
     el.innerHTML =
       '<div class="empty-state"><div class="empty-state__icon">⚠️</div>' +
       '<div class="empty-state__title">Could not load champions</div>' +
-      '<div class="empty-state__desc">' + esc((e && e.message) || '') + '</div></div>';
+      '<div class="empty-state__desc">' + esc((e&&e.message)||'') + '</div></div>';
   }
 }
-
-// ── Mark user as champion when tournament completes ─────────────────
 var _origCrownChampion = crownChampion;
 crownChampion = async function(tournId) {
   await _origCrownChampion(tournId);
@@ -15252,7 +16213,7 @@ function ocRenderRegistration(el, tourn) {
   if (tourn) {
     sbGetPublic('teams', 'tournament_id=eq.' + tourn.id + '&fee_paid=eq.true&select=id').then(function(rows) {
       var count = rows ? rows.length : 0;
-      var pp = typeof calcPrizePool === 'function' ? calcPrizePool(OC_ENTRY_FEE, count) : { pool: 0 };
+      var pp = typeof calcPrizePool === 'function' ? calcPrizePool(OC_ENTRY_FEE, count, 'open_championship') : { pool: 0 };
       var el2 = document.getElementById(poolId);
       if (el2) { el2.textContent = ocFmt$(pp.pool || 0); }
     }).catch(function() {});
@@ -15724,7 +16685,7 @@ window.ocRenderAdminPanel = async function(el) {
     var paid    = teams.filter(function(t) { return t.fee_paid; });
     var started = teams.filter(function(t) { return t.started_at; });
     var complete= teams.filter(function(t) { return (t.oc_round || 0) >= OC_ROUNDS; });
-    var pp = typeof calcPrizePool === 'function' ? calcPrizePool(OC_ENTRY_FEE, paid.length) : { pool: 0 };
+    var pp = typeof calcPrizePool === 'function' ? calcPrizePool(OC_ENTRY_FEE, paid.length, 'open_championship') : { pool: 0 };
 
     var teamRows = '';
     for (var i = 0; i < teams.length; i++) {
@@ -15867,6 +16828,1140 @@ if (document.readyState === 'loading') {
 } else {
   ocInit();
 }
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEXTBOOK SYSTEM — Access control, progress sync, prof dashboard
+// ═══════════════════════════════════════════════════════════════════
+
+// Check if the current user has textbook access:
+// Must be in a paid tournament that has textbook_enabled = true
+// OR be the professor who created such a tournament
+async function tbCheckAccess() {
+  if (!currentUser) return false;
+  var userId = currentUser.id;
+  var role   = currentUser.role || '';
+
+  // Admins and professors always have access
+  if (currentUser.is_admin || role === 'professor') {
+    // Try to find a relevant tournament for the progress dashboard
+    try {
+      var myT = await sbGet('tournaments', 'created_by=eq.' + userId + '&limit=1&select=id');
+      return { access: true, tournId: myT && myT.length ? myT[0].id : null };
+    } catch(e) {
+      return { access: true, tournId: null };
+    }
+  }
+
+  // Students: access if they have paid for any team in any tournament
+  try {
+    var capTeams = await sbGet('teams',
+      'captain_id=eq.' + userId + '&fee_paid=eq.true&limit=1&select=id,tournament_id');
+    if (capTeams && capTeams.length > 0) {
+      return { access: true, tournId: capTeams[0].tournament_id || null };
+    }
+  } catch(e) {}
+
+  // Also check if user is a member of any paid team
+  // Try the sbGetPublic route which works without auth
+  try {
+    var allTeams = await sbGetPublic('teams',
+      'fee_paid=eq.true&limit=500&select=id,tournament_id,captain_id,members');
+    if (allTeams) {
+      for (var i = 0; i < allTeams.length; i++) {
+        var t = allTeams[i];
+        var members = t.members || [];
+        if (t.captain_id === userId || members.indexOf(userId) >= 0) {
+          return { access: true, tournId: t.tournament_id || null };
+        }
+      }
+    }
+  } catch(e2) {}
+
+  return false;
+}
+
+// Listen for progress/navigation messages from the textbook iframe
+window.addEventListener('message', function(evt) {
+  if (!evt.data || typeof evt.data !== 'object') return;
+  if (evt.data.type === 'tb-progress' && currentUser) {
+    tbSaveProgress(currentUser.id, window._tbTournId || null, evt.data.ch, evt.data.scores || {});
+    tbReadProgress();
+    tbRenderSidebar();
+  }
+  if (evt.data.type === 'tb-navigate') {
+    TB_ACTIVE_CH = evt.data.ch || TB_ACTIVE_CH;
+    tbRenderSidebar();
+  }
+});
+
+// Store tournament ID for progress tracking (called once after login)
+async function tbUpdateNavVisibility() {
+  if (!currentUser) return;
+  try {
+    var access = await tbCheckAccess();
+    window._tbTournId = (access && typeof access === 'object') ? access.tournId : null;
+  } catch(e) {}
+}
+
+// ─── PROGRESS SYNC ───────────────────────────────────────────────
+// Called from textbook iframe via postMessage
+async function tbSaveProgress(userId, tournId, chapterId, quizScores) {
+  if (!userId || !chapterId) return;
+  var payload = {
+    user_id:      userId,
+    tournament_id: tournId || null,
+    chapter_id:   chapterId,
+    completed:    true,
+    quiz_scores:  quizScores || {},
+    updated_at:   new Date().toISOString()
+  };
+  try {
+    // Upsert: use POST with prefer=resolution=merge-duplicates header equivalent
+    // Supabase REST upsert: POST with on_conflict param
+    await fetch(SUPA_URL + '/rest/v1/mn_textbook_progress' +
+      '?on_conflict=user_id,tournament_id,chapter_id', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (await _authToken()),
+        'apikey': SUPA_ANON,
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) { console.warn('tbSaveProgress error', e); }
+}
+
+// Listen for messages from the textbook iframe
+window.addEventListener('message', function(evt) {
+  if (!evt.data || typeof evt.data !== 'object') return;
+
+  if (evt.data.type === 'tb-progress' && currentUser) {
+    // Student completed a chapter or submitted quiz
+    var chId = evt.data.ch;
+    var scores = evt.data.scores || {};
+    tbSaveProgress(currentUser.id, window._tbTournId, chId, scores);
+    tbReadProgress();
+    tbRenderSidebar();
+  }
+  if (evt.data.type === 'tb-navigate') {
+    TB_ACTIVE_CH = evt.data.ch || TB_ACTIVE_CH;
+    tbRenderSidebar();
+  }
+});
+
+// ─── PROFESSOR PROGRESS DASHBOARD ────────────────────────────────
+async function tbRenderProfProgress(tournId) {
+  var el = document.getElementById('tb-prof-progress');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--text-400);font-size:0.875rem;padding:1.5rem 0;">Loading student progress…</div>';
+
+  try {
+    // Fetch all teams in this tournament
+    var teams = await sbGet('teams',
+      'tournament_id=eq.' + tournId + '&fee_paid=eq.true&select=id,name,captain_id,members&limit=200');
+    if (!teams || teams.length === 0) {
+      el.innerHTML = '<div style="color:var(--text-400);font-size:0.875rem;padding:1.5rem 0;">No enrolled teams yet.</div>';
+      return;
+    }
+
+    // Collect all student user IDs
+    var userIds = [];
+    for (var i = 0; i < teams.length; i++) {
+      var t = teams[i];
+      if (t.captain_id) userIds.push(t.captain_id);
+      if (t.members && Array.isArray(t.members)) {
+        for (var j = 0; j < t.members.length; j++) {
+          if (t.members[j] && userIds.indexOf(t.members[j]) < 0) userIds.push(t.members[j]);
+        }
+      }
+    }
+
+    // Fetch progress records for all users in this tournament
+    var progress = await sbGet('mn_textbook_progress',
+      'tournament_id=eq.' + tournId + '&limit=5000&select=user_id,chapter_id,completed,quiz_scores,updated_at');
+
+    // Fetch user names
+    var userRows = await sbGet('mn_users',
+      'id=in.(' + userIds.slice(0,100).join(',') + ')&select=id,username,email&limit=100');
+    var userMap = {};
+    if (userRows) {
+      for (var u = 0; u < userRows.length; u++) {
+        userMap[userRows[u].id] = userRows[u];
+      }
+    }
+
+    // Build progress map: userId -> Set of completed chapter IDs
+    var progressMap = {};
+    var quizMap = {};
+    if (progress) {
+      for (var p = 0; p < progress.length; p++) {
+        var pr = progress[p];
+        if (!progressMap[pr.user_id]) progressMap[pr.user_id] = [];
+        if (pr.completed) progressMap[pr.user_id].push(pr.chapter_id);
+        if (pr.quiz_scores && Object.keys(pr.quiz_scores).length > 0) {
+          if (!quizMap[pr.user_id]) quizMap[pr.user_id] = {};
+          Object.assign(quizMap[pr.user_id], pr.quiz_scores);
+        }
+      }
+    }
+
+    var totalChs = TB_CHAPTERS.length;
+    var completedChs = TB_CHAPTERS.filter(function(c) {
+      return c.id !== 'ch23' && c.id !== 'ch24' && c.id !== 'ch25' && c.id !== 'ch26';
+    }).length; // only count published chapters
+
+    // Summary row
+    var avgPct = userIds.length > 0 ? Math.round(
+      userIds.reduce(function(sum, uid) {
+        return sum + ((progressMap[uid] || []).length / completedChs * 100);
+      }, 0) / userIds.length
+    ) : 0;
+
+    var html = '';
+    // Summary bar
+    html += '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">';
+    html += '<div style="flex:1;background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;">' +
+      '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-400);margin-bottom:0.25rem;">Students Enrolled</div>' +
+      '<div style="font-size:1.75rem;font-weight:700;color:var(--text-900);">' + userIds.length + '</div>' +
+    '</div>';
+    html += '<div style="flex:1;background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;">' +
+      '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-400);margin-bottom:0.25rem;">Published Chapters</div>' +
+      '<div style="font-size:1.75rem;font-weight:700;color:var(--text-900);">' + completedChs + '</div>' +
+    '</div>';
+    html += '<div style="flex:1;background:var(--bg-subtle);border-radius:var(--radius);padding:1rem;">' +
+      '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-400);margin-bottom:0.25rem;">Avg. Completion</div>' +
+      '<div style="font-size:1.75rem;font-weight:700;color:' + (avgPct >= 70 ? '#16a34a' : avgPct >= 40 ? '#d97706' : '#dc2626') + ';">' + avgPct + '%</div>' +
+    '</div>';
+    html += '</div>';
+
+    // Chapter completion heatmap header
+    var pubChs = TB_CHAPTERS.filter(function(c){ return c.id !== 'ch23' && c.id !== 'ch24' && c.id !== 'ch25' && c.id !== 'ch26'; });
+
+    // Per-student table
+    html += '<div style="overflow-x:auto;">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">';
+    html += '<thead><tr style="background:var(--bg-subtle);">';
+    html += '<th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);min-width:140px;">Student</th>';
+    html += '<th style="text-align:center;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);white-space:nowrap;">Completed</th>';
+    html += '<th style="text-align:center;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);white-space:nowrap;">Quiz Score</th>';
+    html += '<th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;color:var(--text-600);border-bottom:1px solid var(--border);">Chapter Progress</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var ui = 0; ui < userIds.length; ui++) {
+      var uid = userIds[ui];
+      var user = userMap[uid] || {};
+      var name = user.username || user.email || uid.slice(0,8);
+      var done = (progressMap[uid] || []).length;
+      var pct = Math.round(done / completedChs * 100);
+      var qs = quizMap[uid] || {};
+      var qKeys = Object.keys(qs);
+      var qAvg = qKeys.length > 0 ? Math.round(qKeys.reduce(function(s,k){ return s + (Number(qs[k]) || 0); },0) / qKeys.length) : null;
+      var rowBg = ui % 2 === 0 ? '' : 'background:var(--bg-subtle);';
+
+      html += '<tr style="' + rowBg + '">';
+      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text-700);font-weight:500;">' + name + '</td>';
+      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:center;">' +
+        '<span style="font-weight:600;color:' + (pct >= 70 ? '#16a34a' : pct >= 30 ? '#d97706' : '#94a3b8') + ';">' + done + '/' + completedChs + '</span>' +
+        ' <span style="color:var(--text-400);font-size:0.75rem;">(' + pct + '%)</span>' +
+      '</td>';
+      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:center;">' +
+        (qAvg !== null ? '<span style="font-weight:600;color:' + (qAvg >= 70 ? '#16a34a' : qAvg >= 50 ? '#d97706' : '#dc2626') + ';">' + qAvg + '%</span>' : '<span style="color:var(--text-300);">—</span>') +
+      '</td>';
+
+      // Chapter dot heatmap
+      html += '<td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);">';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
+      for (var ci = 0; ci < pubChs.length; ci++) {
+        var chDone = (progressMap[uid] || []).indexOf(pubChs[ci].id) >= 0;
+        html += '<div title="Ch.' + pubChs[ci].num + ' ' + pubChs[ci].title.replace(/&amp;/g,'&') + '" style="width:14px;height:14px;border-radius:3px;background:' + (chDone ? '#16a34a' : '#e2e8f0') + ';"></div>';
+      }
+      html += '</div></td>';
+      html += '</tr>';
+    }
+
+    html += '</tbody></table></div>';
+    html += '<div style="font-size:0.75rem;color:var(--text-400);margin-top:0.75rem;">🟩 Chapter completed &nbsp; ⬜ Not yet completed. Progress updates as students read and complete quiz questions.</div>';
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="color:#dc2626;font-size:0.875rem;padding:1rem 0;">Error loading progress: ' + (e.message || e) + '</div>';
+    console.error('tbRenderProfProgress error', e);
+  }
+}
+
+// ─── TEXTBOOK FETCH + INJECT HELPERS ────────────────────────────
+var _tbLoaded = false;
+
+function tbGoChapter(chId) {
+  TB_ACTIVE_CH = chId;
+  tbRenderSidebar();
+  var frame = document.getElementById('tb-iframe');
+  if (!frame) return;
+  try {
+    if (frame.contentWindow && frame.contentWindow.showChapter) {
+      frame.contentWindow.showChapter(chId);
+    }
+  } catch(e) {}
+}
+
+function tbSetDifficulty(level) {
+  var frame = document.getElementById('tb-iframe');
+  if (!frame) return;
+  try {
+    if (frame.contentWindow && frame.contentWindow.setDifficulty) {
+      frame.contentWindow.setDifficulty(level);
+    }
+  } catch(e) {}
+}
+
+// ─── TEXTBOOK LOADER ─────────────────────────────────────────────
+function tbGetTextbookUrl() {
+  // Reliably resolve the textbook URL regardless of deployment pattern
+  var a = document.createElement('a');
+  a.href = 'macronations-textbook.html';  // browser resolves relative to current page
+  return a.href;
+}
+
+function tbLoadIframe() {
+  var main = document.getElementById('tb-main');
+  if (!main) return;
+
+  // Already have an iframe — just navigate it
+  var existing = document.getElementById('tb-iframe');
+  if (existing) {
+    try {
+      if (existing.contentWindow && existing.contentWindow.showChapter) {
+        if (existing.contentWindow.loadedCharts) existing.contentWindow.loadedCharts = {};
+        existing.contentWindow.showChapter(TB_ACTIVE_CH || 'ch1');
+      }
+    } catch(e) {}
+    tbRenderSidebar();
+    return;
+  }
+
+  var tbUrl = tbGetTextbookUrl();
+
+  // Simple full-height iframe — no position tricks needed
+  main.style.cssText = 'flex:1 1 auto;overflow:hidden;min-height:0;display:flex;flex-direction:column;';
+  main.innerHTML =
+    '<div id="tb-spinner" style="padding:3rem;text-align:center;color:#64748b;">' +
+      '<div style="width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#3b82f6;' +
+      'border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;"></div>' +
+      '<div>Loading textbook...</div>' +
+      '<div style="margin-top:0.75rem;">' +
+        '<a href="' + tbUrl + '" target="_blank" style="color:#3b82f6;font-size:0.875rem;">Open in new tab if this takes too long ↗</a>' +
+      '</div>' +
+    '</div>' +
+    '<iframe id="tb-iframe" src="' + tbUrl + '" ' +
+      'style="flex:1;width:100%;border:none;display:none;" ' +
+      'title="Applied Macroeconomics Textbook"></iframe>';
+
+  var frame = document.getElementById('tb-iframe');
+  frame.addEventListener('load', function() {
+    var spinner = document.getElementById('tb-spinner');
+    if (spinner) spinner.style.display = 'none';
+    frame.style.display = 'block';
+    _tbLoaded = true;
+    tbRenderSidebar();
+    setTimeout(function() {
+      try {
+        if (frame.contentWindow && frame.contentWindow.showChapter) {
+          frame.contentWindow.showChapter(TB_ACTIVE_CH || 'ch1');
+        }
+      } catch(e) {}
+    }, 300);
+  });
+}
+
+// Keep old name as alias
+function tbFetchAndInject() { tbLoadIframe(); }
+
+// ─── PAGE LOADER — with access gating ────────────────────────────
+PAGE_LOADERS['textbook'] = function() {
+  tbReadProgress();
+  tbRenderSidebar();
+
+  tbCheckAccess().then(function(access) {
+    var main = document.getElementById('tb-main');
+    var tbUrl = tbGetTextbookUrl();
+
+    if (!access) {
+      if (main) {
+        main.innerHTML =
+          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;text-align:center;padding:3rem;">' +
+            '<div style="font-size:3rem;">🔒</div>' +
+            '<div style="font-size:1.25rem;font-weight:700;color:var(--text-700);">Textbook Access Required</div>' +
+            '<div style="font-size:0.9375rem;color:var(--text-500);max-width:480px;line-height:1.6;">Available to students in a paid tournament where the professor has adopted the textbook. Contact your professor or <a href="mailto:support@macronations.com">support@macronations.com</a>.</div>' +
+            '<button class="btn btn--primary" onclick="showPage(\'tournaments\')">Browse Tournaments</button>' +
+          '</div>';
+      }
+      var sb = document.getElementById('tb-sidebar');
+      if (sb) sb.style.display = 'none';
+      return;
+    }
+
+    var sb2 = document.getElementById('tb-sidebar');
+    if (sb2) sb2.style.display = 'flex';
+
+    // Professor progress panel
+    var isProfOrAdmin = currentUser && (currentUser.role === 'professor' || currentUser.is_admin);
+    var tournId = (typeof access === 'object') ? access.tournId : null;
+    window._tbTournId = tournId;
+
+    if (isProfOrAdmin && tournId && !document.getElementById('tb-prof-progress-wrap')) {
+      var sb3 = document.getElementById('tb-sidebar');
+      if (sb3) {
+        var wrap = document.createElement('div');
+        wrap.id = 'tb-prof-progress-wrap';
+        wrap.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0;';
+        wrap.innerHTML =
+          '<button onclick="tbToggleProfPanel()" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0.75rem 1.125rem;background:none;border:none;color:#94a3b8;font-size:0.8125rem;font-weight:600;cursor:pointer;">' +
+            '<span>📊 Student Progress</span><span id="tb-prof-toggle-icon">▼</span>' +
+          '</button>' +
+          '<div id="tb-prof-progress-panel" style="display:none;background:#fff;border-top:1px solid var(--border);padding:1rem;overflow-y:auto;max-height:300px;">' +
+            '<div id="tb-prof-progress"></div>' +
+          '</div>';
+        sb3.appendChild(wrap);
+        window._tbProfTournId = tournId;
+      }
+    }
+
+    // Show landing card with button to open textbook in new tab
+    // Iframe embedding has been unreliable. New tab is the most robust solution
+    // and ensures FRED data charts and Chart.js load correctly.
+    if (main) {
+      main.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;text-align:center;padding:3rem;background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);">' +
+          '<div style="font-size:4rem;">📖</div>' +
+          '<div style="font-size:1.5rem;font-weight:700;color:#0f3d9e;">Applied Macroeconomics</div>' +
+          '<div style="font-size:0.875rem;font-weight:600;color:#475569;">From Theory to Policy Simulation</div>' +
+          '<div style="font-size:0.875rem;color:#64748b;">By Amarendra Sharma, PhD · Binghamton University (SUNY)</div>' +
+          '<div style="font-size:0.9375rem;color:#475569;max-width:520px;line-height:1.6;">22 chapters with live FRED data charts, interactive diagrams (Phillips Curve, IS-LM, Solow Model), end-of-chapter quizzes, and policy scenario questions.</div>' +
+          '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;">' +
+            '<a href="' + tbUrl + '" target="_blank" rel="noopener" class="btn btn--primary" style="padding:0.75rem 1.75rem;font-size:1rem;">📘 Open Textbook ↗</a>' +
+            '<a href="' + tbUrl + '#ch1" target="_blank" rel="noopener" class="btn btn--ghost" style="padding:0.75rem 1.5rem;font-size:1rem;">Jump to Chapter 1 →</a>' +
+          '</div>' +
+          '<div style="font-size:0.8125rem;color:#64748b;margin-top:0.5rem;max-width:480px;line-height:1.5;">Opens in a new tab to ensure FRED live data charts render properly. Use the chapter list on the left to track your reading progress.</div>' +
+        '</div>';
+    }
+  });
+};
+
+function tbToggleProfPanel() {
+  var panel = document.getElementById('tb-prof-progress-panel');
+  var icon  = document.getElementById('tb-prof-toggle-icon');
+  if (!panel) return;
+  var open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '▼' : '▲';
+  if (!open && window._tbProfTournId) tbRenderProfProgress(window._tbProfTournId);
+}
+
+
+
+// ════════════════════════════════════════════════════════════════
+//  SANDBOX MODE — frictionless tour for professors and students
+//  Completely isolated from Supabase. State lives in localStorage.
+//  Does not affect any existing platform feature.
+// ════════════════════════════════════════════════════════════════
+
+var SBX_KEY = 'macronations_sandbox_v1';
+var SBX_ROLE_KEY = 'macronations_sandbox_role_v1';
+var SBX_ACTIVE_KEY = 'macronations_sandbox_active_v1';
+
+function sbxIsActive() {
+  try { return localStorage.getItem(SBX_ACTIVE_KEY) === '1'; } catch(e) { return false; }
+}
+
+function sbxLoadState() {
+  var defaults = {
+    professor: {
+      tournamentCreated: false,
+      tournamentName: '',
+      tournamentRounds: 5,
+      tournamentCode: '',
+      // step progress
+      currentStep: 1,
+      stepsDone: []
+    },
+    student: {
+      joinedTournament: false,
+      teamName: '',
+      roundsPlayed: 0,
+      bestScore: 0,
+      currentStep: 1,
+      stepsDone: []
+    }
+  };
+  try {
+    var raw = localStorage.getItem(SBX_KEY);
+    if (!raw) { return defaults; }
+    var parsed = JSON.parse(raw);
+    // Merge with defaults so new fields work even on old state
+    return {
+      professor: Object.assign({}, defaults.professor, parsed.professor || {}),
+      student:   Object.assign({}, defaults.student,   parsed.student   || {})
+    };
+  } catch(e) {
+    return defaults;
+  }
+}
+
+function sbxSaveState(state) {
+  try { localStorage.setItem(SBX_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function sbxGetRole() {
+  try { return localStorage.getItem(SBX_ROLE_KEY) || 'professor'; } catch(e) { return 'professor'; }
+}
+
+function sbxSetRole(role) {
+  try { localStorage.setItem(SBX_ROLE_KEY, role); } catch(e) {}
+}
+
+function sbxEnter() {
+  try { localStorage.setItem(SBX_ACTIVE_KEY, '1'); } catch(e) {}
+  document.body.classList.add('sandbox-mode');
+  sbxRenderBanner();
+  showPage('sandbox');
+}
+
+function sbxExit() {
+  if (!confirm('Exit the sandbox? Your demo progress will be preserved if you come back.')) { return; }
+  try { localStorage.removeItem(SBX_ACTIVE_KEY); } catch(e) {}
+  document.body.classList.remove('sandbox-mode');
+  var bn = document.getElementById('sbx-banner');
+  if (bn) { bn.remove(); }
+  showPage('home');
+}
+
+function sbxReset() {
+  if (!confirm('Reset all sandbox progress? This clears the demo tournament and team you created. You will stay in sandbox mode.')) { return; }
+  try { localStorage.removeItem(SBX_KEY); } catch(e) {}
+  flash('Sandbox reset. Start fresh!', 'info');
+  sbxRenderPage();
+}
+
+function sbxRenderBanner() {
+  var existing = document.getElementById('sbx-banner');
+  if (existing) { existing.remove(); }
+  var bn = document.createElement('div');
+  bn.id = 'sbx-banner';
+  bn.className = 'sbx-banner';
+  bn.setAttribute('role', 'status');
+  bn.innerHTML =
+    '<span class="sbx-banner__label">' +
+      '<span class="sbx-banner__dot" aria-hidden="true"></span>' +
+      'Sandbox Mode' +
+    '</span>' +
+    '<span class="sbx-banner__msg">You are exploring a demo. Nothing here is saved to the real platform.</span>' +
+    '<span class="sbx-banner__actions">' +
+      '<button class="sbx-banner__btn" onclick="showPage(\'sandbox\')">Tour</button>' +
+      '<button class="sbx-banner__btn sbx-banner__btn--exit" onclick="sbxExit()">Exit</button>' +
+    '</span>';
+  document.body.insertBefore(bn, document.body.firstChild);
+}
+
+function sbxSwitchRole(role) {
+  sbxSetRole(role);
+  sbxRenderPage();
+}
+
+// ───────────────────────────────────────────
+//  Step definitions per role
+// ───────────────────────────────────────────
+function sbxStepsForRole(role) {
+  if (role === 'professor') {
+    return [
+      {
+        id: 1,
+        title: 'Create a Class Tournament',
+        desc: 'Set up a private tournament for your class — pick a name, schedule, and number of rounds.'
+      },
+      {
+        id: 2,
+        title: 'Share Your Invite Code',
+        desc: 'Each tournament gets a unique join code. Share it with students or post it on Brightspace.'
+      },
+      {
+        id: 3,
+        title: 'Monitor & Wrap Up',
+        desc: 'Track team progress, see live standings, and certify winners at the end of the season.'
+      }
+    ];
+  }
+  // student
+  return [
+    {
+      id: 1,
+      title: 'Join with a Code',
+      desc: 'Enter the invite code your professor shared (try the demo code below) and form a team.'
+    },
+    {
+      id: 2,
+      title: 'Play a Round',
+      desc: 'Set 6 policy levers, see how your country scores across 5 pillars, and submit your round.'
+    },
+    {
+      id: 3,
+      title: 'See Where You Rank',
+      desc: 'View the class leaderboard, see how your team compares, and plan your next round.'
+    }
+  ];
+}
+
+// ───────────────────────────────────────────
+//  Render: step strip + active scene
+// ───────────────────────────────────────────
+function sbxRenderPage() {
+  if (!document.getElementById('page-sandbox')) { return; }
+  var role = sbxGetRole();
+  var state = sbxLoadState();
+  var profBtn = document.getElementById('sbx-role-prof');
+  var studBtn = document.getElementById('sbx-role-stud');
+  if (profBtn && studBtn) {
+    profBtn.classList.toggle('active', role === 'professor');
+    studBtn.classList.toggle('active', role === 'student');
+    profBtn.setAttribute('aria-selected', role === 'professor' ? 'true' : 'false');
+    studBtn.setAttribute('aria-selected', role === 'student' ? 'true' : 'false');
+  }
+  sbxRenderSteps(role, state);
+  sbxRenderScene(role, state);
+}
+
+function sbxRenderSteps(role, state) {
+  var container = document.getElementById('sbx-steps-container');
+  if (!container) { return; }
+  var steps = sbxStepsForRole(role);
+  var roleState = state[role];
+  var html = '<div class="sbx-grid">';
+  for (var i = 0; i < steps.length; i++) {
+    var s = steps[i];
+    var isDone = roleState.stepsDone.indexOf(s.id) !== -1;
+    var isCurrent = roleState.currentStep === s.id && !isDone;
+    var cls = 'sbx-step';
+    if (isDone) { cls += ' sbx-step--done'; }
+    else if (isCurrent) { cls += ' sbx-step--current'; }
+    html +=
+      '<div class="' + cls + '">' +
+        (isDone ? '<span class="sbx-step__check">✓</span>' : '') +
+        '<div class="sbx-step__num">' + s.id + '</div>' +
+        '<div class="sbx-step__title">' + sbxEsc(s.title) + '</div>' +
+        '<div class="sbx-step__desc">' + sbxEsc(s.desc) + '</div>' +
+        '<button class="sbx-step__btn" onclick="sbxGoToStep(' + s.id + ')">' +
+          (isDone ? 'Revisit' : (isCurrent ? 'Start →' : 'Open')) +
+        '</button>' +
+      '</div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function sbxGoToStep(stepNum) {
+  var role = sbxGetRole();
+  var state = sbxLoadState();
+  state[role].currentStep = stepNum;
+  sbxSaveState(state);
+  sbxRenderPage();
+  // Scroll to the scene
+  var scene = document.getElementById('sbx-scene-container');
+  if (scene) { scene.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+
+function sbxMarkStepDone(stepNum) {
+  var role = sbxGetRole();
+  var state = sbxLoadState();
+  if (state[role].stepsDone.indexOf(stepNum) === -1) {
+    state[role].stepsDone.push(stepNum);
+  }
+  // Advance to next step if not already complete
+  if (stepNum < 3) {
+    state[role].currentStep = stepNum + 1;
+  }
+  sbxSaveState(state);
+  sbxRenderPage();
+}
+
+// ───────────────────────────────────────────
+//  Scene rendering — different content per (role, step)
+// ───────────────────────────────────────────
+function sbxRenderScene(role, state) {
+  var container = document.getElementById('sbx-scene-container');
+  if (!container) { return; }
+  var step = state[role].currentStep;
+  var html = '';
+  if (role === 'professor') {
+    if (step === 1)      { html = sbxSceneProfCreate(state); }
+    else if (step === 2) { html = sbxSceneProfShare(state); }
+    else if (step === 3) { html = sbxSceneProfMonitor(state); }
+  } else {
+    if (step === 1)      { html = sbxSceneStudJoin(state); }
+    else if (step === 2) { html = sbxSceneStudPlay(state); }
+    else if (step === 3) { html = sbxSceneStudLeaderboard(state); }
+  }
+  container.innerHTML = html;
+  // After render, wire any sliders for the sim scene
+  if (role === 'student' && step === 2) { sbxWireSim(); }
+}
+
+// ── Professor Step 1: Create a tournament ──
+function sbxSceneProfCreate(state) {
+  var ps = state.professor;
+  var created = ps.tournamentCreated;
+  var html =
+    '<div class="sbx-scene">' +
+      '<h2 class="sbx-scene__title">Step 1 · Create a Class Tournament</h2>' +
+      '<div class="sbx-scene__hint">' +
+        '<span class="sbx-scene__hint-icon">💡</span>' +
+        '<strong>What you would do in real life:</strong> sign in with your .edu email, head to the Professor Dashboard, and click "Create Tournament." Here in the sandbox you get to do the same thing — without any email or signup.' +
+      '</div>';
+  if (!created) {
+    html +=
+      '<div class="sbx-form-group">' +
+        '<label for="sbx-t-name">Tournament name</label>' +
+        '<input type="text" id="sbx-t-name" placeholder="e.g., ECON 162 Summer 2026" value="ECON 162 Summer 2026">' +
+      '</div>' +
+      '<div class="sbx-form-group">' +
+        '<label for="sbx-t-rounds">Number of rounds</label>' +
+        '<select id="sbx-t-rounds">' +
+          '<option value="3">3 rounds (quick)</option>' +
+          '<option value="5" selected>5 rounds (recommended)</option>' +
+          '<option value="8">8 rounds (full season)</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="sbx-callout">' +
+        'Class tournaments are <strong>free</strong>. The only paid option is electing your tournament into the Global Championship season — that is separate from class-only play.' +
+      '</div>' +
+      '<button class="sbx-btn-primary" onclick="sbxCreateTournament()">Create Tournament</button>';
+  } else {
+    html +=
+      '<div class="sbx-tcard">' +
+        '<div class="sbx-tcard__name">' + sbxEsc(ps.tournamentName) + '</div>' +
+        '<div class="sbx-tcard__meta">' +
+          '<span class="sbx-tcard__pill sbx-tcard__pill--upcoming">Registration open</span>' +
+          ps.tournamentRounds + ' rounds · Created by you (Sandbox Professor)' +
+        '</div>' +
+        '<div style="font-size:0.875rem;color:var(--text-700);">Tournament ready! Now share the invite code with students.</div>' +
+      '</div>' +
+      '<button class="sbx-btn-secondary" onclick="sbxResetTournament()">Recreate</button> ' +
+      '<button class="sbx-btn-primary" onclick="sbxGoToStep(2)">Next: Share invite code →</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function sbxCreateTournament() {
+  var name = (document.getElementById('sbx-t-name').value || '').trim();
+  var rounds = parseInt(document.getElementById('sbx-t-rounds').value, 10) || 5;
+  if (!name) { alert('Please enter a tournament name.'); return; }
+  var state = sbxLoadState();
+  state.professor.tournamentCreated = true;
+  state.professor.tournamentName = name;
+  state.professor.tournamentRounds = rounds;
+  // Generate a friendly invite code
+  var code = 'MN-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+  state.professor.tournamentCode = code;
+  sbxSaveState(state);
+  flash('Tournament created! Invite code: ' + code, 'success');
+  sbxMarkStepDone(1);
+}
+
+function sbxResetTournament() {
+  var state = sbxLoadState();
+  state.professor.tournamentCreated = false;
+  state.professor.tournamentName = '';
+  state.professor.tournamentCode = '';
+  state.professor.stepsDone = [];
+  state.professor.currentStep = 1;
+  sbxSaveState(state);
+  sbxRenderPage();
+}
+
+// ── Professor Step 2: Share invite code ──
+function sbxSceneProfShare(state) {
+  var ps = state.professor;
+  if (!ps.tournamentCreated) {
+    return '<div class="sbx-scene"><h2 class="sbx-scene__title">No tournament yet</h2><p>Go back and create one first.</p><button class="sbx-btn-primary" onclick="sbxGoToStep(1)">← Back to Step 1</button></div>';
+  }
+  return '' +
+    '<div class="sbx-scene">' +
+      '<h2 class="sbx-scene__title">Step 2 · Share Your Invite Code</h2>' +
+      '<div class="sbx-scene__hint">' +
+        '<span class="sbx-scene__hint-icon">💡</span>' +
+        '<strong>In real life:</strong> the platform generates a unique join code when you create a tournament. You copy it into your Brightspace announcement or syllabus and students enter it on the Tournaments page to join.' +
+      '</div>' +
+      '<div class="sbx-tcard">' +
+        '<div class="sbx-tcard__name">' + sbxEsc(ps.tournamentName) + '</div>' +
+        '<div class="sbx-tcard__meta">' + ps.tournamentRounds + ' rounds · Class tournament</div>' +
+        '<div style="margin-top:0.75rem;font-size:0.8125rem;color:var(--text-500);">Invite code (shareable):</div>' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:1.625rem;font-weight:700;color:var(--blue);letter-spacing:0.06em;margin-top:0.25rem;">' + sbxEsc(ps.tournamentCode) + '</div>' +
+        '<div style="margin-top:1rem;padding:0.75rem;background:var(--bg-subtle);border-radius:6px;font-size:0.8125rem;color:var(--text-700);line-height:1.5;">' +
+          '<strong>Suggested Brightspace post:</strong><br>' +
+          '"Class, our MacroNations tournament is ready. Form a team of up to 5 and join with code <strong>' + sbxEsc(ps.tournamentCode) + '</strong> at macronations.com/tournaments. First round opens Monday."' +
+        '</div>' +
+      '</div>' +
+      '<div class="sbx-callout">' +
+        '<strong>What students see:</strong> when they enter your code, they are dropped into your tournament with their team. They cannot accidentally join the wrong section.' +
+      '</div>' +
+      '<button class="sbx-btn-secondary" onclick="sbxGoToStep(1)">← Back</button> ' +
+      '<button class="sbx-btn-primary" onclick="sbxMarkStepDone(2)">Got it — Next: monitor progress →</button>' +
+    '</div>';
+}
+
+// ── Professor Step 3: Monitor ──
+function sbxSceneProfMonitor(state) {
+  var ps = state.professor;
+  if (!ps.tournamentCreated) {
+    return '<div class="sbx-scene"><h2 class="sbx-scene__title">No tournament yet</h2><button class="sbx-btn-primary" onclick="sbxGoToStep(1)">Start at Step 1</button></div>';
+  }
+  // Generate a demo leaderboard
+  var teams = [
+    { name: 'Team Phoenix', country: 'Brazil', pts: 847 },
+    { name: 'Northwind Economic Council', country: 'Norway', pts: 822 },
+    { name: 'Singh, Patel, Garcia', country: 'India', pts: 791 },
+    { name: 'The Visible Hand', country: 'Japan', pts: 768 },
+    { name: 'Marginal Returns', country: 'Germany', pts: 743 },
+    { name: 'Team Atlas', country: 'Canada', pts: 712 },
+    { name: 'Bull or Bear', country: 'United States', pts: 685 }
+  ];
+  var rows = '';
+  for (var i = 0; i < teams.length; i++) {
+    var t = teams[i];
+    var rankCls = 'sbx-leaderboard__rank';
+    if (i === 0) { rankCls += ' sbx-leaderboard__rank--gold'; }
+    else if (i === 1) { rankCls += ' sbx-leaderboard__rank--silver'; }
+    else if (i === 2) { rankCls += ' sbx-leaderboard__rank--bronze'; }
+    rows +=
+      '<div class="sbx-leaderboard__row">' +
+        '<span class="' + rankCls + '">#' + (i + 1) + '</span>' +
+        '<span><span class="sbx-leaderboard__team">' + sbxEsc(t.name) + '</span><span class="sbx-leaderboard__country">' + sbxEsc(t.country) + '</span></span>' +
+        '<span class="sbx-leaderboard__pts">Round 3</span>' +
+        '<span class="sbx-leaderboard__pts">' + t.pts + '</span>' +
+      '</div>';
+  }
+  return '' +
+    '<div class="sbx-scene">' +
+      '<h2 class="sbx-scene__title">Step 3 · Monitor &amp; Wrap Up</h2>' +
+      '<div class="sbx-scene__hint">' +
+        '<span class="sbx-scene__hint-icon">💡</span>' +
+        '<strong>The professor dashboard</strong> shows your tournament\'s live standings, team rosters, round-by-round progress, and grade-ready exports. Here is a simulated mid-season snapshot:' +
+      '</div>' +
+      '<div style="margin-bottom:1rem;font-weight:600;color:var(--text-700);">' + sbxEsc(ps.tournamentName) + ' · Live Leaderboard (Round 3 of ' + ps.tournamentRounds + ')</div>' +
+      '<div class="sbx-leaderboard">' +
+        '<div class="sbx-leaderboard__row sbx-leaderboard__row--header">' +
+          '<span>Rank</span><span>Team</span><span>Status</span><span style="text-align:right;">Points</span>' +
+        '</div>' +
+        rows +
+      '</div>' +
+      '<div class="sbx-callout" style="margin-top:1.25rem;">' +
+        '<strong>At the end of the season</strong>, you can elect to advance your top team(s) into the MacroNations Global Championship for an additional fee — or just certify your class winners and call it done. Both options take a single click in your dashboard.' +
+      '</div>' +
+      '<button class="sbx-btn-secondary" onclick="sbxGoToStep(2)">← Back</button> ' +
+      '<button class="sbx-btn-primary" onclick="sbxFinishProf()">Got it — try the student side →</button>' +
+    '</div>';
+}
+
+function sbxFinishProf() {
+  sbxMarkStepDone(3);
+  sbxSetRole('student');
+  sbxRenderPage();
+}
+
+// ── Student Step 1: Join with a code ──
+function sbxSceneStudJoin(state) {
+  var ss = state.student;
+  var demoCode = state.professor.tournamentCode || 'MN-DEMO1';
+  var joined = ss.joinedTournament;
+  var html =
+    '<div class="sbx-scene">' +
+      '<h2 class="sbx-scene__title">Step 1 · Join with a Code</h2>' +
+      '<div class="sbx-scene__hint">' +
+        '<span class="sbx-scene__hint-icon">💡</span>' +
+        '<strong>How students get in:</strong> on the real platform they would sign up (any valid email — .edu is only required for professor accounts), go to Tournaments, click "Join with code", and enter the code their professor posted.' +
+      '</div>';
+  if (!joined) {
+    html +=
+      '<div class="sbx-callout">' +
+        '<strong>Try it:</strong> the demo code is <code style="font-family:\'DM Mono\',monospace;background:var(--bg-white);padding:0.125rem 0.375rem;border-radius:4px;border:1px solid var(--border);">' + sbxEsc(demoCode) + '</code> — or just leave it pre-filled below.' +
+      '</div>' +
+      '<div class="sbx-form-group">' +
+        '<label for="sbx-join-code">Invite code</label>' +
+        '<input type="text" id="sbx-join-code" value="' + sbxEsc(demoCode) + '">' +
+      '</div>' +
+      '<div class="sbx-form-group">' +
+        '<label for="sbx-team-name">Team name</label>' +
+        '<input type="text" id="sbx-team-name" placeholder="e.g., The Optimal Allocators" value="The Optimal Allocators">' +
+      '</div>' +
+      '<button class="sbx-btn-primary" onclick="sbxJoinTournament()">Join Tournament</button>';
+  } else {
+    html +=
+      '<div class="sbx-tcard">' +
+        '<div class="sbx-tcard__name">' + sbxEsc(ss.teamName) + '</div>' +
+        '<div class="sbx-tcard__meta">' +
+          '<span class="sbx-tcard__pill sbx-tcard__pill--active">Joined</span>' +
+          'Tournament: ' + sbxEsc(state.professor.tournamentName || 'Demo Tournament') +
+        '</div>' +
+        '<div style="font-size:0.875rem;color:var(--text-700);">You are in. Now play a round.</div>' +
+      '</div>' +
+      '<button class="sbx-btn-secondary" onclick="sbxResetTeam()">Pick a new team name</button> ' +
+      '<button class="sbx-btn-primary" onclick="sbxGoToStep(2)">Next: Play a round →</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function sbxJoinTournament() {
+  var code = (document.getElementById('sbx-join-code').value || '').trim();
+  var name = (document.getElementById('sbx-team-name').value || '').trim();
+  if (!code) { alert('Please enter an invite code.'); return; }
+  if (!name) { alert('Please enter a team name.'); return; }
+  var state = sbxLoadState();
+  state.student.joinedTournament = true;
+  state.student.teamName = name;
+  sbxSaveState(state);
+  flash('Joined the tournament as "' + name + '"!', 'success');
+  sbxMarkStepDone(1);
+}
+
+function sbxResetTeam() {
+  var state = sbxLoadState();
+  state.student.joinedTournament = false;
+  state.student.teamName = '';
+  state.student.stepsDone = [];
+  state.student.currentStep = 1;
+  sbxSaveState(state);
+  sbxRenderPage();
+}
+
+// ── Student Step 2: Play a round (mini simulator) ──
+function sbxSceneStudPlay(state) {
+  if (!state.student.joinedTournament) {
+    return '<div class="sbx-scene"><h2 class="sbx-scene__title">Join a tournament first</h2><button class="sbx-btn-primary" onclick="sbxGoToStep(1)">← Back to Step 1</button></div>';
+  }
+  return '' +
+    '<div class="sbx-scene">' +
+      '<h2 class="sbx-scene__title">Step 2 · Play a Round</h2>' +
+      '<div class="sbx-scene__hint">' +
+        '<span class="sbx-scene__hint-icon">💡</span>' +
+        '<strong>Each round:</strong> you set six policy levers, the engine simulates how your country performs across five pillars (GDP, Stability, Equality, Sustainability, Innovation), and you get scored out of 1,000.' +
+      '</div>' +
+      '<div class="sbx-sim">' +
+        '<div class="sbx-sim__panel">' +
+          '<div class="sbx-sim__panel-title">Your Policy Levers</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>Tax rate</span><span class="sbx-lever__value" id="sbx-v-tax">25%</span></div>' +
+            '<input type="range" id="sbx-l-tax" min="10" max="50" value="25">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>Government spending</span><span class="sbx-lever__value" id="sbx-v-spend">30%</span></div>' +
+            '<input type="range" id="sbx-l-spend" min="15" max="50" value="30">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>Interest rate</span><span class="sbx-lever__value" id="sbx-v-rate">3.0%</span></div>' +
+            '<input type="range" id="sbx-l-rate" min="0" max="10" step="0.5" value="3">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>R&D investment</span><span class="sbx-lever__value" id="sbx-v-rd">3%</span></div>' +
+            '<input type="range" id="sbx-l-rd" min="0" max="10" step="0.5" value="3">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>Education spending</span><span class="sbx-lever__value" id="sbx-v-edu">5%</span></div>' +
+            '<input type="range" id="sbx-l-edu" min="0" max="15" step="0.5" value="5">' +
+          '</div>' +
+          '<div class="sbx-lever">' +
+            '<div class="sbx-lever__label"><span>Green energy</span><span class="sbx-lever__value" id="sbx-v-green">2%</span></div>' +
+            '<input type="range" id="sbx-l-green" min="0" max="10" step="0.5" value="2">' +
+          '</div>' +
+        '</div>' +
+        '<div class="sbx-sim__panel">' +
+          '<div class="sbx-sim__panel-title">Your Pillar Scores</div>' +
+          '<div class="sbx-pillars">' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">GDP</div><div class="sbx-pillar__score" id="sbx-p-gdp">120</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-gdp" style="width:60%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Stability</div><div class="sbx-pillar__score" id="sbx-p-sta">130</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-sta" style="width:65%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Equality</div><div class="sbx-pillar__score" id="sbx-p-eq">110</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-eq" style="width:55%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Sustainability</div><div class="sbx-pillar__score" id="sbx-p-sus">100</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-sus" style="width:50%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Innovation</div><div class="sbx-pillar__score" id="sbx-p-inn">115</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-inn" style="width:58%;"></div></div></div>' +
+            '<div class="sbx-pillar"><div class="sbx-pillar__name">Bonus</div><div class="sbx-pillar__score" id="sbx-p-bon">25</div><div class="sbx-pillar__bar"><div class="sbx-pillar__bar-fill" id="sbx-pb-bon" style="width:50%;"></div></div></div>' +
+          '</div>' +
+          '<div class="sbx-total"><div class="sbx-total__label">Total Round Score</div><div class="sbx-total__value" id="sbx-p-total">600</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sbx-callout">' +
+        '<strong>Move the sliders</strong> and watch the pillar scores update in real time. There is no single "right" answer — high taxes hurt GDP but help Equality; high R&amp;D helps Innovation but takes money away from other priorities. The challenge is finding a balance for your country profile.' +
+      '</div>' +
+      '<button class="sbx-btn-secondary" onclick="sbxGoToStep(1)">← Back</button> ' +
+      '<button class="sbx-btn-primary" onclick="sbxSubmitRound()">Submit Round →</button>' +
+    '</div>';
+}
+
+function sbxWireSim() {
+  var ids = ['tax','spend','rate','rd','edu','green'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById('sbx-l-' + ids[i]);
+    if (el) { el.addEventListener('input', sbxComputeSim); }
+  }
+  sbxComputeSim();
+}
+
+function sbxComputeSim() {
+  var tax    = parseFloat(document.getElementById('sbx-l-tax').value);
+  var spend  = parseFloat(document.getElementById('sbx-l-spend').value);
+  var rate   = parseFloat(document.getElementById('sbx-l-rate').value);
+  var rd     = parseFloat(document.getElementById('sbx-l-rd').value);
+  var edu    = parseFloat(document.getElementById('sbx-l-edu').value);
+  var green  = parseFloat(document.getElementById('sbx-l-green').value);
+
+  // Update value labels
+  document.getElementById('sbx-v-tax').textContent   = tax + '%';
+  document.getElementById('sbx-v-spend').textContent = spend + '%';
+  document.getElementById('sbx-v-rate').textContent  = rate.toFixed(1) + '%';
+  document.getElementById('sbx-v-rd').textContent    = rd + '%';
+  document.getElementById('sbx-v-edu').textContent   = edu + '%';
+  document.getElementById('sbx-v-green').textContent = green + '%';
+
+  // Simple but plausible scoring (max 200 per pillar)
+  // GDP: encouraged by low taxes, moderate spending, low rates, R&D, education
+  var gdp = 100 - (tax - 25) * 1.5 + (spend - 25) * 0.6 - (rate - 3) * 6 + rd * 6 + edu * 4;
+  // Stability: hurt by extreme rates, very low taxes (deficit), very high spending
+  var sta = 140 - Math.abs(rate - 3) * 8 - Math.abs(tax - 28) * 1.2 - Math.abs(spend - 30) * 1.0;
+  // Equality: helped by high taxes, education spending, gov spending
+  var eq  = 80 + (tax - 20) * 1.8 + edu * 5 + spend * 0.6;
+  // Sustainability: green energy, education, lower deficit
+  var sus = 60 + green * 10 + edu * 2 + (tax - spend) * 0.8;
+  // Innovation: R&D, education, low rates
+  var inn = 70 + rd * 9 + edu * 3.5 - rate * 4;
+  // Bonus: balance — penalize extremes
+  var bon = 50 - Math.max(0, (spend - tax) - 8) * 1.5;
+
+  // Clip each to [0, 200]
+  var pillars = { gdp:gdp, sta:sta, eq:eq, sus:sus, inn:inn, bon:bon };
+  var total = 0;
+  for (var k in pillars) {
+    var v = Math.max(0, Math.min(200, Math.round(pillars[k])));
+    pillars[k] = v;
+    total += v;
+  }
+
+  document.getElementById('sbx-p-gdp').textContent = pillars.gdp;
+  document.getElementById('sbx-p-sta').textContent = pillars.sta;
+  document.getElementById('sbx-p-eq').textContent  = pillars.eq;
+  document.getElementById('sbx-p-sus').textContent = pillars.sus;
+  document.getElementById('sbx-p-inn').textContent = pillars.inn;
+  document.getElementById('sbx-p-bon').textContent = pillars.bon;
+  document.getElementById('sbx-pb-gdp').style.width = (pillars.gdp / 2) + '%';
+  document.getElementById('sbx-pb-sta').style.width = (pillars.sta / 2) + '%';
+  document.getElementById('sbx-pb-eq').style.width  = (pillars.eq  / 2) + '%';
+  document.getElementById('sbx-pb-sus').style.width = (pillars.sus / 2) + '%';
+  document.getElementById('sbx-pb-inn').style.width = (pillars.inn / 2) + '%';
+  document.getElementById('sbx-pb-bon').style.width = (pillars.bon / 2) + '%';
+  document.getElementById('sbx-p-total').textContent = total;
+}
+
+function sbxSubmitRound() {
+  // Capture current total
+  var totalEl = document.getElementById('sbx-p-total');
+  var total = totalEl ? parseInt(totalEl.textContent, 10) || 0 : 0;
+  var state = sbxLoadState();
+  state.student.roundsPlayed = (state.student.roundsPlayed || 0) + 1;
+  if (total > (state.student.bestScore || 0)) {
+    state.student.bestScore = total;
+  }
+  sbxSaveState(state);
+  flash('Round submitted! You scored ' + total + ' points.', 'success');
+  sbxMarkStepDone(2);
+}
+
+// ── Student Step 3: Leaderboard ──
+function sbxSceneStudLeaderboard(state) {
+  if (!state.student.joinedTournament) {
+    return '<div class="sbx-scene"><h2 class="sbx-scene__title">Join a tournament first</h2><button class="sbx-btn-primary" onclick="sbxGoToStep(1)">← Back to Step 1</button></div>';
+  }
+  var yourScore = state.student.bestScore || 600;
+  var teamName = state.student.teamName || 'Your Team';
+  // Build a demo leaderboard with the student's team placed by their score
+  var teams = [
+    { name: 'Team Phoenix', country: 'Brazil', pts: 847 },
+    { name: 'Northwind Economic Council', country: 'Norway', pts: 822 },
+    { name: 'Singh, Patel, Garcia', country: 'India', pts: 791 },
+    { name: 'The Visible Hand', country: 'Japan', pts: 768 },
+    { name: 'Marginal Returns', country: 'Germany', pts: 743 },
+    { name: 'Team Atlas', country: 'Canada', pts: 712 },
+    { name: 'Bull or Bear', country: 'United States', pts: 685 },
+    { name: teamName, country: 'You', pts: yourScore, isYou: true },
+    { name: 'Pareto Frontier', country: 'South Korea', pts: 590 },
+    { name: 'Solow Residual', country: 'Mexico', pts: 542 }
+  ];
+  teams.sort(function(a, b) { return b.pts - a.pts; });
+  var rows = '';
+  var yourRank = 0;
+  for (var i = 0; i < teams.length; i++) {
+    var t = teams[i];
+    if (t.isYou) { yourRank = i + 1; }
+    var rankCls = 'sbx-leaderboard__rank';
+    if (i === 0) { rankCls += ' sbx-leaderboard__rank--gold'; }
+    else if (i === 1) { rankCls += ' sbx-leaderboard__rank--silver'; }
+    else if (i === 2) { rankCls += ' sbx-leaderboard__rank--bronze'; }
+    rows +=
+      '<div class="sbx-leaderboard__row' + (t.isYou ? ' sbx-leaderboard__row--you' : '') + '">' +
+        '<span class="' + rankCls + '">#' + (i + 1) + '</span>' +
+        '<span><span class="sbx-leaderboard__team">' + sbxEsc(t.name) + (t.isYou ? ' (you)' : '') + '</span><span class="sbx-leaderboard__country">' + sbxEsc(t.country) + '</span></span>' +
+        '<span></span>' +
+        '<span class="sbx-leaderboard__pts">' + t.pts + '</span>' +
+      '</div>';
+  }
+  return '' +
+    '<div class="sbx-scene">' +
+      '<h2 class="sbx-scene__title">Step 3 · See Where You Rank</h2>' +
+      '<div class="sbx-scene__hint">' +
+        '<span class="sbx-scene__hint-icon">💡</span>' +
+        '<strong>After each round</strong> the leaderboard updates live. Students can see their team\'s ranking, the gap to the leader, and which pillars they need to improve. Click any team in the real platform to see their public scorecard.' +
+      '</div>' +
+      '<div style="margin-bottom:1rem;font-weight:600;color:var(--text-700);">Class Leaderboard · Your score: <strong style="color:var(--blue);">' + yourScore + '</strong> · Rank: <strong style="color:var(--gold);">#' + yourRank + ' of ' + teams.length + '</strong></div>' +
+      '<div class="sbx-leaderboard">' +
+        '<div class="sbx-leaderboard__row sbx-leaderboard__row--header">' +
+          '<span>Rank</span><span>Team</span><span></span><span style="text-align:right;">Points</span>' +
+        '</div>' +
+        rows +
+      '</div>' +
+      '<div class="sbx-callout" style="margin-top:1.25rem;">' +
+        '<strong>That\'s the whole loop:</strong> create → join → play → rank → repeat. Each round adds to your cumulative score across the season. Top finishers earn certificates and can advance to the Global Championship.' +
+      '</div>' +
+      '<button class="sbx-btn-secondary" onclick="sbxGoToStep(2)">← Play another round</button> ' +
+      '<button class="sbx-btn-gold" onclick="sbxMarkStepDone(3);openAuthModal(\'register\');">Done exploring — sign up for real →</button>' +
+    '</div>';
+}
+
+// Helper: HTML-escape strings
+function sbxEsc(s) {
+  if (s === null || s === undefined) { return ''; }
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Register the page loader so showPage('sandbox') renders content
+if (typeof PAGE_LOADERS === 'object' && PAGE_LOADERS !== null) {
+  PAGE_LOADERS.sandbox = function() { sbxRenderPage(); };
+}
+
+// On initial page load, if sandbox was active, restore it
+(function sbxBootstrap() {
+  function init() {
+    if (sbxIsActive()) {
+      document.body.classList.add('sandbox-mode');
+      sbxRenderBanner();
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 
 </script>
 
