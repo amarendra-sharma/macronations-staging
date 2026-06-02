@@ -2991,6 +2991,57 @@ h1, h2, h3, h4, h5 {
   line-height: 1.6;
 }
 
+/* ── Open Season free-mode banner ───────────────────────────────── */
+.lp-free-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin: 1.25rem 0 0.5rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255,215,0,0.10);
+  border: 1px solid rgba(255,215,0,0.45);
+  border-radius: var(--radius-lg);
+  max-width: 540px;
+}
+.lp-free-banner__icon { font-size: 1.5rem; line-height: 1.2; flex-shrink: 0; }
+.lp-free-banner__title { font-weight: 700; color: #fff; font-size: 0.9375rem; margin-bottom: 0.15rem; }
+.lp-free-banner__sub { font-size: 0.8125rem; color: rgba(255,255,255,0.7); line-height: 1.5; }
+
+/* ── Discipline / course catalog ────────────────────────────────── */
+.lp-disc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.lp-disc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.lp-disc-card--live { border-color: var(--blue); }
+.lp-disc-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md, 0 8px 24px rgba(13,31,60,0.10)); }
+.lp-disc-card__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.875rem; }
+.lp-disc-card__icon { font-size: 1.75rem; line-height: 1; }
+.lp-disc-card__status {
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 0.2rem 0.6rem; border-radius: 100px;
+}
+.lp-disc-card__status--live { background: #e6f5ed; color: #10884a; }
+.lp-disc-card__status--soon { background: var(--bg-subtle); color: var(--text-500); }
+.lp-disc-card__title { font-family: 'DM Serif Display', serif; font-size: 1.1875rem; color: var(--text-900); margin-bottom: 0.4rem; }
+.lp-disc-card__desc { font-size: 0.875rem; color: var(--text-500); line-height: 1.6; flex: 1; margin-bottom: 1rem; }
+.lp-disc-card__cta {
+  align-self: flex-start; background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600; color: var(--blue); padding: 0;
+}
+.lp-disc-card__cta--muted { color: var(--text-400); cursor: default; font-weight: 500; }
+.lp-disc-foot { text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-500); }
+.lp-disc-foot a { color: var(--blue); font-weight: 600; }
+
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .lp-tiers-grid { grid-template-columns: 1fr; }
@@ -3681,6 +3732,356 @@ body.sandbox-mode {
 .sbx-callout strong { color: var(--text-900); }
 
 
+
+/* ════════════════════════════════════════
+   RESEARCH MODULE (Phase 1)
+   All classes prefixed res- for module isolation.
+═══════════════════════════════════════════ */
+.res-hero {
+  background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 60%, var(--navy-700) 100%);
+  color: #fff;
+  padding: 4rem 1.5rem 5rem;
+  position: relative;
+  overflow: hidden;
+}
+.res-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 30%, rgba(201, 146, 10, 0.18), transparent 50%);
+  pointer-events: none;
+}
+.res-hero__inner { max-width: 920px; margin: 0 auto; position: relative; z-index: 1; }
+.res-hero__kicker {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  background: rgba(201, 146, 10, 0.18);
+  border: 1px solid rgba(201, 146, 10, 0.4);
+  color: #f5c46a;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 999px;
+  margin-bottom: 1.25rem;
+}
+.res-hero__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.15;
+  font-weight: 400;
+  margin: 0 0 1rem;
+  letter-spacing: -0.01em;
+}
+.res-hero__title em { font-style: italic; color: #f5c46a; }
+.res-hero__lede {
+  font-size: 1.1rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.84);
+  max-width: 720px;
+  margin: 0 0 1.75rem;
+}
+.res-hero__ctas { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.res-section { padding: 3rem 1.5rem; }
+.res-section--alt { background: #f9f6ef; }
+.res-section__inner { max-width: 1080px; margin: 0 auto; }
+.res-section__title {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  color: var(--navy-900);
+  margin: 0 0 1rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.res-section__lede {
+  color: var(--text-600);
+  font-size: 1.02rem;
+  line-height: 1.7;
+  margin: 0 0 2rem;
+  max-width: 820px;
+}
+
+.res-pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.res-pillar {
+  background: #fff;
+  border: 1px solid #e8e2d2;
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 1.25rem 1.4rem;
+}
+.res-pillar__num {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+.res-pillar__title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--navy-900);
+  margin: 0 0 0.5rem;
+  font-weight: 500;
+}
+.res-pillar__body { color: var(--text-700); font-size: 0.94rem; line-height: 1.6; }
+
+.res-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 760px) { .res-grid-two { grid-template-columns: 1fr; } }
+
+.res-list { padding-left: 0; list-style: none; margin: 0; }
+.res-list li {
+  padding: 0.8rem 0 0.8rem 2.3rem;
+  position: relative;
+  border-bottom: 1px solid #ece6d6;
+  font-size: 0.96rem;
+  color: var(--text-700);
+  line-height: 1.55;
+}
+.res-list li:last-child { border-bottom: none; }
+.res-list li::before {
+  content: '';
+  position: absolute;
+  left: 0.4rem;
+  top: 1.1rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.res-list--check li::before { content: '✓'; padding-top: 2px; line-height: 1; font-size: 0.7rem; }
+
+/* Researcher dashboard */
+.res-dash {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+.res-dash__header {
+  background: #fff;
+  border: 1px solid #e8e2d2;
+  border-radius: 10px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.res-dash__title {
+  font-family: var(--font-serif);
+  font-size: 1.65rem;
+  color: var(--navy-900);
+  margin: 0 0 0.35rem;
+  font-weight: 400;
+}
+.res-dash__subtitle { color: var(--text-600); font-size: 0.96rem; }
+.res-status-pill {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.res-status-pill--pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.res-status-pill--verified { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.res-status-pill--rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.res-status-pill--info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+.res-step {
+  background: #fff;
+  border: 1px solid #e8e2d2;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.res-step--complete { border-left: 4px solid #10b981; }
+.res-step--current { border-left: 4px solid var(--gold); box-shadow: 0 2px 12px rgba(201, 146, 10, 0.08); }
+.res-step--locked { opacity: 0.55; }
+.res-step__head {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+.res-step__num {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--cream-100);
+  color: var(--navy-800);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.res-step--complete .res-step__num { background: #10b981; color: #fff; }
+.res-step--current .res-step__num { background: var(--gold); color: #fff; }
+.res-step__head-text { flex: 1; }
+.res-step__title { font-weight: 600; color: var(--navy-900); font-size: 1rem; margin: 0; }
+.res-step__hint { font-size: 0.83rem; color: var(--text-500); margin-top: 0.15rem; }
+.res-step__chev {
+  color: var(--text-400);
+  transition: transform 0.2s;
+  font-size: 1.2rem;
+}
+.res-step--open .res-step__chev { transform: rotate(180deg); }
+.res-step__body {
+  padding: 0 1.25rem 1.25rem 4.45rem;
+  font-size: 0.94rem;
+  color: var(--text-700);
+  line-height: 1.65;
+  border-top: 1px solid #f0eadd;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  display: none;
+}
+.res-step--open .res-step__body { display: block; }
+.res-step__body p { margin: 0 0 0.85rem; }
+.res-step__body .btn { margin-top: 0.5rem; }
+
+.res-doc-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.85rem; }
+.res-doc-card {
+  background: #fff;
+  border: 1px solid #e8e2d2;
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.res-doc-card__title { font-weight: 600; color: var(--navy-900); font-size: 0.98rem; }
+.res-doc-card__desc { color: var(--text-600); font-size: 0.85rem; line-height: 1.5; flex: 1; }
+.res-doc-card__meta { font-family: var(--font-mono, monospace); font-size: 0.72rem; color: var(--text-500); text-transform: uppercase; letter-spacing: 0.08em; }
+.res-doc-card__actions { margin-top: 0.5rem; }
+
+/* Admin verification queue */
+.res-queue-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 0.92rem;
+}
+.res-queue-table th {
+  background: var(--cream-100);
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--navy-900);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid #e8e2d2;
+}
+.res-queue-table td {
+  padding: 0.8rem 0.85rem;
+  border-bottom: 1px solid #f0eadd;
+  vertical-align: top;
+}
+.res-queue-table tr:hover td { background: #fbf8f0; }
+.res-queue-actions { display: flex; gap: 0.4rem; }
+
+.res-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-500);
+  font-size: 0.95rem;
+  background: #fff;
+  border: 1px dashed #d8d2c2;
+  border-radius: 10px;
+}
+
+.res-motivation-wrap { display: none; }
+.res-motivation-wrap.on { display: block; }
+
+/* Hide research nav tabs when module disabled */
+.nav__tab--research, .mobile-menu__link--research { display: none; }
+.res-on .nav__tab--research, .res-on .mobile-menu__link--research { display: inline-flex; }
+.mobile-menu__link--research { display: none; }
+.res-on .mobile-menu__link--research { display: flex; }
+
+
+/* ===== RESEARCH MODULE PHASE 2 ===== */
+.res2-panel { background:#fff; border:1px solid #e8e2d2; border-left:4px solid var(--gold); border-radius:10px; padding:1.25rem 1.4rem; margin:1rem 0; }
+.res2-panel__title { font-family:var(--font-serif); font-size:1.2rem; color:var(--navy-900); margin:0 0 0.5rem; }
+.res2-panel__body { color:var(--text-700); font-size:0.94rem; line-height:1.6; }
+.res2-task-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.7rem 0; border-bottom:1px solid #f0eadd; }
+.res2-task-row:last-child { border-bottom:none; }
+.res2-task-row__label { font-size:0.93rem; color:var(--text-800); }
+.res2-task-row__status { font-size:0.78rem; font-weight:600; padding:0.2rem 0.6rem; border-radius:999px; }
+.res2-s-done { background:#d1fae5; color:#065f46; }
+.res2-s-open { background:#dbeafe; color:#1e40af; }
+.res2-s-locked { background:#f3f4f6; color:#6b7280; }
+.res2-s-wait { background:#fef3c7; color:#92400e; }
+
+/* Assessment runner */
+.res2-test-overlay { position:fixed; inset:0; background:rgba(10,20,40,0.97); z-index:9999; overflow-y:auto; padding:0; }
+.res2-test-wrap { max-width:760px; margin:0 auto; padding:1.5rem 1.25rem 4rem; color:#1a1a1a; }
+.res2-test-bar { position:sticky; top:0; background:var(--navy-900); color:#fff; padding:0.85rem 1.25rem; display:flex; justify-content:space-between; align-items:center; border-radius:0 0 10px 10px; margin-bottom:1.5rem; z-index:2; box-shadow:0 2px 12px rgba(0,0,0,0.25); }
+.res2-timer { font-family:var(--font-mono,monospace); font-size:1.15rem; font-weight:700; }
+.res2-timer--warn { color:#fca5a5; }
+.res2-progress { font-size:0.85rem; opacity:0.85; }
+.res2-q { background:#fff; border:1px solid #e2ddcf; border-radius:10px; padding:1.25rem 1.4rem; margin-bottom:1rem; }
+.res2-q__num { font-family:var(--font-mono,monospace); font-size:0.72rem; color:var(--gold); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.4rem; }
+.res2-q__stem { font-size:1rem; color:#1a1a1a; line-height:1.55; margin-bottom:0.9rem; font-weight:500; }
+.res2-opt { display:block; padding:0.7rem 0.9rem; border:1.5px solid #e2ddcf; border-radius:8px; margin-bottom:0.5rem; cursor:pointer; font-size:0.94rem; line-height:1.45; transition:all 0.12s; }
+.res2-opt:hover { border-color:var(--gold); background:#fdfaf2; }
+.res2-opt--sel { border-color:var(--navy-700); background:#eef2fb; font-weight:500; }
+.res2-opt__letter { display:inline-block; font-weight:700; color:var(--navy-800); margin-right:0.5rem; }
+.res2-test-foot { display:flex; justify-content:space-between; gap:1rem; margin-top:1.5rem; }
+
+/* Case study track */
+.res2-case { background:#fff; border:1px solid #e8e2d2; border-radius:10px; padding:1.4rem 1.6rem; margin-bottom:1rem; }
+.res2-case__num { font-family:var(--font-mono,monospace); font-size:0.72rem; color:var(--gold); letter-spacing:0.1em; text-transform:uppercase; }
+.res2-case__title { font-family:var(--font-serif); font-size:1.3rem; color:var(--navy-900); margin:0.3rem 0 0.75rem; }
+.res2-case__scenario { font-size:0.93rem; color:var(--text-700); line-height:1.65; margin-bottom:0.9rem; }
+.res2-case__prompt { font-size:0.93rem; color:#1a1a1a; line-height:1.6; background:#faf8f2; border-radius:8px; padding:0.9rem 1.1rem; margin-bottom:0.9rem; }
+.res2-wordcount { font-size:0.8rem; color:var(--text-500); text-align:right; margin-top:0.3rem; }
+.res2-wordcount--ok { color:#065f46; }
+.res2-textarea { width:100%; min-height:180px; border:1.5px solid #e2ddcf; border-radius:8px; padding:0.85rem; font-family:inherit; font-size:0.94rem; line-height:1.6; resize:vertical; box-sizing:border-box; }
+.res2-textarea:focus { outline:none; border-color:var(--gold); }
+
+/* Likert */
+.res2-likert-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.65rem 0; border-bottom:1px solid #f0eadd; }
+.res2-likert-q { font-size:0.92rem; color:var(--text-800); flex:1; }
+.res2-likert-opts { display:flex; gap:0.3rem; }
+.res2-likert-opt { width:2.1rem; height:2.1rem; border:1.5px solid #e2ddcf; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.85rem; font-weight:600; color:var(--text-600); transition:all 0.12s; }
+.res2-likert-opt--sel { background:var(--navy-800); border-color:var(--navy-800); color:#fff; }
+
+/* Instructor section mgmt */
+.res2-sec-card { background:#fff; border:1px solid #e8e2d2; border-radius:10px; padding:1.25rem 1.4rem; margin-bottom:1rem; }
+.res2-sec-code { font-family:var(--font-mono,monospace); font-size:1.3rem; font-weight:700; color:var(--navy-900); letter-spacing:0.1em; background:#f4f0e6; padding:0.4rem 0.9rem; border-radius:8px; display:inline-block; }
+.res2-gate-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0.6rem; margin-top:0.85rem; }
+.res2-gate { border:1px solid #e8e2d2; border-radius:8px; padding:0.7rem 0.85rem; font-size:0.85rem; }
+.res2-gate__name { font-weight:600; color:var(--navy-900); margin-bottom:0.35rem; }
+.res2-stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:0.75rem; margin:0.85rem 0; }
+.res2-stat { background:#faf8f2; border-radius:8px; padding:0.75rem; text-align:center; }
+.res2-stat__num { font-size:1.6rem; font-weight:700; color:var(--navy-900); font-family:var(--font-mono,monospace); }
+.res2-stat__lbl { font-size:0.72rem; color:var(--text-500); text-transform:uppercase; letter-spacing:0.05em; margin-top:0.2rem; }
 </style>
 </head>
 <body>
@@ -3740,6 +4141,7 @@ body.sandbox-mode {
       <a href="#" class="nav__tab" data-page="about">About</a>
       <span class="nav__divider" aria-hidden="true"></span>
       <a href="#" class="nav__tab nav__tab--how" data-page="how">How it works</a>
+      <a href="#" class="nav__tab nav__tab--research" data-page="research">Research</a>
     </nav>
 
     <!-- Desktop CTA -->
@@ -3825,6 +4227,10 @@ body.sandbox-mode {
       <span class="mobile-menu__link-icon">💡</span>
       How it works
     </a>
+    <a href="#" class="mobile-menu__link mobile-menu__link--research" data-page="research">
+      <span class="mobile-menu__link-icon">🔬</span>
+      Research
+    </a>
 
   </div>
 
@@ -3868,6 +4274,15 @@ body.sandbox-mode {
             </a>
           </div>
 
+          <!-- Open Season (free-mode) banner — shown only when free mode is on -->
+          <div id="lp-free-banner" class="lp-free-banner" style="display:none;">
+            <span class="lp-free-banner__icon" aria-hidden="true">🌍</span>
+            <div class="lp-free-banner__body">
+              <div class="lp-free-banner__title">Open Season — free for everyone</div>
+              <div class="lp-free-banner__sub">Every tournament is free this year. One global season, one playoff, one champion — with the course textbook open to all. The award is seeded by MacroNations.</div>
+            </div>
+          </div>
+
           <!-- Sandbox CTA — frictionless tour -->
           <div class="sbx-home-cta">
             <span class="sbx-home-cta__icon" aria-hidden="true">🧪</span>
@@ -3880,8 +4295,8 @@ body.sandbox-mode {
 
           <div class="hero__stats" role="list">
             <div role="listitem">
-              <span class="hero__stat-value">Free</span>
-              <span class="hero__stat-label">Class Tournaments</span>
+              <span class="hero__stat-value" id="lp-hero-stat-value">Free</span>
+              <span class="hero__stat-label" id="lp-hero-stat-label">Class Tournaments</span>
             </div>
             <div role="listitem">
               <span class="hero__stat-value">1,000</span>
@@ -3994,8 +4409,63 @@ body.sandbox-mode {
       </div>
     </section>
 
+    <!-- Learning platform: course / discipline catalog -->
+    <section class="section" id="lp-disciplines" aria-labelledby="disciplines-heading">
+      <div class="container">
+        <div class="section__header">
+          <span class="section__eyebrow">A Learning Platform</span>
+          <h2 class="section__title" id="disciplines-heading">Learn economics by running it</h2>
+          <p class="section__desc">MacroNations is growing into a home for every area of economics — each discipline pairs a competitive simulation with a full course and textbook. Students play; professors teach and assign. Here’s what’s live and what’s on the way.</p>
+        </div>
+        <div class="lp-disc-grid">
+
+          <article class="lp-disc-card lp-disc-card--live">
+            <div class="lp-disc-card__top">
+              <span class="lp-disc-card__icon" aria-hidden="true">📈</span>
+              <span class="lp-disc-card__status lp-disc-card__status--live">Live</span>
+            </div>
+            <h3 class="lp-disc-card__title">Macroeconomics</h3>
+            <p class="lp-disc-card__desc">Govern a national economy across five pillars — GDP, stability, equality, sustainability, innovation — with a full Principles &amp; Intermediate textbook included.</p>
+            <button class="lp-disc-card__cta" onclick="openAuthModal('register')">Play now →</button>
+          </article>
+
+          <article class="lp-disc-card lp-disc-card--soon">
+            <div class="lp-disc-card__top">
+              <span class="lp-disc-card__icon" aria-hidden="true">♟️</span>
+              <span class="lp-disc-card__status lp-disc-card__status--soon">In development</span>
+            </div>
+            <h3 class="lp-disc-card__title">Game Theory</h3>
+            <p class="lp-disc-card__desc">Strategic-reasoning arenas — Nash equilibria, auctions, bargaining and repeated games — taught through head-to-head play against classmates and AI opponents.</p>
+            <span class="lp-disc-card__cta lp-disc-card__cta--muted">Coming soon</span>
+          </article>
+
+          <article class="lp-disc-card lp-disc-card--soon">
+            <div class="lp-disc-card__top">
+              <span class="lp-disc-card__icon" aria-hidden="true">🛒</span>
+              <span class="lp-disc-card__status lp-disc-card__status--soon">Planned</span>
+            </div>
+            <h3 class="lp-disc-card__title">Microeconomics</h3>
+            <p class="lp-disc-card__desc">Markets, firms and consumers — supply, demand, competition and market structure — explored through interactive simulations and assignments.</p>
+            <span class="lp-disc-card__cta lp-disc-card__cta--muted">On the roadmap</span>
+          </article>
+
+          <article class="lp-disc-card lp-disc-card--future">
+            <div class="lp-disc-card__top">
+              <span class="lp-disc-card__icon" aria-hidden="true">➕</span>
+              <span class="lp-disc-card__status lp-disc-card__status--soon">More to come</span>
+            </div>
+            <h3 class="lp-disc-card__title">And beyond</h3>
+            <p class="lp-disc-card__desc">Econometrics, international trade, development, behavioral economics — new disciplines join the platform as we build them, each with its own course and competition.</p>
+            <span class="lp-disc-card__cta lp-disc-card__cta--muted">In the works</span>
+          </article>
+
+        </div>
+        <p class="lp-disc-foot">Are you a professor who’d like a new area covered? <a href="#" onclick="showPage('about');return false;">Get in touch →</a></p>
+      </div>
+    </section>
+
     <!-- Play your way: Free vs Global tiers -->
-    <section class="section lp-tiers-section" aria-labelledby="tiers-heading">
+    <section class="section lp-tiers-section" id="lp-section-tiered" aria-labelledby="tiers-heading">
       <div class="container">
         <div class="section__header">
           <span class="section__eyebrow">Play Your Way</span>
@@ -4028,7 +4498,7 @@ body.sandbox-mode {
               <li>Year-long season standings</li>
               <li>Participation certificates for all · Winner certificate for champion</li>
               <li>Cash awards — top finalists share the fund</li>
-              <li>📖 <strong>Free textbook access</strong> — <em>Applied Macroeconomics</em>, both Principles &amp; Intermediate levels</li>
+              <li>📖 <strong>Free textbook access</strong> — <em>Applied Macroeconomics</em> by Amarendra Sharma, PhD, both Principles &amp; Intermediate levels</li>
             </ul>
             <button class="btn btn--gold" style="margin-top:1.25rem;width:100%;" onclick="openAuthModal('register')">Join the Championship</button>
           </div>
@@ -4036,8 +4506,49 @@ body.sandbox-mode {
       </div>
     </section>
 
+    <!-- Open Season (free mode) — shown instead of tier pricing when free mode is on -->
+    <section class="section lp-tiers-section" id="lp-section-free" aria-labelledby="free-heading" style="display:none;">
+      <div class="container">
+        <div class="section__header">
+          <span class="section__eyebrow">Open Season</span>
+          <h2 class="section__title" id="free-heading">Free for everyone. One global championship.</h2>
+          <p class="section__desc">No entry fees, no tiers — every team competes on equal footing. Play your tournament, and every team that plays this year is seeded into one annual global championship that runs all the way to the finals.</p>
+        </div>
+        <div class="lp-tiers-grid">
+          <div class="lp-tier lp-tier--gold">
+            <div class="lp-tier__badge lp-tier__badge--free">Free · Everyone</div>
+            <h3 class="lp-tier__name">Play & Compete</h3>
+            <div class="lp-tier__price">$0 <span>per team</span></div>
+            <p class="lp-tier__desc">Join or create a team and run the full macroeconomic simulation. Whether you’re in a class tournament or playing independently, you’re automatically part of the global season.</p>
+            <ul class="lp-tier__features">
+              <li>Full simulation — all 10 policy levers</li>
+              <li>Live leaderboards &amp; crisis rounds</li>
+              <li>Participation certificate for all</li>
+              <li>📖 <strong>Free textbook access</strong> for everyone</li>
+              <li>Every team enters the annual global pool</li>
+            </ul>
+            <button class="btn btn--gold" style="margin-top:1.25rem;width:100%;" onclick="openAuthModal('register')">Register Free</button>
+          </div>
+          <div class="lp-tier">
+            <div class="lp-tier__badge lp-tier__badge--global">Global Championship</div>
+            <h3 class="lp-tier__name">One Season → Finals</h3>
+            <div class="lp-tier__price">Seeded <span>by MacroNations</span></div>
+            <p class="lp-tier__desc">A single annual seeding gathers every team that played this year. The top teams advance through the playoff bracket to a year-end final — and the award is funded by MacroNations, not entry fees.</p>
+            <ul class="lp-tier__features">
+              <li>All teams seeded into one season pool</li>
+              <li>Top 8 advance to the playoff bracket</li>
+              <li>Quarterfinals → Semifinals → Final</li>
+              <li>Award seeded by MacroNations</li>
+              <li>Winner certificate for the champion</li>
+            </ul>
+            <button class="btn btn--primary" style="margin-top:1.25rem;width:100%;" onclick="showPage('rankings')">View Global Rankings</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- World Cup prize pool -->
-    <section class="lp-wc-section" aria-labelledby="wc-heading">
+    <section class="lp-wc-section" id="lp-wc-section" aria-labelledby="wc-heading">
       <div class="container">
         <div class="section__eyebrow" style="color:rgba(255,215,0,0.7);margin-bottom:0.5rem;">Global Championship</div>
         <h2 class="section__title" id="wc-heading" style="color:#fff;margin-bottom:0.625rem;">One award fund. Two teams share it.</h2>
@@ -4076,7 +4587,7 @@ body.sandbox-mode {
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">2</span><span><strong>Submit Round 1</strong> — once fee is confirmed, your 10-day clock starts on first submission</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">3</span><span><strong>Complete 10 rounds</strong> — one every 24 hours, auto-advancing</span></li>
               <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">4</span><span><strong>Qualify for the World Cup</strong> — finish by Nov 30 to enter the playoff bracket</span></li>
-              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">📖</span><span><strong>Free textbook access</strong> — <em>Applied Macroeconomics: From Theory to Policy Simulation</em> at both Principles and Intermediate levels, included with your entry fee</span></li>
+              <li style="display:flex;gap:0.75rem;align-items:flex-start;"><span style="color:#FFD700;font-weight:700;font-size:1.125rem;flex-shrink:0;">📖</span><span><strong>Free textbook access</strong> — <em>Applied Macroeconomics: From Theory to Policy Simulation</em>, by Amarendra Sharma, PhD, at both Principles and Intermediate levels, included with your entry fee</span></li>
             </ul>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
               <button class="btn btn--gold" onclick="ocLandingRegister()">Register for Open Championship</button>
@@ -4111,7 +4622,7 @@ body.sandbox-mode {
                   <div style="font-size:1.25rem;flex-shrink:0;line-height:1.2;">📖</div>
                   <div>
                     <div style="font-size:0.8125rem;color:#FFD700;font-weight:600;margin-bottom:0.25rem;">Course Textbook Included</div>
-                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);line-height:1.5;"><em>Applied Macroeconomics: From Theory to Policy Simulation</em> — both Principles and Intermediate levels, free with your entry fee.</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);line-height:1.5;"><em>Applied Macroeconomics: From Theory to Policy Simulation</em>, by Amarendra Sharma, PhD (Binghamton University) — both Principles and Intermediate levels, free with your entry fee.</div>
                   </div>
                 </div>
               </div>
@@ -4139,7 +4650,7 @@ body.sandbox-mode {
               <div class="step__num" aria-hidden="true">1</div>
               <div>
                 <h3 class="step__title">Register Your Team</h3>
-                <p class="step__desc">Form a team of up to 5 players using any valid email. No affiliation required for the Open Championship. Professors selecting professor access need a .edu address.</p>
+                <p class="step__desc">Form a team of up to 5 players using any valid email. No affiliation required for the Open Championship. Professors selecting professor access need an institutional academic email (.edu, .ac.in, .ac.uk, .edu.au, etc.).</p>
               </div>
             </div>
             <div class="step">
@@ -4335,6 +4846,9 @@ body.sandbox-mode {
 
     <!-- Tab panels -->
     <div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+      <!-- Research participation panel (Phase 2) -->
+      <div id="res2-student-panel"></div>
+
       <!-- Not logged in / no team -->
       <div id="dash-no-team" style="display:none;">
         <div class="empty-state">
@@ -4342,6 +4856,7 @@ body.sandbox-mode {
           <div class="empty-state__title">No active team</div>
           <div class="empty-state__desc">Join or create a team in a tournament to access your dashboard.</div>
           <button class="btn btn--primary btn--lg" onclick="showPage('tournaments')">Browse Tournaments</button>
+          <button class="btn btn--ghost btn--lg" onclick="res2_promptEnroll()" style="margin-top:0.6rem;">Join a Research Section</button>
         </div>
       </div>
 
@@ -4568,9 +5083,9 @@ body.sandbox-mode {
     <div style="background:var(--bg-white);border-bottom:1px solid var(--border);">
       <div class="container" style="padding-top:0;padding-bottom:0;">
         <div class="admin-tabs" role="tablist" style="border-bottom:none;margin-bottom:0;overflow-x:auto;">
-          <button class="admin-tab active" data-about-tab="how"        onclick="showAbout('how')">How It Works</button>
+          <button class="admin-tab active" data-about-tab="founder"    onclick="showAbout('founder')">Founder</button>
+          <button class="admin-tab"        data-about-tab="how"        onclick="showAbout('how')">How It Works</button>
           <button class="admin-tab"        data-about-tab="curriculum" onclick="showAbout('curriculum')">Curriculum Guide</button>
-          <button class="admin-tab"        data-about-tab="founder"    onclick="showAbout('founder')">Founder</button>
           <button class="admin-tab"        data-about-tab="legal"      onclick="showAbout('legal')">Legal</button>
         </div>
       </div>
@@ -4621,7 +5136,15 @@ body.sandbox-mode {
           <div style="font-size:0.9375rem;">Loading textbook…</div>
         </div>
         <div id="tb-content" style="display:none;height:100%;overflow-y:auto;"></div>
-      </main>
+      
+  <!-- ── PAGE: RESEARCH ── -->
+  <div class="page page-research" id="page-research">
+    <div id="research-content">
+      <!-- Populated dynamically by res_renderLanding / res_renderDashboard -->
+    </div>
+  </div>
+
+</main>
     </div>
   </div>
 
@@ -4701,7 +5224,7 @@ body.sandbox-mode {
         <div class="form-field">
           <label class="form-label form-label--required" for="reg-email">Email Address</label>
           <input type="email" id="reg-email" class="form-input" placeholder="you@email.com" autocomplete="email">
-          <div class="form-hint">Use any valid email. Professors selecting the professor role need a .edu address to access professor features.</div>
+          <div class="form-hint">Use any valid email. Professors selecting the professor role need an institutional academic email (e.g. .edu, .ac.in, .ac.uk, .edu.au) to access professor features.</div>
         </div>
         <div class="form-field">
           <label class="form-label form-label--required" for="reg-institution">Institution</label>
@@ -4728,6 +5251,20 @@ body.sandbox-mode {
                   <span class="radio-card__icon">🏛️</span>
                   <span class="radio-card__title">Professor</span>
                 </label>
+              </div>
+              <div class="radio-card">
+                <input type="radio" name="role" id="role-researcher" value="researcher">
+                <label class="radio-card__label" for="role-researcher">
+                  <span class="radio-card__icon">🔬</span>
+                  <span class="radio-card__title">Researcher</span>
+                </label>
+              </div>
+            </div>
+            <div class="res-motivation-wrap" id="reg-researcher-extra">
+              <div class="form-field" style="margin-top:0.85rem;">
+                <label class="form-label form-label--required" for="reg-research-motivation">Why are you interested in the research study?</label>
+                <textarea id="reg-research-motivation" class="form-input" rows="3" placeholder="Briefly describe your courses, research interests, and what wave you would target. This helps the Lead PI verify your application."></textarea>
+                <div class="form-hint">Researchers register as professors with an additional study-participation flag. You'll be reviewed by the Lead PI before gaining access to research features. Your professor account works normally in the meantime.</div>
               </div>
             </div>
           </div>
@@ -4952,7 +5489,8 @@ body.sandbox-mode {
 </footer>
 
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js">
+</script><script>
 // ═══════════════════════════════════════════════════════════════════
 //  1. SUPABASE CONFIG & REST HELPERS
 // ═══════════════════════════════════════════════════════════════════
@@ -5623,6 +6161,38 @@ function _showResetModal() {
   openModal('modal-reset-password');
 }
 
+// Recognizes institutional academic email domains worldwide.
+// US uses .edu; most other countries use a second-level academic domain
+// such as .ac.in / .edu.in (India), .ac.uk (UK), .edu.au (Australia), etc.
+function _isAcademicEmail(email) {
+  var e = (email || '').toLowerCase().trim();
+  var at = e.indexOf('@');
+  if (at === -1) return false;
+  var domain = e.slice(at + 1);
+  if (!domain) return false;
+  var suffixes = [
+    '.edu',                                   // US + some private intl institutions
+    '.ac.in', '.edu.in', '.res.in',           // India
+    '.ac.uk',                                 // United Kingdom
+    '.edu.au',                                // Australia
+    '.ac.nz',                                 // New Zealand
+    '.ac.jp', '.edu.cn', '.edu.sg',           // Japan, China, Singapore
+    '.ac.za', '.edu.pk', '.edu.bd',           // South Africa, Pakistan, Bangladesh
+    '.ac.kr', '.edu.my', '.ac.ir',            // South Korea, Malaysia, Iran
+    '.edu.tr', '.ac.ae', '.edu.sa',           // Turkey, UAE, Saudi Arabia
+    '.ac.id', '.edu.ph', '.edu.vn',           // Indonesia, Philippines, Vietnam
+    '.ac.th', '.edu.hk', '.edu.tw',           // Thailand, Hong Kong, Taiwan
+    '.ac.il', '.edu.eg', '.ac.ke',            // Israel, Egypt, Kenya
+    '.edu.ng', '.edu.mx', '.edu.br',          // Nigeria, Mexico, Brazil
+    '.edu.co', '.edu.ar', '.edu.pe'           // Colombia, Argentina, Peru
+  ];
+  for (var i = 0; i < suffixes.length; i++) {
+    var s = suffixes[i];
+    if (domain.length >= s.length && domain.slice(-s.length) === s) return true;
+  }
+  return false;
+}
+
 async function doRegister() {
   _setFormErr('register-error','');
   var name     = (document.getElementById('reg-name').value || '').trim();
@@ -5639,11 +6209,26 @@ async function doRegister() {
   if (username.length < 3) { _setFormErr('register-error','Username must be at least 3 characters.'); return; }
   if (!/^[a-z0-9_]+$/.test(username)) { _setFormErr('register-error','Username may only contain letters, numbers, and underscores.'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { _setFormErr('register-error','Please enter a valid email address.'); return; }
-  // Professor role requires .edu — auto-downgrade to student if not .edu
+  // Researcher option: research_status flag is set on the professor account.
+  // The actual role written to mn_users is always 'professor' for researchers.
+  var wantsResearch = (role === 'researcher');
+  var researchMotivation = '';
+  if (wantsResearch) {
+    var motEl = document.getElementById('reg-research-motivation');
+    researchMotivation = motEl ? (motEl.value || '').trim() : '';
+    if (researchMotivation.length < 30) {
+      _setFormErr('register-error','Please tell us a bit more (at least 30 characters) about why you want to participate in the research study.');
+      return;
+    }
+    role = 'professor';  // researchers ARE professors with an extra status flag
+  }
+
+  // Professor / researcher requires an institutional academic email — auto-downgrade otherwise
   if (role === 'professor') {
-    if (!email.match(/^[^\s@]+@[^\s@]+\.edu$/i) && !email.match(/^[^\s@]+@[^\s@]+\.edu\.[a-z]{2}$/i)) {
+    if (!_isAcademicEmail(email)) {
       role = 'student';
-      flash('Professor access requires a .edu email. You have been registered as a student. Contact support to upgrade.', 'info');
+      wantsResearch = false;
+      flash('Professor and researcher access require an institutional academic email (e.g. .edu, .ac.in, .ac.uk, .edu.au). You have been registered as a student. Contact support to upgrade.', 'info');
     }
   }
 
@@ -5739,6 +6324,10 @@ async function doRegister() {
         role:        finalRole,
         is_admin:    isFirst
       };
+      if (wantsResearch && finalRole === 'professor') {
+        profileData.research_status     = 'pending_verification';
+        profileData.research_motivation = researchMotivation;
+      }
       profile = await sbPost('mn_users', profileData);
       // Re-link any teams that had the placeholder id in their members array
       // (cascade update — patch teams where members contains the old placeholder id)
@@ -5768,6 +6357,11 @@ async function doRegister() {
         is_admin:    isFirst
       };
       if (authUserId) { profileData.id = authUserId; }
+      // Researcher application: capture motivation and set pending verification.
+      if (wantsResearch && finalRole === 'professor') {
+        profileData.research_status     = 'pending_verification';
+        profileData.research_motivation = researchMotivation;
+      }
       profile = await sbPost('mn_users', profileData);
     } else {
       // Fully registered account already exists — use it
@@ -6175,6 +6769,34 @@ function _updateFeeDisplays() {
       ocRenderPage();
     }
   }
+  // Reflect the platform mode across the landing page & nav.
+  if (typeof _applyPlatformModeUI === 'function') { _applyPlatformModeUI(); }
+}
+
+// Toggle landing-page sections, banners and stat labels to match the
+// active platform mode. Safe to call at any time (guards every element).
+function _applyPlatformModeUI() {
+  var free = mnIsFreeMode();
+  try { document.body.classList.toggle('mn-free-mode', free); } catch(e) {}
+
+  // Free-mode announcement banner on the home hero
+  var banner = document.getElementById('lp-free-banner');
+  if (banner) { banner.style.display = free ? '' : 'none'; }
+
+  // Swap the pricing/championship sections.
+  var tieredIds = ['lp-section-tiered', 'lp-wc-section', 'open-championship'];
+  for (var i = 0; i < tieredIds.length; i++) {
+    var elT = document.getElementById(tieredIds[i]);
+    if (elT) { elT.style.display = free ? 'none' : ''; }
+  }
+  var freeSection = document.getElementById('lp-section-free');
+  if (freeSection) { freeSection.style.display = free ? '' : 'none'; }
+
+  // Hero stat: "Free Class Tournaments" → "Free for Everyone" in free mode
+  var heroStat = document.getElementById('lp-hero-stat-label');
+  if (heroStat) { heroStat.textContent = free ? 'For Everyone' : 'Class Tournaments'; }
+  var heroStatVal = document.getElementById('lp-hero-stat-value');
+  if (heroStatVal) { heroStatVal.textContent = 'Free'; }
 }
 
 (async function init() {
@@ -6230,6 +6852,11 @@ function _updateFeeDisplays() {
         var liveSeed = Number(pb.award_seed);
         if (liveSeed >= 0) { AWARD_SEED = liveSeed; }
       }
+      // Platform mode: 'free' converts the whole platform to Open Season.
+      if (pb.platform_mode === 'free') {
+        PLATFORM_FREE_MODE = true;
+        mnApplyFreeModeToFees();
+      }
     }
   } catch(feeErr) { /* keep hardcoded defaults */ }
   _updateFeeDisplays();
@@ -6272,6 +6899,10 @@ function _updateFeeDisplays() {
         });
     } catch(e) {}
   })();
+
+  // Load research module settings so the Research tab visibility is set
+  // before the first page render.
+  try { await res_loadSettings(); } catch(_resE) { /* non-fatal */ }
 
   showPage('home');
 })();
@@ -7846,6 +8477,8 @@ var PILLARS = [
 // read these globals WITHOUT re-fetching. If renderDashboard() has not run, all tabs show defaults.
 // Do NOT clear or reassign _dash* globals outside of renderDashboard() or tab data will desync.
 async function renderDashboard() {
+  if (typeof res2_loadEnrollment === "function") { try { await res2_loadEnrollment(); } catch(_re){} }
+  if (typeof res2_renderStudentPanel === "function") { try { res2_renderStudentPanel(); } catch(_re2){} }
   if (!currentUser) { openAuthModal('login'); return; }
 
   var noTeamEl  = document.getElementById('dash-no-team');
@@ -9116,6 +9749,32 @@ async function doStripeCheckout(teamId, tournamentId, amountDollars, teamName) {
 var WORLD_CUP_ENTRY_FEE  = 50;
 var AWARD_SEED           = 1000;  // Seed contribution — overridden by global_seasons.award_seed
 
+// ═══════════════════════════════════════════════════════════════════
+//  PLATFORM MODE  (super-admin global switch)
+//  'tiered' = the three-tier competitive system (free class, professor
+//             -elected global w/ fee, Open Championship w/ fee).  [default]
+//  'free'   = "Open Season" — every tournament free, one annual seeding
+//             that runs all the way to the playoff & finals, textbook
+//             open to everyone, and the award is seeded by MacroNations
+//             (not funded from entry fees).
+//  Persisted in global_seasons[currentYear].playoff_bracket.platform_mode
+//  so the choice survives reloads and is shared across all visitors.
+//  The tiered fee is preserved in playoff_bracket.tiered_entry_fee so it
+//  can be restored intact when the super admin switches back.
+// ═══════════════════════════════════════════════════════════════════
+var PLATFORM_FREE_MODE = false;
+
+function mnIsFreeMode() { return !!PLATFORM_FREE_MODE; }
+
+// Apply free-mode side effects to the in-memory fee globals. Does NOT
+// touch the database — call doSetPlatformMode() for persistent changes.
+function mnApplyFreeModeToFees() {
+  if (PLATFORM_FREE_MODE) {
+    WORLD_CUP_ENTRY_FEE = 0;
+    if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = 0; }
+  }
+}
+
 function renderDashPayment() {
   var el = document.getElementById('dash-panel-payment');
   if (!el) { return; }
@@ -9245,7 +9904,8 @@ var ADMIN_TABS_FULL = [
   { id:'waivers',        label:'🎟️ Waivers' },
   { id:'notify',         label:'📧 Notifications' },
   { id:'analytics',      label:'📈 Analytics' },
-  { id:'openchamp',      label:'🔓 Open Champ' }
+  { id:'openchamp',      label:'🔓 Open Champ' },
+  { id:'research',       label:'🔬 Research' }
 ];
 var ADMIN_TABS_PROF = [
   { id:'overview',    label:'📊 My Tournaments' },
@@ -10208,6 +10868,7 @@ function _renderAdminTab(id) {
   else if (id === 'waivers')        { renderAdminWaivers(el); }
   else if (id === 'notify')         { renderAdminNotify(el); }
   else if (id === 'analytics')      { renderAdminAnalytics(el); }
+  else if (id === 'research')       { res_renderAdminPanel(el); }
   else if (id === 'openchamp')      {
     // Call via window to ensure cross-script-block access
     if (window.ocRenderAdminPanel) {
@@ -10232,6 +10893,130 @@ function _metricCard(icon, val, label, iconClass) {
 
 // _setFormErr defined earlier in auth module
 
+// ═══════════════════════════════════════════════════════════════════
+//  SUPER-ADMIN: PLATFORM MODE CONTROL
+//  Switch the whole platform between the three-tier competitive system
+//  and "Open Season" (everything free, one annual seeding to the finals).
+// ═══════════════════════════════════════════════════════════════════
+
+// Persist the chosen mode on this year's season record and update the
+// in-memory fee globals. Does not by itself convert existing tournaments
+// (that is a separate, confirmed bulk action) — except when called from
+// doActivateOpenSeason, which chains the full Open-Season setup.
+async function doSetPlatformMode(mode) {
+  if (!_isAdmin()) { flash('Super-admin only.', 'error'); return false; }
+  var year = new Date().getFullYear();
+  try {
+    await _ensureGlobalSeason(year);
+    var rows    = await sbGet('global_seasons', 'year=eq.' + year + '&limit=1') || [];
+    var bracket = (rows.length && rows[0].playoff_bracket) ? rows[0].playoff_bracket : {};
+
+    if (mode === 'free') {
+      // Preserve the tiered fee so it can be restored later, untouched.
+      if (bracket.platform_mode !== 'free') {
+        bracket.tiered_entry_fee = (bracket.entry_fee != null) ? bracket.entry_fee : WORLD_CUP_ENTRY_FEE;
+      }
+      bracket.platform_mode = 'free';
+      bracket.entry_fee     = 0;
+      await sbPatch('global_seasons', 'year=eq.' + year, { playoff_bracket: bracket });
+      PLATFORM_FREE_MODE  = true;
+      WORLD_CUP_ENTRY_FEE = 0;
+      if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = 0; }
+    } else {
+      bracket.platform_mode = 'tiered';
+      var restore = (bracket.tiered_entry_fee != null) ? Number(bracket.tiered_entry_fee) : 50;
+      bracket.entry_fee = restore;
+      await sbPatch('global_seasons', 'year=eq.' + year, { playoff_bracket: bracket });
+      PLATFORM_FREE_MODE  = false;
+      WORLD_CUP_ENTRY_FEE = restore;
+      if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = restore; }
+    }
+    _updateFeeDisplays();
+    return true;
+  } catch(e) {
+    flash('Could not change platform mode: ' + (e.message || ''), 'error');
+    return false;
+  }
+}
+
+// Bulk-convert every existing tournament to free ($0 entry) and mark all
+// their teams as paid so no payment gate blocks anyone.
+async function doConvertAllTournamentsFree(silent) {
+  if (!_isAdmin()) { flash('Super-admin only.', 'error'); return; }
+  if (!silent && !confirm('Convert ALL existing tournaments to free ($0 entry)?\n\n' +
+      'Every tournament\'s entry fee is set to $0 and all of their teams are marked as paid, ' +
+      'so no one is blocked by a payment gate. The tiered fee configuration is preserved and ' +
+      'will return automatically if you switch back to Competitive mode.')) { return; }
+  try {
+    var tourns = await sbGet('tournaments', 'select=id,name,entry_fee&order=created_at.desc&limit=500') || [];
+    var converted = 0;
+    for (var i = 0; i < tourns.length; i++) {
+      if ((Number(tourns[i].entry_fee) || 0) !== 0) {
+        await sbPatch('tournaments', 'id=eq.' + tourns[i].id, { entry_fee: 0 });
+        converted++;
+      }
+      // Clear any payment gate on this tournament's teams.
+      try { await sbPatch('teams', 'tournament_id=eq.' + tourns[i].id + '&fee_paid=eq.false', { fee_paid: true }); } catch(tpErr) {}
+      // Reflect in local admin cache
+      for (var k = 0; k < _adminTournaments.length; k++) {
+        if (_adminTournaments[k].id === tourns[i].id) { _adminTournaments[k].entry_fee = 0; }
+      }
+    }
+    if (!silent) { flash(converted + ' tournament(s) converted to free; team payment gates cleared.', 'success'); }
+    return converted;
+  } catch(e) {
+    flash('Conversion failed: ' + (e.message || ''), 'error');
+  }
+}
+
+// One-click Open Season: switch to free mode, convert all tournaments to
+// free, and seed the single annual global pool with every team that has
+// played this year — exactly the "everything free, one seeding to the
+// finals" configuration.
+async function doActivateOpenSeason() {
+  if (!_isAdmin()) { flash('Super-admin only.', 'error'); return; }
+  if (!confirm('Activate OPEN SEASON?\n\n' +
+      '• All tournaments become free ($0 entry)\n' +
+      '• A single annual seeding includes every team that has played this year\n' +
+      '• The course textbook opens to everyone\n' +
+      '• The award is seeded by MacroNations (not funded by entry fees)\n' +
+      '• The landing page and other pages switch to the free experience\n\n' +
+      'Your three-tier (Competitive) configuration is preserved and can be restored anytime.')) { return; }
+  var year = new Date().getFullYear();
+  flash('Activating Open Season…', 'info');
+  var ok = await doSetPlatformMode('free');
+  if (!ok) { return; }
+  await doConvertAllTournamentsFree(true);
+  // Seed the annual pool silently (without the per-call confirm()).
+  try {
+    await _ensureGlobalSeason(year);
+    var tourns = await sbGet('tournaments',
+      'season_year=eq.' + year + '&select=id&order=created_at.desc&limit=500') || [];
+    var total = 0;
+    for (var i = 0; i < tourns.length; i++) {
+      total += (await _registerGlobalQualifiers(tourns[i].id, { limit: 100000, countFees: false })) || 0;
+    }
+    flash('Open Season is live. ' + total + ' team(s) seeded into the Season ' + year + ' global pool. ' +
+          'Use the Global Season tab to build the year-end playoff.', 'success');
+  } catch(e) {
+    flash('Open Season is live. Seeding step had an issue: ' + (e.message || ''), 'info');
+  }
+  if (_adminTab === 'overview') { renderAdminOverview(document.getElementById('admin-panel-content')); }
+}
+
+async function doRestoreCompetitiveMode() {
+  if (!_isAdmin()) { flash('Super-admin only.', 'error'); return; }
+  if (!confirm('Switch back to COMPETITIVE (three-tier) mode?\n\n' +
+      'Your saved entry-fee configuration is restored. Existing tournaments that were set to free ' +
+      'stay free (convert them individually if needed) — but new global/Open Championship tournaments ' +
+      'will charge the configured entry fee again.')) { return; }
+  var ok = await doSetPlatformMode('tiered');
+  if (ok) {
+    flash('Competitive mode restored. The three tiers are active again.', 'success');
+    if (_adminTab === 'overview') { renderAdminOverview(document.getElementById('admin-panel-content')); }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────
 //  TAB 1: OVERVIEW
 // ─────────────────────────────────────────────────────────────────
@@ -10244,11 +11029,17 @@ function renderAdminOverview(el) {
   for (var j = 0; j < _adminTeams.length; j++) {
     var tm = _adminTeams[j];
     totalTeams++;
-    if (tm.fee_paid) { paidTeams++; }
-    // Find entry fee
+    if (!tm.fee_paid) { continue; }
+    // Only count teams in tournaments with a positive entry fee. Teams in free
+    // tournaments are auto-flagged fee_paid=true at creation so non-payment
+    // gates do not block them, but they did not pay any money.
     for (var k = 0; k < _adminTournaments.length; k++) {
-      if (_adminTournaments[k].id === tm.tournament_id && tm.fee_paid) {
-        revenue += Number(_adminTournaments[k].entry_fee) || 0;
+      if (_adminTournaments[k].id === tm.tournament_id) {
+        var ef = Number(_adminTournaments[k].entry_fee) || 0;
+        if (ef > 0) {
+          paidTeams++;
+          revenue += ef;
+        }
         break;
       }
     }
@@ -10284,6 +11075,49 @@ function renderAdminOverview(el) {
       '</div>'
     : '';
 
+  // Super-admin only: Platform Mode control panel
+  var platformCard = '';
+  if (_isAdmin()) {
+    var free = mnIsFreeMode();
+    var modeBadge = free
+      ? '<span class="badge badge--gold badge--no-dot">Open Season · Free</span>'
+      : '<span class="badge badge--blue badge--no-dot">Competitive · Three Tiers</span>';
+    platformCard =
+      '<div class="card" style="margin-bottom:1.5rem;border:2px solid ' + (free ? '#FFD700' : 'var(--blue)') + ';">' +
+        '<div class="card__header">' +
+          '<span class="card__title">🎛️ Platform Mode</span>' + modeBadge +
+        '</div>' +
+        '<div class="card__body">' +
+          '<p style="font-size:0.875rem;color:var(--text-600);line-height:1.6;margin-bottom:1rem;">' +
+            'Choose how the whole platform operates. <strong>Competitive</strong> keeps the three tiers ' +
+            '(free class tournaments, professor-elected global with fee, and the paid Open Championship). ' +
+            '<strong>Open Season</strong> makes every tournament free, runs a single annual seeding all the way ' +
+            'to the playoff and finals, opens the textbook to everyone, and seeds the award from MacroNations ' +
+            'rather than entry fees. Switching is reversible — your tiered fee settings are preserved.' +
+          '</p>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">' +
+            '<div style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;background:' + (free ? 'var(--bg-subtle)' : '#eef3ff') + ';">' +
+              '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.25rem;">🏆 Competitive (Three Tiers)' + (!free ? ' · Active' : '') + '</div>' +
+              '<div style="font-size:0.8125rem;color:var(--text-500);line-height:1.5;">Free class · Professor-elected global (fee) · Open Championship (fee). Retained for future use.</div>' +
+            '</div>' +
+            '<div style="border:1px solid ' + (free ? '#FFD700' : 'var(--border)') + ';border-radius:var(--radius-lg);padding:1rem;background:' + (free ? '#fffdf0' : 'var(--surface)') + ';">' +
+              '<div style="font-weight:600;color:var(--text-900);margin-bottom:0.25rem;">🌍 Open Season (Free)' + (free ? ' · Active' : '') + '</div>' +
+              '<div style="font-size:0.8125rem;color:var(--text-500);line-height:1.5;">Everything free · One annual seeding to the finals · Textbook for all · Award seeded by MacroNations.</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:0.625rem;flex-wrap:wrap;align-items:center;">' +
+            (free
+              ? '<button class="btn btn--ghost" onclick="doRestoreCompetitiveMode()">↩ Restore Competitive Mode</button>' +
+                '<button class="btn btn--primary btn--sm" onclick="doSeedAllSeasonTeams(' + (new Date().getFullYear()) + ')">🔄 Re-sync Season Pool</button>' +
+                '<button class="btn btn--ghost btn--sm" onclick="doConvertAllTournamentsFree()">Convert remaining tournaments to free</button>'
+              : '<button class="btn btn--gold" onclick="doActivateOpenSeason()">🌍 Activate Open Season</button>' +
+                '<span style="font-size:0.8125rem;color:var(--text-400);">Converts all tournaments to free and seeds one annual playoff.</span>'
+            ) +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
   // Recent tournaments table
   var recentRows = '';
   var shown = Math.min(_adminTournaments.length, 5);
@@ -10303,7 +11137,7 @@ function renderAdminOverview(el) {
   }
 
   el.innerHTML =
-    metricsHtml + quickAction +
+    metricsHtml + platformCard + quickAction +
     '<div class="card">' +
       '<div class="card__header"><span class="card__title">' + (isProf ? 'My Tournaments' : 'Recent Tournaments') + '</span>' +
         '<button class="btn btn--primary btn--sm" onclick="openAdminTab(\'tournaments\')">View All</button>' +
@@ -10585,9 +11419,12 @@ async function doCreateTournament() {
     closeModal('modal-create-tournament');
 
     // Show post-creation instructions to professor
+    // Class/university tournaments enforce a student<->creator domain match
+    // for ALL institutions (not just .edu), so the note must reflect that.
     var profDomain  = (currentUser && currentUser.email) ? currentUser.email.split('@')[1] : '';
-    var isDotEdu    = profDomain && profDomain.toLowerCase().endsWith('.edu');
-    var emailNote   = isDotEdu
+    var isClassTier = (newTourn.tier === 'class' || newTourn.tier === 'university');
+    var showDomainNote = isClassTier && profDomain;
+    var emailNote   = showDomainNote
       ? 'Important: This tournament is linked to your ' + profDomain + ' domain. ' +
         'Ask your students to register on MacroNations using their @' + profDomain + ' email address. ' +
         'Students who register with a personal email (Gmail, Outlook, etc.) will not be able to join this tournament.'
@@ -10614,7 +11451,7 @@ async function doCreateTournament() {
             '<li>One student per team clicks <strong>Join</strong> to create the team and gets an invite code</li>' +
             '<li>Teammates enter the 8-character invite code to join the team</li>' +
           '</ol>' +
-          (isDotEdu
+          (showDomainNote
             ? '<div class="dash-alert dash-alert--info">' +
                 '<div class="dash-alert__icon">&#9432;</div>' +
                 '<div class="dash-alert__body"><div class="dash-alert__title">Email address requirement</div>' +
@@ -10708,7 +11545,15 @@ async function doConfirmComplete() {
 
   // For global elected tournaments: register top-8 qualifiers and auto-create bracket
   var tourn = _getTournById(tid);
-  if (tourn && tourn.is_global_elected) {
+  if (mnIsFreeMode()) {
+    // Open Season: EVERY completed tournament feeds the single annual pool.
+    try {
+      await _registerGlobalQualifiers(tid, { limit: 100000, countFees: false });
+      flash('Open Season: all teams from this tournament added to the annual global pool.', 'success');
+    } catch(qe) {
+      flash('Note: could not register season qualifiers: ' + (qe.message || ''), 'info');
+    }
+  } else if (tourn && tourn.is_global_elected) {
     try {
       await _registerGlobalQualifiers(tid);
     } catch(qe) {
@@ -12673,9 +13518,16 @@ async function _ensureGlobalSeason(year) {
   }
 }
 
-// Called when a global elected tournament completes.
-// Inserts the top-8 teams into global_qualifiers for the season.
-async function _registerGlobalQualifiers(tournId) {
+// Called when a tournament completes (or via the season sync tool).
+// In the default (tiered) mode this registers the top 8 teams of a global
+// elected tournament and rolls a share of entry fees into the award fund.
+// Pass opts = { limit: <n>, countFees: <bool> } to override; in free mode
+// the defaults become "every team, no fees" so the single annual seeding
+// includes every team that has played this year.
+async function _registerGlobalQualifiers(tournId, opts) {
+  opts = opts || {};
+  var limit     = (typeof opts.limit === 'number') ? opts.limit : (mnIsFreeMode() ? 100000 : 8);
+  var countFees = (typeof opts.countFees === 'boolean') ? opts.countFees : !mnIsFreeMode();
   try {
     var tourn = _getTournById(tournId);
     if (!tourn) {
@@ -12691,7 +13543,7 @@ async function _registerGlobalQualifiers(tournId) {
 
     // Fetch all economies for this tournament to rank teams
     var econRows = await sbGet('economies',
-      'tournament_id=eq.' + tournId + '&select=team_id,current&limit=200') || [];
+      'tournament_id=eq.' + tournId + '&select=team_id,current&limit=500') || [];
 
     var ranked = [];
     for (var ei = 0; ei < econRows.length; ei++) {
@@ -12702,12 +13554,12 @@ async function _registerGlobalQualifiers(tournId) {
       ranked.push({ teamId: er.team_id, score: computeScores(st).total });
     }
     ranked.sort(function(a, b) { return b.score - a.score; });
-    var top8 = ranked.slice(0, 8);
+    var seedSet = ranked.slice(0, limit);
 
     // Fetch team details
-    var teamIds = top8.map(function(r) { return r.teamId; });
+    var teamIds = seedSet.map(function(r) { return r.teamId; });
     var teamsRes = teamIds.length
-      ? await sbGet('teams', 'id=in.(' + teamIds.join(',') + ')&limit=8')
+      ? await sbGet('teams', 'id=in.(' + teamIds.join(',') + ')&limit=' + Math.max(8, teamIds.length))
       : [];
     var teamMap = {};
     if (teamsRes) {
@@ -12723,31 +13575,33 @@ async function _registerGlobalQualifiers(tournId) {
     }
     var captainMap = {};
     if (captainIds.length) {
-      var capRows = await sbGet('mn_users', 'id=in.(' + captainIds.join(',') + ')&select=id,name,institution,country&limit=8') || [];
+      var capRows = await sbGet('mn_users', 'id=in.(' + captainIds.join(',') + ')&select=id,name,institution,country&limit=' + Math.max(8, captainIds.length)) || [];
       for (var capi = 0; capi < capRows.length; capi++) {
         captainMap[capRows[capi].id] = capRows[capi];
       }
     }
 
-    // Update season prize pool
-    var teamCount = econRows.length;
-    var entryFee  = Number(tourn.entry_fee) || 0;
-    var feesFromThisTourn = entryFee * teamCount;
-    // Increment entry_fees_collected on the season
-    var season = await sbGet('global_seasons', 'year=eq.' + seasonYear + '&limit=1');
-    if (season && season.length) {
-      var newFees = (Number(season[0].entry_fees_collected) || 0) + feesFromThisTourn;
-      var newPool = Math.round(newFees * 0.25);
-      await sbPatch('global_seasons', 'year=eq.' + seasonYear, {
-        entry_fees_collected: newFees,
-        prize_pool: newPool
-      });
+    // Update season prize pool from entry fees (skipped in free mode —
+    // there the award is seeded by MacroNations, not from fees).
+    if (countFees) {
+      var teamCount = econRows.length;
+      var entryFee  = Number(tourn.entry_fee) || 0;
+      var feesFromThisTourn = entryFee * teamCount;
+      var season = await sbGet('global_seasons', 'year=eq.' + seasonYear + '&limit=1');
+      if (season && season.length) {
+        var newFees = (Number(season[0].entry_fees_collected) || 0) + feesFromThisTourn;
+        var newPool = Math.round(newFees * 0.25);
+        await sbPatch('global_seasons', 'year=eq.' + seasonYear, {
+          entry_fees_collected: newFees,
+          prize_pool: newPool
+        });
+      }
     }
 
     // Insert qualifiers — skip if already exists (UNIQUE constraint on season_year+team_id)
     var insertCount = 0;
-    for (var qi = 0; qi < top8.length; qi++) {
-      var entry = top8[qi];
+    for (var qi = 0; qi < seedSet.length; qi++) {
+      var entry = seedSet[qi];
       var team  = teamMap[entry.teamId] || {};
       var cap   = team.captain_id ? (captainMap[team.captain_id] || {}) : {};
       try {
@@ -12771,8 +13625,48 @@ async function _registerGlobalQualifiers(tournId) {
     }
 
     flash(insertCount + ' team(s) added to Season ' + seasonYear + ' global qualifiers.', 'success');
+    return insertCount;
   } catch(e) {
     flash('Could not register global qualifiers: ' + (e.message || ''), 'error');
+    return 0;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ANNUAL SEEDING — pull EVERY team that has played this year into the
+//  single global qualifier pool. Used by the super-admin "Sync season"
+//  control and automatically in free (Open Season) mode.
+// ─────────────────────────────────────────────────────────────────
+async function doSeedAllSeasonTeams(year) {
+  year = year || new Date().getFullYear();
+  if (!_isAdmin()) { flash('Super-admin only.', 'error'); return; }
+  if (!confirm('Seed the Season ' + year + ' global pool with EVERY team that has played this year?\n\n' +
+               'This scans all tournaments dated ' + year + ' and adds each of their teams to the annual qualifier pool. ' +
+               'Teams already present are skipped. The top 8 of this pool seed the year-end playoff.')) { return; }
+  try {
+    await _ensureGlobalSeason(year);
+    // All tournaments in this season year (any tier, any status that has play)
+    var tourns = await sbGet('tournaments',
+      'season_year=eq.' + year + '&select=id,name,tier,entry_fee&order=created_at.desc&limit=500') || [];
+    if (!tourns.length) {
+      // Fall back to created_at-year match if season_year is not populated
+      tourns = await sbGet('tournaments', 'select=id,name,tier,entry_fee,season_year&order=created_at.desc&limit=500') || [];
+      tourns = tourns.filter(function(t) { return (t.season_year || 0) === year; });
+    }
+    if (!tourns.length) { flash('No tournaments found for ' + year + '.', 'info'); return; }
+
+    var total = 0;
+    for (var i = 0; i < tourns.length; i++) {
+      // Every team, no fee accounting — award is seeded, not fee-funded.
+      var n = await _registerGlobalQualifiers(tourns[i].id, { limit: 100000, countFees: false });
+      total += (n || 0);
+    }
+    flash('Season ' + year + ' seeded: ' + total + ' team(s) added across ' + tourns.length + ' tournament(s).', 'success');
+    if (_adminTab === 'globalseasons') {
+      renderAdminGlobalSeasons(document.getElementById('admin-panel-content'));
+    }
+  } catch(e) {
+    flash('Season seeding failed: ' + (e.message || ''), 'error');
   }
 }
 
@@ -12938,11 +13832,20 @@ async function renderAdminGlobalSeasons(el) {
 
     el.innerHTML =
       '<div style="max-width:900px;">' +
-        '<div class="dash-alert dash-alert--info" style="margin-bottom:1.5rem;">' +
+        '<div class="dash-alert dash-alert--info" style="margin-bottom:1rem;">' +
           '<div class="dash-alert__icon">🌐</div>' +
           '<div class="dash-alert__body"><div class="dash-alert__title">How the global season works</div>' +
-          'When an elected professor tournament completes, the top 8 teams are automatically added here as qualifiers. ' +
-          'At year end, click "Seed Year-End Playoff" to build the final bracket from the top 8 qualifiers across all universities.</div>' +
+          (mnIsFreeMode()
+            ? 'Open Season is active. Every tournament played this year feeds a single annual qualifier pool — ' +
+              'use “Seed All Season Teams” to pull in every team that has played. At year end, “Seed Year-End Playoff” ' +
+              'builds the final bracket from the top 8 of that pool, all the way to the finals.'
+            : 'When an elected professor tournament completes, its top 8 teams are added here as qualifiers. ' +
+              'You can also click “Seed All Season Teams” to include every team that has played this year. ' +
+              'At year end, “Seed Year-End Playoff” builds the final bracket from the top 8 qualifiers.') +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:1.25rem;">' +
+          '<button class="btn btn--primary btn--sm" onclick="doSeedAllSeasonTeams(' + curYear + ')">🔄 Seed All Season Teams (every team this year)</button>' +
         '</div>' +
         seasonCards +
         qTable +
@@ -13207,12 +14110,19 @@ async function renderAdminAnalytics(el) {
   }
 
   // Teams + revenue
+  // A team is "actually paid" only when fee_paid=true AND its tournament has
+  // a positive entry fee. Teams in FREE tournaments are auto-flagged
+  // fee_paid=true at creation (so non-payment gates do not block them), but
+  // they did not pay any money and should not be counted as paid teams.
   var paidTeams = 0, totalRevenue = 0;
   for (var tj = 0; tj < allTeams.length; tj++) {
     if (allTeams[tj].fee_paid) {
-      paidTeams++;
       var tt = _getTournById(allTeams[tj].tournament_id);
-      if (tt) { totalRevenue += Number(tt.entry_fee) || 0; }
+      var fee = tt ? (Number(tt.entry_fee) || 0) : 0;
+      if (fee > 0) {
+        paidTeams++;
+        totalRevenue += fee;
+      }
     }
   }
   var paidTeamPct = allTeams.length ? Math.round(paidTeams / allTeams.length * 100) : 0;
@@ -13369,7 +14279,12 @@ async function renderAdminAnalytics(el) {
   }
   var recentSignups = allUsers.slice().sort(_byCreatedAtDesc).slice(0, 10);
   var recentTournaments = allTournaments.slice().sort(_byCreatedAtDesc).slice(0, 10);
-  var recentPaidTeams = allTeams.slice().filter(function(t){ return t.fee_paid; }).sort(_byCreatedAtDesc).slice(0, 10);
+  // Recent Paid Teams — same filter logic as above: must have actually paid money.
+  var recentPaidTeams = allTeams.slice().filter(function(t) {
+    if (!t.fee_paid) { return false; }
+    var rpt = _getTournById(t.tournament_id);
+    return rpt && (Number(rpt.entry_fee) || 0) > 0;
+  }).sort(_byCreatedAtDesc).slice(0, 10);
 
   // ── Build HTML ────────────────────────────────────────────────────
   function pct(x) { return Math.round(x * 100) / 100 + '%'; }
@@ -13920,6 +14835,117 @@ async function exportCSV() {
       dec.submitted_at || '',
       dec.is_final ? 'yes' : 'draft'
     ]);
+  }
+
+  // ─── Sheet 3: Textbook Progress (one row per student per chapter) ───
+  // Fetches mn_textbook_progress rows for all teams in the professor's
+  // tournaments. Each chapter quiz score plus completion timestamp is
+  // included so professors can use this for participation/quiz grading.
+  var tbProgress = [];
+  if (tids.length) {
+    try {
+      // Collect student user IDs from the teams
+      var studentIds = [];
+      for (var tpi = 0; tpi < _adminTeams.length; tpi++) {
+        var tpm = _adminTeams[tpi];
+        if (tpm.captain_id && studentIds.indexOf(tpm.captain_id) < 0) studentIds.push(tpm.captain_id);
+        if (tpm.members && tpm.members.length) {
+          for (var tpj = 0; tpj < tpm.members.length; tpj++) {
+            if (tpm.members[tpj] && studentIds.indexOf(tpm.members[tpj]) < 0) studentIds.push(tpm.members[tpj]);
+          }
+        }
+      }
+      if (studentIds.length) {
+        // Supabase REST: use in.(...) for the user filter
+        var userParam = studentIds.slice(0, 500).join(',');
+        tbProgress = await sbGet('mn_textbook_progress',
+          'tournament_id=in.(' + tids.join(',') + ')&user_id=in.(' + userParam + ')' +
+          '&order=user_id.asc,chapter_id.asc&limit=5000' +
+          '&select=user_id,tournament_id,chapter_id,completed,quiz_scores,updated_at') || [];
+      }
+    } catch(e) { tbProgress = []; }
+  }
+
+  // Sheet 3 header — textbook completion + quiz performance
+  if (tbProgress.length) {
+    rows.push(['','','','','','','','','','','','','']);
+    rows.push(['TEXTBOOK CHAPTER PROGRESS & QUIZ SCORES','','','','','','','','','','','','']);
+    rows.push(['Student User ID','Student Name','Student Email','Team','Tournament','Chapter','Completed','Quiz Answered','Quiz Total','Quiz Correct','Quiz %','Updated At']);
+    // Build user and team lookup maps
+    var userLookup = {};
+    for (var ui = 0; ui < _adminUsers.length; ui++) {
+      userLookup[_adminUsers[ui].id] = _adminUsers[ui];
+    }
+    var teamLookup = {};
+    for (var teamI = 0; teamI < _adminTeams.length; teamI++) {
+      var tmrec = _adminTeams[teamI];
+      // Index by captain_id and each member id
+      if (tmrec.captain_id) { teamLookup[tmrec.captain_id] = tmrec; }
+      if (tmrec.members) {
+        for (var tj = 0; tj < tmrec.members.length; tj++) {
+          if (tmrec.members[tj] && !teamLookup[tmrec.members[tj]]) {
+            teamLookup[tmrec.members[tj]] = tmrec;
+          }
+        }
+      }
+    }
+    for (var pgi = 0; pgi < tbProgress.length; pgi++) {
+      var pg = tbProgress[pgi];
+      var pguser  = userLookup[pg.user_id] || {};
+      var pgteam  = teamLookup[pg.user_id] || {};
+      var pgtourn = tournMap[pg.tournament_id] || {};
+      var qs      = pg.quiz_scores || {};
+      // quiz_scores stored as { answered, total, correct, pct }
+      rows.push([
+        pg.user_id || '',
+        pguser.name || pguser.username || '',
+        pguser.email || '',
+        pgteam.name || '',
+        pgtourn.name || '',
+        pg.chapter_id || '',
+        pg.completed ? 'yes' : 'no',
+        (qs.answered !== undefined) ? qs.answered : '',
+        (qs.total    !== undefined) ? qs.total    : '',
+        (qs.correct  !== undefined) ? qs.correct  : '',
+        (qs.pct      !== undefined) ? qs.pct + '%' : '',
+        pg.updated_at || ''
+      ]);
+    }
+
+    // Sheet 3b: per-student textbook summary (one row per student)
+    rows.push(['','','','','','','','','','','','','']);
+    rows.push(['TEXTBOOK SUMMARY PER STUDENT (FOR GRADEBOOK)','','','','','','','','','','','','']);
+    rows.push(['Student User ID','Student Name','Student Email','Team','Tournament','Chapters Completed','Total Quiz Questions Answered','Total Correct','Overall Quiz %']);
+    var summary = {};
+    for (var pgs = 0; pgs < tbProgress.length; pgs++) {
+      var s = tbProgress[pgs];
+      var uid = s.user_id;
+      if (!summary[uid]) {
+        summary[uid] = { tournament_id: s.tournament_id, completed: 0, answered: 0, correct: 0 };
+      }
+      if (s.completed) { summary[uid].completed++; }
+      var sq = s.quiz_scores || {};
+      if (sq.answered) { summary[uid].answered += sq.answered; }
+      if (sq.correct)  { summary[uid].correct  += sq.correct; }
+    }
+    for (var suid in summary) {
+      var srec = summary[suid];
+      var suser = userLookup[suid] || {};
+      var steam = teamLookup[suid] || {};
+      var stourn = tournMap[srec.tournament_id] || {};
+      var spct = srec.answered ? Math.round(srec.correct / srec.answered * 100) : 0;
+      rows.push([
+        suid,
+        suser.name || suser.username || '',
+        suser.email || '',
+        steam.name || '',
+        stourn.name || '',
+        srec.completed,
+        srec.answered,
+        srec.correct,
+        spct + '%'
+      ]);
+    }
   }
 
   var csv = rows.map(function(r){
@@ -14498,11 +15524,29 @@ async function renderRankings() {
       if (!globalEntries.length) {
         globalRows = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.4);">No teams yet in Season ' + curYear + '. Teams appear here when global elected tournaments are completed.</td></tr>';
       }
+      // Status semantics — be honest about what's locked in:
+      //   "Qualified" = the team's source tournament is complete, so their SCORE is final.
+      //   "Live"      = source tournament still active, score can still move.
+      //   Top 8 is ALWAYS provisional during the season because:
+      //     - Live teams can still climb above them
+      //     - Tournaments that complete later can enter teams with higher scores
+      //   The Top 8 lock-in happens only when the season closes and the playoff bracket is seeded.
+      // So during the season we show "Provisional Top 8" for everyone currently in slots 1-8.
+      // After season close (handled elsewhere via playoff seeding), the gold "Top 8" badge applies.
       for (var gri = 0; gri < globalEntries.length; gri++) {
         var gr    = globalEntries[gri];
         var isMe  = currentUser && gr.captainId && (gr.captainId === currentUser.id);
         var inTop8 = gri < 8;
         var medal = gri === 0 ? '🥇' : gri === 1 ? '🥈' : gri === 2 ? '🥉' : '<span class="rank-num">' + (gri+1) + '</span>';
+        var statusBadges = '';
+        if (gr.qualified) {
+          statusBadges += '<span class="badge badge--green badge--no-dot" style="margin-right:4px;" title="Source tournament complete — score is final">Score Locked</span>';
+        } else {
+          statusBadges += '<span class="badge badge--subtle badge--no-dot" style="margin-right:4px;" title="Source tournament still active — score may still change">Live</span>';
+        }
+        if (inTop8) {
+          statusBadges += '<span class="badge badge--subtle badge--no-dot" style="color:#FFD700;border-color:rgba(255,215,0,0.4);" title="Currently in a playoff-qualifying position. Final Top 8 is determined when the season closes.">Provisional Top 8</span>';
+        }
         globalRows +=
           '<tr class="' + (isMe ? 'rank-my-row' : '') + '">' +
           '<td>' + medal + '</td>' +
@@ -14513,10 +15557,7 @@ async function renderRankings() {
             '<br><span class="text-muted" style="font-size:0.75rem;">' + esc(gr.tournament) + '</span>' +
           '</td>' +
           '<td><span class="rank-score">' + gr.score + '</span> / 1000</td>' +
-          '<td>' +
-            (gr.qualified ? '<span class="badge badge--green badge--no-dot" style="margin-right:4px;">Qualified</span>' : '<span class="badge badge--subtle badge--no-dot" style="margin-right:4px;">Live</span>') +
-            (inTop8 ? '<span class="badge badge--gold">Top 8</span>' : '') +
-          '</td>' +
+          '<td>' + statusBadges + '</td>' +
           '</tr>';
       }
 
@@ -14535,8 +15576,9 @@ async function renderRankings() {
             '<div>' +
               '<h2 style="font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:#FFD700;margin-bottom:0.125rem;">MacroNations World Cup · Season ' + curYear + '</h2>' +
               '<span style="font-size:0.8125rem;color:rgba(255,255,255,0.6);">Global Championship Standings · Top 8 qualify for year-end playoff · ' +
-                '<span style="color:#6EE7B7;">Qualified</span> = locked in · ' +
-                '<span style="color:rgba(255,255,255,0.5);">Live</span> = active tournament</span>' +
+                '<span style="color:#6EE7B7;">Score Locked</span> = tournament complete · ' +
+                '<span style="color:rgba(255,255,255,0.5);">Live</span> = tournament active · ' +
+                'All Top 8 positions are provisional until the season closes</span>' +
             '</div>' +
             '<span class="badge badge--gold">🏆 Global</span>' +
           '</div>' +
@@ -14548,7 +15590,7 @@ async function renderRankings() {
                 '<tbody>' + globalRows + '</tbody>' +
               '</table>' +
             '</div>' +
-            '<p class="text-sm text-muted" style="margin-top:0.75rem;">Award fund seeded by MacroNations LLC, supplemented by entry fees at management discretion. Qualified teams locked in from completed tournaments. Live teams still competing.</p>' +
+            '<p class="text-sm text-muted" style="margin-top:0.75rem;">Award fund seeded by MacroNations LLC, supplemented by entry fees at management discretion. Standings update as more tournaments complete. Final Top 8 playoff bracket is seeded at season close.</p>' +
           '</div>' +
         '</div>';
     }
@@ -14780,7 +15822,7 @@ PAGE_LOADERS['legal'] = function() { showLegal('terms'); };
 //  ABOUT PAGE (How It Works, Founder, Legal)
 // ═══════════════════════════════════════════════════════════════════
 
-PAGE_LOADERS['about'] = function() { showAbout('how'); };
+PAGE_LOADERS['about'] = function() { showAbout('founder'); };
 
 function showAbout(tab) {
   // Update tab active state
@@ -15009,7 +16051,7 @@ function _aboutHowItWorks() {
       '<div class="card__header"><span class="card__title">🎓 For Students</span></div>' +
       '<div class="card__body">' +
         '<div class="steps">' +
-          _step('1','Register & Join','Create a free account with any valid email. Professors who want to create class tournaments need a .edu address. Open Championship is open to everyone — no university or institutional affiliation required. Go to Tournaments, find a competition open for registration, and create or join a team with an 8-character invite code. Teams have up to 5 members.') +
+          _step('1','Register & Join','Create a free account with any valid email. Professors who want to create class tournaments need an institutional academic email (.edu, .ac.in, .ac.uk, .edu.au, etc.). Open Championship is open to everyone — no university or institutional affiliation required. Go to Tournaments, find a competition open for registration, and create or join a team with an 8-character invite code. Teams have up to 5 members.') +
           _step('2','Pay the Entry Fee (if applicable)','For paid tournaments, go to Dashboard → Payment to pay the entry fee via Stripe. Your policy submissions are locked until payment is confirmed by the admin.') +
           _step('3','Set Your 10 Policy Levers','Every round, go to Dashboard → Policy. Adjust your 10 macroeconomic levers: Interest Rate, Government Spending, Tax Rate, Trade Openness, R&D Investment, Green Energy Mix, Welfare Spending, Regulation, Foreign Aid, and Infrastructure. Write a brief rationale and hit Submit Final Decision before the round deadline.') +
           _step('4','Respond to Crises','Some rounds trigger an economic crisis (banking crash, pandemic, trade war, debt crisis). Go to Crisis tab first — choose your response option — then separately submit your policy. These are two independent steps. If you skip the crisis response, the full unmitigated shock applies to your economy.') +
@@ -17440,6 +18482,11 @@ async function tbCheckAccess() {
   var userId = currentUser.id;
   var role   = currentUser.role || '';
 
+  // Open Season: the textbook is free for everyone who is signed in.
+  if (typeof mnIsFreeMode === 'function' && mnIsFreeMode()) {
+    return { access: true, tournId: (window._tbTournId || null) };
+  }
+
   // Admins and professors always have access
   if (currentUser.is_admin || role === 'professor') {
     // Try to find a relevant tournament for the progress dashboard
@@ -18140,7 +19187,7 @@ function sbxSceneProfCreate(state) {
       '<h2 class="sbx-scene__title">Step 1 · Create a Class Tournament</h2>' +
       '<div class="sbx-scene__hint">' +
         '<span class="sbx-scene__hint-icon">💡</span>' +
-        '<strong>What you would do in real life:</strong> sign in with your .edu email, head to the Professor Dashboard, and click "Create Tournament." Here in the sandbox you get to do the same thing — without any email or signup.' +
+        '<strong>What you would do in real life:</strong> sign in with your institutional academic email, head to the Professor Dashboard, and click "Create Tournament." Here in the sandbox you get to do the same thing — without any email or signup.' +
       '</div>';
   if (!created) {
     html +=
@@ -18281,7 +19328,7 @@ function sbxSceneProfMonitor(state) {
         rows +
       '</div>' +
       '<div class="sbx-callout" style="margin-top:1.25rem;">' +
-        '<strong>At the end of the season</strong>, you can elect to advance your top team(s) into the MacroNations Global Championship for an additional fee — or just certify your class winners and call it done. Both options take a single click in your dashboard.' +
+        '<strong>When you create a tournament</strong>, you can elect to enter it into the MacroNations Global Championship season (entry fee applies) — your class plays the same way either way, but elected tournaments compete for season standings and Top-8 playoff qualification. When the season ends, click <strong>Mark Complete</strong> to auto-generate certificates for all participants. Both setups take a single click in your dashboard.' +
       '</div>' +
       '<button class="sbx-btn-secondary" onclick="sbxGoToStep(2)">← Back</button> ' +
       '<button class="sbx-btn-primary" onclick="sbxFinishProf()">Got it — try the student side →</button>' +
@@ -18304,7 +19351,7 @@ function sbxSceneStudJoin(state) {
       '<h2 class="sbx-scene__title">Step 1 · Join with a Code</h2>' +
       '<div class="sbx-scene__hint">' +
         '<span class="sbx-scene__hint-icon">💡</span>' +
-        '<strong>How students get in:</strong> on the real platform they would sign up (any valid email — .edu is only required for professor accounts), go to Tournaments, click "Join with code", and enter the code their professor posted.' +
+        '<strong>How students get in:</strong> on the real platform they would sign up (any valid email — an institutional academic email is only required for professor accounts), go to Tournaments, click "Join with code", and enter the code their professor posted.' +
       '</div>';
   if (!joined) {
     html +=
@@ -18663,6 +19710,1662 @@ if (typeof PAGE_LOADERS === 'object' && PAGE_LOADERS !== null) {
   }
 })();
 
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// RESEARCH MODULE — Phase 1: Foundation & Onboarding
+// All exported names prefixed res_ / _res for module isolation.
+// Gated entirely behind _resEnabled, loaded from mn_research_settings.
+// ════════════════════════════════════════════════════════════════════════════
+
+var _resEnabled  = false;
+var _resSettings = {};
+var _resCurrentSite = null;        // researcher's mn_research_sites row
+var _resOpenStep = null;           // currently expanded step in dashboard
+var _resVerificationCache = null;  // admin queue cache
+
+// Toggle a body class so CSS can show/hide the Research tab.
+function _resApplyVisibility() {
+  if (_resEnabled) { document.body.classList.add('res-on'); }
+  else             { document.body.classList.remove('res-on'); }
+}
+
+// Read settings from mn_research_settings (public table — anon-readable).
+async function res_loadSettings() {
+  try {
+    var rows = await sbGetPublic('mn_research_settings', 'select=key,value&limit=50');
+    if (rows && rows.length) {
+      _resSettings = {};
+      for (var i = 0; i < rows.length; i++) {
+        _resSettings[rows[i].key] = rows[i].value;
+      }
+      _resEnabled = (_resSettings.module_enabled === true);
+    }
+  } catch (e) {
+    _resEnabled = false;
+  }
+  _resApplyVisibility();
+}
+
+// Setting accessor with sensible fallback.
+function res_get(key, fallback) {
+  if (Object.prototype.hasOwnProperty.call(_resSettings, key)) {
+    return _resSettings[key];
+  }
+  return fallback;
+}
+
+// ─── Researcher landing page (public) ──────────────────────────────────────
+
+function res_renderLanding() {
+  // Module disabled? Show a polite "coming soon" notice.
+  if (!_resEnabled) {
+    document.getElementById('research-content').innerHTML =
+      '<div class="res-section"><div class="res-section__inner res-empty">' +
+        '<h2 class="res-section__title" style="margin-bottom:0.75rem;">Research</h2>' +
+        '<p>The MacroNations Research Programme is not currently accepting new collaborators. Please check back at the start of the next academic term.</p>' +
+      '</div></div>';
+    return;
+  }
+
+  // If logged in as a researcher (any status), show their dashboard instead.
+  if (currentUser && currentUser.research_status) {
+    res_renderDashboard();
+    return;
+  }
+
+  // Otherwise: public-facing landing page.
+  var wave    = String(res_get('current_wave', 'Wave 1 - Fall 2026'));
+  var aeaId   = String(res_get('preregistration_aea_id', ''));
+  var html = '' +
+    '<section class="res-hero">' +
+      '<div class="res-hero__inner">' +
+        '<div class="res-hero__kicker">Multi-Institution RCT &middot; ' + esc(wave) + '</div>' +
+        '<h1 class="res-hero__title">Does competitive simulation <em>improve learning</em> in macroeconomics?</h1>' +
+        '<p class="res-hero__lede">A pre-registered, multi-site randomized study across universities worldwide. Run MacroNations in one of your sections and contribute to the first credible causal evidence on whether competitive policy simulation improves student learning. Site PIs are eligible for co-authorship on the resulting papers under a transparent contribution policy.</p>' +
+        '<div class="res-hero__ctas">' +
+          (currentUser
+            ? '<button class="btn btn--primary btn--lg" onclick="res_applyAsResearcher()">Apply to Join the Study</button>'
+            : '<button class="btn btn--primary btn--lg" onclick="res_openSignup()">Apply to Join the Study</button>'
+          ) +
+          '<button class="btn btn--ghost btn--lg" onclick="res_scrollTo(\'res-pillars-section\')">How it works</button>' +
+        '</div>' +
+      '</div>' +
+    '</section>' +
+
+    '<section class="res-section" id="res-pillars-section">' +
+      '<div class="res-section__inner">' +
+        '<h2 class="res-section__title">What we are measuring</h2>' +
+        '<p class="res-section__lede">A randomized, pre-registered design with active controls and behavioral telemetry — built to clear the bar of a leading economics or economics-education journal.</p>' +
+        '<div class="res-pillars">' +
+          '<div class="res-pillar"><div class="res-pillar__num">01</div><div class="res-pillar__title">Randomized within course</div><div class="res-pillar__body">Teams are randomly assigned to the tournament arm or a matched case-study control arm of equivalent time and credit weight.</div></div>' +
+          '<div class="res-pillar"><div class="res-pillar__num">02</div><div class="res-pillar__title">Standardized assessment</div><div class="res-pillar__body">A 40-item Macroeconomic Knowledge and Reasoning Assessment (MKRA) is administered as pre-test and post-test in every participating section.</div></div>' +
+          '<div class="res-pillar"><div class="res-pillar__num">03</div><div class="res-pillar__title">Behavioral telemetry</div><div class="res-pillar__body">Every policy decision and written rationale is captured in real time, supporting mechanism analysis beyond a simple treatment-effect estimate.</div></div>' +
+          '<div class="res-pillar"><div class="res-pillar__num">04</div><div class="res-pillar__title">Multi-site, multi-country</div><div class="res-pillar__body">External validity built in from the start. The network grows each wave; data accumulates across institutions and countries.</div></div>' +
+        '</div>' +
+      '</div>' +
+    '</section>' +
+
+    '<section class="res-section res-section--alt">' +
+      '<div class="res-section__inner">' +
+        '<div class="res-grid-two">' +
+          '<div>' +
+            '<h2 class="res-section__title">What you would do</h2>' +
+            '<ul class="res-list res-list--check">' +
+              '<li>Use MacroNations in at least one principles- or intermediate-level macroeconomics section per term.</li>' +
+              '<li>Follow a standardized protocol: pre-test, platform-handled randomization, post-test, brief endline survey, and a de-identified score upload at term close.</li>' +
+              '<li>Assign the shared case-study materials to your control teams (provided by the consortium).</li>' +
+              '<li>Maintain implementation fidelity (deadlines, weight in grade, no out-of-protocol assistance — all logged automatically).</li>' +
+              '<li>Obtain local IRB approval or rely on the lead-site IRB where institutionally permitted.</li>' +
+            '</ul>' +
+          '</div>' +
+          '<div>' +
+            '<h2 class="res-section__title">What you receive</h2>' +
+            '<ul class="res-list res-list--check">' +
+              '<li>Free institutional license to MacroNations for participating section(s) for the duration of the study.</li>' +
+              '<li>Ready-to-use syllabus inserts, MKRA assessment, case-study materials, and consent and IRB templates.</li>' +
+              '<li>Co-authorship eligibility on the lead substantive paper under the transparent authorship policy.</li>' +
+              '<li>Access to the de-identified pooled dataset for related independent research, subject to the Data Use Agreement.</li>' +
+              '<li>A per-site results report each term comparing your students\' outcomes to the pooled benchmark.</li>' +
+            '</ul>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</section>' +
+
+    '<section class="res-section">' +
+      '<div class="res-section__inner" style="text-align:center;">' +
+        '<h2 class="res-section__title" style="margin-bottom:1rem;">Ready to apply?</h2>' +
+        '<p class="res-section__lede" style="margin-left:auto;margin-right:auto;">Applications are reviewed by the Lead PI. After verification you gain access to the researcher dashboard, the document library, and the step-by-step onboarding workflow.</p>' +
+        (currentUser
+          ? '<button class="btn btn--primary btn--lg" onclick="res_applyAsResearcher()">Apply to Join the Study</button>'
+          : '<button class="btn btn--primary btn--lg" onclick="res_openSignup()">Create a Researcher Account</button>'
+        ) +
+        (aeaId
+          ? '<p class="text-xs text-center" style="margin-top:1.25rem;color:var(--text-500);">Pre-registered: AEA RCT ' + esc(aeaId) + '</p>'
+          : ''
+        ) +
+      '</div>' +
+    '</section>';
+
+  document.getElementById('research-content').innerHTML = html;
+}
+
+function res_openSignup() {
+  // Open the existing registration modal and pre-select researcher.
+  openModal('modal-register');
+  setTimeout(function() {
+    var rad = document.getElementById('role-researcher');
+    if (rad) { rad.checked = true; res_toggleMotivation(); }
+  }, 80);
+}
+
+// Existing logged-in user wants to upgrade to researcher (set status flag).
+async function res_applyAsResearcher() {
+  if (!currentUser) { return res_openSignup(); }
+  if (currentUser.research_status) { res_renderDashboard(); return; }
+  if (currentUser.role !== 'professor') {
+    flash('Researcher applications require a professor account. Sign in as a professor or register with your institutional email.', 'info');
+    return;
+  }
+  var motivation = prompt('Briefly describe why you want to participate in the research study (at least 30 characters):');
+  if (!motivation || motivation.trim().length < 30) {
+    flash('Application requires a brief motivation. Please try again.', 'info');
+    return;
+  }
+  try {
+    await sbPatch('mn_users', 'id=eq.' + currentUser.id, {
+      research_status: 'pending_verification',
+      research_motivation: motivation.trim()
+    });
+    currentUser.research_status = 'pending_verification';
+    currentUser.research_motivation = motivation.trim();
+    _saveSession(currentSession, currentUser);
+    flash('Application submitted. The Lead PI will review your application; you will be notified by email.', 'success');
+    res_renderDashboard();
+  } catch (e) {
+    flash('Could not submit application: ' + (e.message || 'unknown error'), 'error');
+  }
+}
+
+// Toggle the motivation textarea based on the selected role radio.
+function res_toggleMotivation() {
+  var wrap = document.getElementById('reg-researcher-extra');
+  var rad  = document.getElementById('role-researcher');
+  if (!wrap || !rad) { return; }
+  if (rad.checked) { wrap.classList.add('on'); }
+  else             { wrap.classList.remove('on'); }
+}
+
+function res_scrollTo(id) {
+  var el = document.getElementById(id);
+  if (el) { el.scrollIntoView({ behavior: 'smooth' }); }
+}
+
+// ─── Researcher dashboard (the 11-step wizard) ─────────────────────────────
+
+async function res_renderDashboard() {
+  var el = document.getElementById('research-content');
+  if (!currentUser) {
+    res_renderLanding();
+    return;
+  }
+
+  // Load this researcher's site (if any).
+  _resCurrentSite = null;
+  if (currentUser.research_status === 'verified' || currentUser.research_status === 'pending_verification') {
+    try {
+      var sites = await sbGet('mn_research_sites',
+        'lead_pi_user_id=eq.' + currentUser.id + '&limit=1');
+      if (sites && sites.length) { _resCurrentSite = sites[0]; }
+    } catch (e) { /* non-fatal */ }
+  }
+
+  var status = currentUser.research_status || 'none';
+  var statusPill = '';
+  var statusMsg  = '';
+
+  if (status === 'pending_verification') {
+    statusPill = '<span class="res-status-pill res-status-pill--pending">Pending verification</span>';
+    statusMsg  = 'Your application is under review by the Lead PI. You can read the protocol and download documents while you wait.';
+  } else if (status === 'verified') {
+    statusPill = '<span class="res-status-pill res-status-pill--verified">Verified researcher</span>';
+    statusMsg  = 'You are verified for ' + esc(String(res_get('current_wave','the current wave'))) + '. Work through the steps below to set up your site and section(s).';
+  } else if (status === 'rejected') {
+    statusPill = '<span class="res-status-pill res-status-pill--rejected">Application declined</span>';
+    statusMsg  = 'Your application was not approved. Contact the Lead PI for details.';
+  } else if (status === 'paused') {
+    statusPill = '<span class="res-status-pill res-status-pill--info">Paused</span>';
+    statusMsg  = 'Your participation is currently paused. Contact the Lead PI to reactivate.';
+  }
+
+  var canAct = (status === 'verified');
+  var steps  = res_buildSteps(canAct);
+
+  var html = '' +
+    '<div class="res-dash">' +
+      '<div class="res-dash__header">' +
+        '<div>' +
+          '<h1 class="res-dash__title">Research Dashboard</h1>' +
+          '<div class="res-dash__subtitle">' + esc(currentUser.name || currentUser.email) + ' &middot; ' + esc(currentUser.institution || '') + '</div>' +
+          '<div style="margin-top:0.6rem;">' + statusPill + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;font-size:0.88rem;color:var(--text-600);max-width:340px;">' +
+          esc(statusMsg) +
+        '</div>' +
+      '</div>' +
+
+      '<h2 class="res-section__title" style="font-size:1.25rem;margin:1.5rem 0 0.85rem;">Onboarding Steps</h2>' +
+      '<div id="res-steps">' + steps + '</div>' +
+
+      ((currentUser && currentUser.research_status === 'verified')
+        ? '<div id="res2-instructor-sections" style="margin-top:2.25rem;"></div>'
+        : '') +
+
+      '<h2 class="res-section__title" style="font-size:1.25rem;margin:2.25rem 0 0.85rem;">Document Library</h2>' +
+      '<div id="res-docs"><div class="res-empty">Loading documents…</div></div>' +
+    '</div>';
+
+  el.innerHTML = html;
+  // Pre-open the first incomplete step
+  res_initStepInteraction();
+  // Load documents asynchronously
+  res_loadDocuments();
+  // Phase 2: instructor section management for verified researchers
+  if (currentUser && currentUser.research_status === 'verified' && typeof res2_renderInstructorSections === 'function') {
+    try { res2_renderInstructorSections(); } catch (_rie) {}
+  }
+}
+
+function res_buildSteps(canAct) {
+  // Each step: number, title, hint, state ('complete'|'current'|'pending'|'locked'), body html
+  var siteRegistered = !!_resCurrentSite;
+  var mouSigned      = siteRegistered && _resCurrentSite.mou_status === 'signed';
+  var irbApproved    = siteRegistered && (_resCurrentSite.irb_status === 'approved' || _resCurrentSite.irb_status === 'exempt' || _resCurrentSite.irb_status === 'reliance_agreed');
+  var sectionsExist  = false; // will be wired in Phase 2
+
+  var stepDefs = [
+    {
+      n: 1, t: 'Read the research design protocol',
+      hint: 'The complete multi-site RCT design. Read before you commit.',
+      state: 'complete',
+      body: '<p>Download the full research design protocol and review it carefully. The protocol covers the randomized design, the active control, the outcome measures, the analysis specification, and the authorship policy.</p>' +
+            '<p>The pre-pilot version of the MKRA assessment instrument is available alongside the protocol so you can see exactly what will be administered to your students.</p>' +
+            '<p><a class="btn btn--primary" href="#" onclick="res_jumpToDocs();return false;">Open Document Library</a></p>'
+    },
+    {
+      n: 2, t: 'Sign and upload the Memorandum of Understanding',
+      hint: 'Establishes the formal terms of participation.',
+      state: canAct ? (mouSigned ? 'complete' : (siteRegistered ? 'current' : 'pending')) : 'locked',
+      body: siteRegistered
+        ? (mouSigned
+            ? '<p>MOU signed on ' + esc((_resCurrentSite.mou_signed_at || '').slice(0,10)) + '. Your participation terms are locked.</p>'
+            : '<p>Download the MOU template from the Document Library, sign with your institutional signing authority, and upload here.</p>' +
+              '<p><button class="btn btn--primary" onclick="res_markMouSigned()">I have signed the MOU</button> ' +
+              '<button class="btn btn--ghost" onclick="res_jumpToDocs()">Get the template</button></p>'
+          )
+        : '<p>You must first create your research site (step 4) before signing the MOU. The MOU is institution-specific.</p>'
+    },
+    {
+      n: 3, t: 'Obtain local IRB approval',
+      hint: 'Or reliance on the lead-site IRB where permitted.',
+      state: canAct ? (irbApproved ? 'complete' : (siteRegistered ? 'current' : 'pending')) : 'locked',
+      body: siteRegistered
+        ? (irbApproved
+            ? '<p>IRB status: <strong>' + esc(_resCurrentSite.irb_status) + '</strong>' + (_resCurrentSite.irb_approval_number ? ' (' + esc(_resCurrentSite.irb_approval_number) + ')' : '') + '.</p>'
+            : '<p>Submit the IRB cooperation letter (template available in the Document Library) to your local IRB. Once approved, record the approval here.</p>' +
+              '<p><button class="btn btn--primary" onclick="res_recordIrbApproval()">Record IRB approval</button></p>'
+          )
+        : '<p>Create your research site (step 4) first so the IRB record can be linked.</p>'
+    },
+    {
+      n: 4, t: 'Register your research site',
+      hint: 'One site per institution. You are the Site PI.',
+      state: canAct ? (siteRegistered ? 'complete' : 'current') : 'locked',
+      body: siteRegistered
+        ? '<p>Site registered: <strong>' + esc(_resCurrentSite.institution_name) + '</strong> (' + esc(_resCurrentSite.country) + ').</p>' +
+          '<p>Wave: ' + esc(_resCurrentSite.wave_assigned || 'not yet assigned') + '. Verification: ' + esc(_resCurrentSite.verification_status) + '.</p>'
+        : '<p>Create your research site row. This links your institutional context to the study and is a prerequisite for the MOU and IRB steps.</p>' +
+          '<p><button class="btn btn--primary" onclick="res_openSiteForm()">Register My Site</button></p>'
+    },
+    {
+      n: 5, t: 'Set up your research section(s) and invite students',
+      hint: 'Coming in Phase 2 — section management.',
+      state: 'pending',
+      body: '<p>Section creation and student enrollment will be available in the Phase 2 release. For now, focus on completing steps 1 through 4.</p>'
+    },
+    {
+      n: 6, t: 'Student consent in-platform',
+      hint: 'Coming in Phase 2 — automated consent capture.',
+      state: 'pending',
+      body: '<p>Students who join a research section will see a consent screen on first login. Their decision is captured automatically.</p>'
+    },
+    {
+      n: 7, t: 'Administer the MKRA pre-test',
+      hint: 'Coming in Phase 2 — 45-minute timed pre-test.',
+      state: 'pending',
+      body: '<p>The 40-item MKRA pre-test will be administered through the platform in week 1 of your section. You can preview the instrument in the Document Library.</p>'
+    },
+    {
+      n: 8, t: 'Confirm randomization and team formation',
+      hint: 'Coming in Phase 2 — balanced team formation, team-level randomization.',
+      state: 'pending',
+      body: '<p>After the pre-test, the platform forms balanced teams of four (matched on baseline ability, gender, and prior coursework) and randomly assigns them to treatment or control within your section.</p>'
+    },
+    {
+      n: 9, t: 'Run the term',
+      hint: 'Treatment teams play the tournament. Control teams complete the case-study track.',
+      state: 'pending',
+      body: '<p>For the next 5 to 10 weeks, treatment teams play MacroNations rounds while control teams submit written case-study responses on matched deadlines. The platform captures all activity automatically.</p>'
+    },
+    {
+      n: 10, t: 'Administer post-test, policy-reasoning task, and endline survey',
+      hint: 'Coming in Phase 2 — end-of-term instruments.',
+      state: 'pending',
+      body: '<p>In the final week, all students complete the same 40-item MKRA as a post-test, a written policy-reasoning scenario, and a short endline survey covering self-efficacy and persistence intent.</p>'
+    },
+    {
+      n: 11, t: 'Upload exam scores and download your CSV',
+      hint: 'Coming in Phase 3 — instructor exam upload and analysis-ready data export.',
+      state: 'pending',
+      body: '<p>Upload your section\'s midterm and final exam scores via CSV. After the cohort closes and the de-identification step runs, you will be able to download your site\'s analysis-ready dataset.</p>'
+    }
+  ];
+
+  var html = '';
+  for (var i = 0; i < stepDefs.length; i++) {
+    var s = stepDefs[i];
+    var stateClass = 'res-step--' + s.state;
+    html +=
+      '<div class="res-step ' + stateClass + '" data-step="' + s.n + '">' +
+        '<div class="res-step__head" onclick="res_toggleStep(' + s.n + ')">' +
+          '<div class="res-step__num">' + (s.state === 'complete' ? '\u2713' : s.n) + '</div>' +
+          '<div class="res-step__head-text">' +
+            '<div class="res-step__title">' + esc(s.t) + '</div>' +
+            '<div class="res-step__hint">' + esc(s.hint) + '</div>' +
+          '</div>' +
+          '<div class="res-step__chev">\u25BC</div>' +
+        '</div>' +
+        '<div class="res-step__body">' + s.body + '</div>' +
+      '</div>';
+  }
+  return html;
+}
+
+function res_toggleStep(n) {
+  var nodes = document.querySelectorAll('.res-step[data-step]');
+  for (var i = 0; i < nodes.length; i++) {
+    if (Number(nodes[i].getAttribute('data-step')) === n) {
+      nodes[i].classList.toggle('res-step--open');
+    } else {
+      nodes[i].classList.remove('res-step--open');
+    }
+  }
+}
+
+function res_initStepInteraction() {
+  // Open the first 'current' step by default
+  var first = document.querySelector('.res-step--current');
+  if (first) { first.classList.add('res-step--open'); }
+}
+
+function res_jumpToDocs() {
+  var t = document.getElementById('res-docs');
+  if (t) { t.scrollIntoView({ behavior: 'smooth' }); }
+}
+
+// ─── Documents loading ─────────────────────────────────────────────────────
+
+async function res_loadDocuments() {
+  var el = document.getElementById('res-docs');
+  if (!el) { return; }
+  try {
+    var docs = await sbGet('mn_research_documents',
+      'is_active=eq.true&order=display_order.asc&limit=100');
+    if (!docs || !docs.length) {
+      el.innerHTML = '<div class="res-empty">No documents have been published yet.</div>';
+      return;
+    }
+    var html = '<div class="res-doc-list">';
+    for (var i = 0; i < docs.length; i++) {
+      var d = docs[i];
+      var url = d.storage_url || '';
+      var dlBtn = url
+        ? '<a class="btn btn--ghost btn--sm" href="' + esc(url) + '" target="_blank" rel="noopener">Download</a>'
+        : '<button class="btn btn--ghost btn--sm" disabled title="Not yet uploaded">Coming soon</button>';
+      html +=
+        '<div class="res-doc-card">' +
+          '<div class="res-doc-card__title">' + esc(d.title) + '</div>' +
+          '<div class="res-doc-card__desc">' + esc(d.description || '') + '</div>' +
+          '<div class="res-doc-card__meta">' + esc(d.version || 'v1.0') + (d.required_step ? ' &middot; Step ' + d.required_step : '') + '</div>' +
+          '<div class="res-doc-card__actions">' + dlBtn + '</div>' +
+        '</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = '<div class="res-empty">Could not load documents (' + esc(e.message || 'error') + ').</div>';
+  }
+}
+
+// ─── Site / MOU / IRB actions ──────────────────────────────────────────────
+
+function res_openSiteForm() {
+  // Use a confirm-style modal — but the existing platform uses prompts for
+  // simple forms; we'll use a small set of prompts for consistency. A richer
+  // modal can come in Phase 2.
+  if (!currentUser || currentUser.research_status !== 'verified') {
+    flash('Site registration requires verification by the Lead PI.', 'info');
+    return;
+  }
+  var inst = prompt('Institution name (e.g., Binghamton University):', currentUser.institution || '');
+  if (!inst) { return; }
+  var country = prompt('Country (e.g., United States, India):', currentUser.country || '');
+  if (!country) { return; }
+  var instType = prompt('Institution type (R1 University, SLAC, Community College, Foreign National University, etc.):', '');
+  if (!instType) { return; }
+  res_doCreateSite(inst.trim(), country.trim(), instType.trim());
+}
+
+async function res_doCreateSite(inst, country, instType) {
+  try {
+    var wave = String(res_get('current_wave', ''));
+    var row = await sbPost('mn_research_sites', {
+      lead_pi_user_id: currentUser.id,
+      institution_name: inst,
+      country: country,
+      institution_type: instType,
+      wave_assigned: wave,
+      verification_status: 'pending'
+    });
+    flash('Research site created. The Lead PI will verify your site shortly.', 'success');
+    _resCurrentSite = row;
+    res_renderDashboard();
+  } catch (e) {
+    flash('Could not create site: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_markMouSigned() {
+  if (!_resCurrentSite) { return; }
+  var ok = confirm('Confirm that you have signed the MOU with your institution\'s signing authority. This will mark step 2 as complete.');
+  if (!ok) { return; }
+  try {
+    await sbPatch('mn_research_sites', 'id=eq.' + _resCurrentSite.id, {
+      mou_status: 'signed',
+      mou_signed_at: new Date().toISOString()
+    });
+    _resCurrentSite.mou_status = 'signed';
+    _resCurrentSite.mou_signed_at = new Date().toISOString();
+    flash('MOU recorded. (Storage of the signed document will be added in a forthcoming release.)', 'success');
+    res_renderDashboard();
+  } catch (e) {
+    flash('Could not record MOU: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_recordIrbApproval() {
+  if (!_resCurrentSite) { return; }
+  var status = prompt('IRB status — type one of: approved, exempt, reliance_agreed');
+  if (!status) { return; }
+  status = status.trim().toLowerCase();
+  if (['approved','exempt','reliance_agreed'].indexOf(status) === -1) {
+    flash('Status must be approved, exempt, or reliance_agreed.', 'error');
+    return;
+  }
+  var num  = prompt('IRB approval number (or leave blank if exempt / reliance):') || '';
+  var date = prompt('IRB approval date (YYYY-MM-DD):') || '';
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    flash('Date must be in YYYY-MM-DD format.', 'error');
+    return;
+  }
+  try {
+    var patch = { irb_status: status };
+    if (num)  { patch.irb_approval_number = num.trim(); }
+    if (date) { patch.irb_approval_date   = date; }
+    await sbPatch('mn_research_sites', 'id=eq.' + _resCurrentSite.id, patch);
+    Object.assign(_resCurrentSite, patch);
+    flash('IRB approval recorded.', 'success');
+    res_renderDashboard();
+  } catch (e) {
+    flash('Could not record IRB: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// ─── Admin: verification queue & module settings ───────────────────────────
+
+async function res_renderAdminPanel(el) {
+  if (!el) { return; }
+  el.innerHTML = '<div style="margin:1rem 0;">Loading research module…</div>';
+
+  // Two sections: (1) module settings, (2) verification queue.
+  var modEnabled = (_resSettings.module_enabled === true);
+  var wave       = String(res_get('current_wave',''));
+  var aeaId      = String(res_get('preregistration_aea_id',''));
+  var osfId      = String(res_get('preregistration_osf_id',''));
+  var autoApprove= (_resSettings.auto_approve_researchers === true);
+
+  var settingsHtml =
+    '<div class="card" style="padding:1.5rem;margin-bottom:1.5rem;">' +
+      '<h3 style="margin-top:0;">Module Settings</h3>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:1rem;">' +
+        '<div>' +
+          '<div style="font-size:0.78rem;color:var(--text-500);text-transform:uppercase;letter-spacing:0.06em;">Module Status</div>' +
+          '<div style="margin-top:0.4rem;">' +
+            (modEnabled
+              ? '<span class="res-status-pill res-status-pill--verified">Enabled</span>'
+              : '<span class="res-status-pill res-status-pill--pending">Disabled</span>'
+            ) +
+          '</div>' +
+          '<button class="btn btn--ghost btn--sm" style="margin-top:0.5rem;" onclick="res_toggleModule(' + (modEnabled ? 'false' : 'true') + ')">' +
+            (modEnabled ? 'Disable Module' : 'Enable Module') +
+          '</button>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.78rem;color:var(--text-500);text-transform:uppercase;letter-spacing:0.06em;">Current Wave</div>' +
+          '<div style="margin-top:0.4rem;font-size:0.94rem;">' + esc(wave) + '</div>' +
+          '<button class="btn btn--ghost btn--sm" style="margin-top:0.5rem;" onclick="res_editSetting(\'current_wave\')">Edit</button>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.78rem;color:var(--text-500);text-transform:uppercase;letter-spacing:0.06em;">Auto-approve researchers</div>' +
+          '<div style="margin-top:0.4rem;">' +
+            (autoApprove
+              ? '<span class="res-status-pill res-status-pill--info">On</span>'
+              : '<span class="res-status-pill res-status-pill--pending">Off</span>'
+            ) +
+          '</div>' +
+          '<button class="btn btn--ghost btn--sm" style="margin-top:0.5rem;" onclick="res_toggleAutoApprove(' + (autoApprove ? 'false' : 'true') + ')">' +
+            (autoApprove ? 'Turn Off' : 'Turn On') +
+          '</button>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.78rem;color:var(--text-500);text-transform:uppercase;letter-spacing:0.06em;">AEA RCT ID</div>' +
+          '<div style="margin-top:0.4rem;font-size:0.94rem;font-family:var(--font-mono,monospace);">' + esc(aeaId || '— not set —') + '</div>' +
+          '<button class="btn btn--ghost btn--sm" style="margin-top:0.5rem;" onclick="res_editSetting(\'preregistration_aea_id\')">Edit</button>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.78rem;color:var(--text-500);text-transform:uppercase;letter-spacing:0.06em;">OSF ID</div>' +
+          '<div style="margin-top:0.4rem;font-size:0.94rem;font-family:var(--font-mono,monospace);">' + esc(osfId || '— not set —') + '</div>' +
+          '<button class="btn btn--ghost btn--sm" style="margin-top:0.5rem;" onclick="res_editSetting(\'preregistration_osf_id\')">Edit</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  el.innerHTML = settingsHtml +
+    '<div class="card" style="padding:1.5rem;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">' +
+        '<h3 style="margin:0;">Researcher Verification Queue</h3>' +
+        '<button class="btn btn--ghost btn--sm" onclick="res_renderAdminPanel(document.getElementById(\'admin-panel-content\'))">Refresh</button>' +
+      '</div>' +
+      '<div id="res-queue-body"><div class="res-empty">Loading…</div></div>' +
+      '<h3 style="margin-top:2rem;">Site Verification Queue</h3>' +
+      '<div id="res-site-queue-body"><div class="res-empty">Loading…</div></div>' +
+    '</div>';
+
+  await res_loadVerificationQueue();
+  await res_loadSiteQueue();
+}
+
+async function res_loadVerificationQueue() {
+  var el = document.getElementById('res-queue-body');
+  if (!el) { return; }
+  try {
+    var rows = await sbGet('mn_users',
+      'research_status=eq.pending_verification&select=id,name,email,institution,country,research_motivation,research_target_wave,created_at&order=created_at.desc&limit=200');
+    if (!rows || !rows.length) {
+      el.innerHTML = '<div class="res-empty">No pending researcher applications.</div>';
+      return;
+    }
+    var h = '<table class="res-queue-table"><thead><tr>' +
+      '<th>Researcher</th><th>Institution</th><th>Motivation</th><th>Actions</th>' +
+      '</tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var mot = (r.research_motivation || '').slice(0, 220);
+      h += '<tr>' +
+        '<td><strong>' + esc(r.name || '—') + '</strong><br><span style="font-size:0.83rem;color:var(--text-500);">' + esc(r.email) + '</span></td>' +
+        '<td>' + esc(r.institution || '—') + '<br><span style="font-size:0.83rem;color:var(--text-500);">' + esc(r.country || '') + '</span></td>' +
+        '<td><div style="max-width:380px;font-size:0.88rem;">' + esc(mot) + (mot.length >= 220 ? '…' : '') + '</div></td>' +
+        '<td><div class="res-queue-actions">' +
+          '<button class="btn btn--primary btn--sm" onclick="res_approveResearcher(\'' + r.id + '\')">Approve</button>' +
+          '<button class="btn btn--ghost btn--sm" onclick="res_rejectResearcher(\'' + r.id + '\')">Decline</button>' +
+        '</div></td>' +
+      '</tr>';
+    }
+    h += '</tbody></table>';
+    el.innerHTML = h;
+  } catch (e) {
+    el.innerHTML = '<div class="res-empty">Error loading queue: ' + esc(e.message || '') + '</div>';
+  }
+}
+
+async function res_loadSiteQueue() {
+  var el = document.getElementById('res-site-queue-body');
+  if (!el) { return; }
+  try {
+    var rows = await sbGet('mn_research_sites',
+      'verification_status=eq.pending&order=created_at.desc&limit=200');
+    if (!rows || !rows.length) {
+      el.innerHTML = '<div class="res-empty">No pending site registrations.</div>';
+      return;
+    }
+    var h = '<table class="res-queue-table"><thead><tr>' +
+      '<th>Site</th><th>Country / Type</th><th>Lead PI</th><th>Actions</th>' +
+      '</tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var s = rows[i];
+      // Look up the lead PI's name
+      var piName = s.lead_pi_user_id;
+      try {
+        var u = await sbGet('mn_users', 'id=eq.' + s.lead_pi_user_id + '&select=name,email&limit=1');
+        if (u && u.length) { piName = u[0].name + ' (' + u[0].email + ')'; }
+      } catch (le) {}
+      h += '<tr>' +
+        '<td><strong>' + esc(s.institution_name) + '</strong><br><span style="font-size:0.83rem;color:var(--text-500);">' + esc(s.wave_assigned || '—') + '</span></td>' +
+        '<td>' + esc(s.country) + '<br><span style="font-size:0.83rem;color:var(--text-500);">' + esc(s.institution_type || '') + '</span></td>' +
+        '<td>' + esc(piName) + '</td>' +
+        '<td><div class="res-queue-actions">' +
+          '<button class="btn btn--primary btn--sm" onclick="res_approveSite(\'' + s.id + '\')">Verify</button>' +
+          '<button class="btn btn--ghost btn--sm" onclick="res_rejectSite(\'' + s.id + '\')">Decline</button>' +
+        '</div></td>' +
+      '</tr>';
+    }
+    h += '</tbody></table>';
+    el.innerHTML = h;
+  } catch (e) {
+    el.innerHTML = '<div class="res-empty">Error loading sites: ' + esc(e.message || '') + '</div>';
+  }
+}
+
+async function res_approveResearcher(userId) {
+  if (!confirm('Approve this researcher? They will gain access to the research dashboard.')) { return; }
+  try {
+    await sbPatch('mn_users', 'id=eq.' + userId, {
+      research_status: 'verified',
+      research_verified_at: new Date().toISOString(),
+      research_verified_by: currentUser.id
+    });
+    flash('Researcher approved.', 'success');
+    await res_loadVerificationQueue();
+  } catch (e) {
+    flash('Could not approve: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_rejectResearcher(userId) {
+  var reason = prompt('Reason for declining (optional, shown to applicant):');
+  if (reason === null) { return; }
+  try {
+    await sbPatch('mn_users', 'id=eq.' + userId, {
+      research_status: 'rejected',
+      research_verified_at: new Date().toISOString(),
+      research_verified_by: currentUser.id
+    });
+    flash('Researcher declined.', 'info');
+    await res_loadVerificationQueue();
+  } catch (e) {
+    flash('Could not decline: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_approveSite(siteId) {
+  if (!confirm('Verify this site? The Site PI will be notified.')) { return; }
+  try {
+    await sbPatch('mn_research_sites', 'id=eq.' + siteId, {
+      verification_status: 'verified',
+      verified_by: currentUser.id,
+      verified_at: new Date().toISOString()
+    });
+    flash('Site verified.', 'success');
+    await res_loadSiteQueue();
+  } catch (e) {
+    flash('Could not verify: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_rejectSite(siteId) {
+  var reason = prompt('Reason for declining (optional):');
+  if (reason === null) { return; }
+  try {
+    await sbPatch('mn_research_sites', 'id=eq.' + siteId, {
+      verification_status: 'rejected',
+      verified_by: currentUser.id,
+      verified_at: new Date().toISOString(),
+      rejection_reason: reason || ''
+    });
+    flash('Site declined.', 'info');
+    await res_loadSiteQueue();
+  } catch (e) {
+    flash('Could not decline: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_toggleModule(newVal) {
+  var msg = newVal
+    ? 'Enable the Research Module? The Research tab will become visible to all visitors.'
+    : 'Disable the Research Module? The Research tab will be hidden. Collected data remains in the database.';
+  if (!confirm(msg)) { return; }
+  try {
+    await sbPatch('mn_research_settings', 'key=eq.module_enabled', {
+      value: newVal, updated_at: new Date().toISOString(), updated_by: currentUser.id
+    });
+    _resSettings.module_enabled = newVal;
+    _resEnabled = !!newVal;
+    _resApplyVisibility();
+    flash('Research module ' + (newVal ? 'enabled' : 'disabled') + '.', 'success');
+    res_renderAdminPanel(document.getElementById('admin-panel-content'));
+  } catch (e) {
+    flash('Could not toggle: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_toggleAutoApprove(newVal) {
+  try {
+    await sbPatch('mn_research_settings', 'key=eq.auto_approve_researchers', {
+      value: newVal, updated_at: new Date().toISOString(), updated_by: currentUser.id
+    });
+    _resSettings.auto_approve_researchers = newVal;
+    flash('Auto-approve ' + (newVal ? 'enabled' : 'disabled') + '.', 'success');
+    res_renderAdminPanel(document.getElementById('admin-panel-content'));
+  } catch (e) {
+    flash('Could not update: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res_editSetting(key) {
+  var cur = _resSettings[key];
+  var curStr = (typeof cur === 'string') ? cur : JSON.stringify(cur);
+  var v = prompt('Edit ' + key + ':', curStr);
+  if (v === null) { return; }
+  var parsed = v;
+  // Try to parse as JSON; if it fails, store as string
+  try { parsed = JSON.parse(v); } catch (e) { parsed = v; }
+  try {
+    await sbPatch('mn_research_settings', 'key=eq.' + key, {
+      value: parsed, updated_at: new Date().toISOString(), updated_by: currentUser.id
+    });
+    _resSettings[key] = parsed;
+    flash('Setting updated.', 'success');
+    res_renderAdminPanel(document.getElementById('admin-panel-content'));
+  } catch (e) {
+    flash('Could not update: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// Wire role-radio onchange to toggle motivation field — done at DOMContentLoaded
+function _resWireRoleRadios() {
+  var rads = document.querySelectorAll('input[name="role"]');
+  for (var i = 0; i < rads.length; i++) {
+    rads[i].addEventListener('change', res_toggleMotivation);
+  }
+}
+
+// Register page loader and wire up
+PAGE_LOADERS['research'] = res_renderLanding;
+
+// Initialize on DOM ready: load settings (publicly readable), then wire UI.
+(function _resBootstrap() {
+  var doInit = function() {
+    res_loadSettings().then(function() {
+      _resWireRoleRadios();
+    });
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', doInit);
+  } else {
+    doInit();
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════════════════
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// RESEARCH MODULE — Phase 2: Instruments & Data Capture
+// Prefix res2_ / _res2. Self-contained; reads gating from mn_research_sections.
+// ════════════════════════════════════════════════════════════════════════════
+
+var _res2Consent   = null;   // current user's consent row (or null)
+var _res2Section   = null;   // the section they're enrolled in
+var _res2Site      = null;   // the site (for salt)
+var _res2Test      = null;   // active assessment runner state
+
+// SHA-256 hex (browser SubtleCrypto). Used for de-identified research_id.
+async function res2_sha256(str) {
+  var enc = new TextEncoder();
+  var buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+  var bytes = Array.prototype.slice.call(new Uint8Array(buf));
+  var hex = '';
+  for (var i = 0; i < bytes.length; i++) {
+    var h = bytes[i].toString(16);
+    if (h.length === 1) { h = '0' + h; }
+    hex += h;
+  }
+  return hex;
+}
+
+function res2_countWords(s) {
+  s = (s || '').trim();
+  if (!s) { return 0; }
+  return s.split(/\s+/).length;
+}
+
+// Load the current user's research enrollment (consent + section + site).
+async function res2_loadEnrollment() {
+  _res2Consent = null; _res2Section = null; _res2Site = null;
+  if (!currentUser) { return; }
+  try {
+    var consents = await sbGet('mn_research_consents',
+      'user_id=eq.' + currentUser.id + '&order=consented_at.desc&limit=1');
+    if (consents && consents.length) {
+      _res2Consent = consents[0];
+      var secs = await sbGet('mn_research_sections', 'id=eq.' + _res2Consent.section_id + '&limit=1');
+      if (secs && secs.length) {
+        _res2Section = secs[0];
+        var sites = await sbGet('mn_research_sites', 'id=eq.' + _res2Section.site_id + '&limit=1');
+        if (sites && sites.length) { _res2Site = sites[0]; }
+      }
+    }
+  } catch (e) { /* non-fatal */ }
+}
+
+// ─── Student: enroll via section code ──────────────────────────────────────
+function res2_promptEnroll() {
+  if (!currentUser) { flash('Please sign in first.', 'info'); return; }
+  var code = prompt('Enter the research section enrollment code provided by your instructor:');
+  if (!code) { return; }
+  res2_doEnroll(code.trim().toUpperCase());
+}
+
+async function res2_doEnroll(code) {
+  try {
+    var secs = await sbGet('mn_research_sections',
+      'enrollment_code=eq.' + encodeURIComponent(code) + '&limit=1');
+    if (!secs || !secs.length) {
+      flash('No research section found with that code.', 'error');
+      return;
+    }
+    var section = secs[0];
+    // Already enrolled?
+    var existing = await sbGet('mn_research_consents',
+      'user_id=eq.' + currentUser.id + '&section_id=eq.' + section.id + '&limit=1');
+    if (existing && existing.length) {
+      flash('You are already enrolled in this section.', 'info');
+      _res2Consent = existing[0]; _res2Section = section;
+      res2_renderStudentPanel();
+      return;
+    }
+    // Show consent modal
+    res2_showConsentModal(section);
+  } catch (e) {
+    flash('Enrollment error: ' + (e.message || 'unknown'), 'error');
+  }
+}
+
+function res2_showConsentModal(section) {
+  var html =
+    '<div class="modal-overlay on" id="res2-consent-modal" style="z-index:9998;">' +
+      '<div class="modal" style="max-width:640px;">' +
+        '<div class="modal__header"><h2 class="modal__title">Research Participation Consent</h2></div>' +
+        '<div class="modal__body" style="max-height:60vh;overflow-y:auto;font-size:0.92rem;line-height:1.6;">' +
+          '<p><strong>Study:</strong> Does Competitive Simulation Improve Learning in Macroeconomics? A Multi-Site Randomized Controlled Trial.</p>' +
+          '<p>You are invited to take part in an educational research study run through this platform. If you consent:</p>' +
+          '<ul style="padding-left:1.2rem;">' +
+            '<li>You will take a short macroeconomics assessment near the start and end of the course.</li>' +
+            '<li>You will be assigned to a team that is randomly placed in either the tournament or a parallel case-study track (both count equally toward your course).</li>' +
+            '<li>You will complete a brief written policy task and an endline survey.</li>' +
+            '<li>Your responses and de-identified course scores will be used for research.</li>' +
+          '</ul>' +
+          '<p><strong>Your privacy:</strong> Your name and email are never included in the research dataset. You are identified only by a one-way cryptographic code.</p>' +
+          '<p><strong>Voluntary:</strong> Participation is voluntary and does not affect your grade. If you decline, you still complete all course activities; your data simply are not used for research. You may withdraw at any time.</p>' +
+          '<p>By clicking \u201cI Consent\u201d you confirm you are at least 18 years old and voluntarily agree to participate.</p>' +
+        '</div>' +
+        '<div class="modal__footer" style="display:flex;gap:0.6rem;justify-content:flex-end;">' +
+          '<button class="btn btn--ghost" onclick="res2_recordConsent(false)">Decline (course only)</button>' +
+          '<button class="btn btn--primary" onclick="res2_recordConsent(true)">I Consent</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  var holder = document.createElement('div');
+  holder.id = 'res2-consent-holder';
+  holder.innerHTML = html;
+  document.body.appendChild(holder);
+  _res2PendingSection = section;
+}
+var _res2PendingSection = null;
+
+async function res2_recordConsent(consented) {
+  var section = _res2PendingSection;
+  var holder = document.getElementById('res2-consent-holder');
+  if (holder) { holder.parentNode.removeChild(holder); }
+  if (!section) { return; }
+  try {
+    var site = null;
+    var sites = await sbGet('mn_research_sites', 'id=eq.' + section.site_id + '&limit=1');
+    if (sites && sites.length) { site = sites[0]; }
+    var salt = (site && site.de_id_salt) ? site.de_id_salt : section.site_id;
+    var rid = await res2_sha256(currentUser.id + ':' + salt);
+    var row = await sbPost('mn_research_consents', {
+      user_id: currentUser.id,
+      section_id: section.id,
+      consent_given: !!consented,
+      consent_version: 'v1.0-2026',
+      research_id: rid
+    });
+    _res2Consent = row; _res2Section = section; _res2Site = site;
+    if (consented) {
+      flash('Thank you \u2014 you are enrolled in the study.', 'success');
+    } else {
+      flash('Recorded. You will take part in course activities without contributing research data.', 'info');
+    }
+    showPage('dashboard');
+    renderDashboard();
+  } catch (e) {
+    flash('Could not record consent: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// ─── Student: research panel on dashboard ──────────────────────────────────
+async function res2_renderStudentPanel() {
+  var mount = document.getElementById('res2-student-panel');
+  if (!mount) { return; }
+  if (!_res2Consent) { mount.innerHTML = ''; return; }
+  if (!_res2Consent.consent_given) {
+    mount.innerHTML =
+      '<div class="res2-panel"><div class="res2-panel__title">Research (declined)</div>' +
+      '<div class="res2-panel__body">You chose not to contribute research data. You can still participate fully in all course activities.</div></div>';
+    return;
+  }
+
+  var sec = _res2Section || {};
+  var rid = _res2Consent.research_id;
+
+  // Find arm assignment and completion states
+  var arm = null, preDone = false, postDone = false, prDone = false, endDone = false;
+  try {
+    var arms = await sbGet('mn_research_arms', 'section_id=eq.' + sec.id + '&team_id=eq.' + encodeURIComponent(rid) + '&limit=1');
+    if (arms && arms.length) { arm = arms[0].arm; }
+    var admins = await sbGet('mn_assessment_administrations', 'research_id=eq.' + encodeURIComponent(rid) + '&limit=10');
+    if (admins && admins.length) {
+      for (var i = 0; i < admins.length; i++) {
+        if (admins[i].phase === 'pre'  && admins[i].is_complete) { preDone = true; }
+        if (admins[i].phase === 'post' && admins[i].is_complete) { postDone = true; }
+      }
+    }
+    var prs = await sbGet('mn_policy_reasoning_responses', 'research_id=eq.' + encodeURIComponent(rid) + '&limit=1');
+    if (prs && prs.length) { prDone = true; }
+    var ends = await sbGet('mn_endline_surveys', 'research_id=eq.' + encodeURIComponent(rid) + '&limit=1');
+    if (ends && ends.length) { endDone = true; }
+  } catch (e) {}
+
+  function row(label, status, action) {
+    var sCls = 'res2-s-locked', sTxt = 'Locked';
+    if (status === 'done') { sCls = 'res2-s-done'; sTxt = 'Complete'; }
+    else if (status === 'open') { sCls = 'res2-s-open'; sTxt = 'Available'; }
+    else if (status === 'wait') { sCls = 'res2-s-wait'; sTxt = 'Waiting'; }
+    return '<div class="res2-task-row"><div class="res2-task-row__label">' + esc(label) +
+      (action ? ' &nbsp; ' + action : '') +
+      '</div><div class="res2-task-row__status ' + sCls + '">' + sTxt + '</div></div>';
+  }
+
+  var html = '<div class="res2-panel">' +
+    '<div class="res2-panel__title">\uD83D\uDD2C Research Participation</div>' +
+    '<div class="res2-panel__body">' +
+      '<p style="margin:0 0 0.5rem;">Section: <strong>' + esc(sec.section_label || '') + '</strong>' +
+      (arm ? ' &middot; Your track: <strong>' + (arm === 'treatment' ? 'Tournament' : 'Case Studies') + '</strong>' : ' &middot; Awaiting team assignment') +
+      '</p>';
+
+  // Pre-test
+  if (preDone) { html += row('Pre-test (macroeconomics assessment)', 'done'); }
+  else if (sec.pretest_open) { html += row('Pre-test (45 min, ~40 questions)', 'open', '<button class="btn btn--primary btn--sm" onclick="res2_startTest(\'pre\')">Start Pre-Test</button>'); }
+  else { html += row('Pre-test', 'wait'); }
+
+  // Arm-specific mid-term activity
+  if (arm === 'treatment') {
+    html += row('Tournament participation (see Tournaments tab)', 'open');
+  } else if (arm === 'control') {
+    if (sec.casestudy_open) { html += row('Case study track (5 written cases)', 'open', '<button class="btn btn--primary btn--sm" onclick="res2_openCaseTrack()">Open Case Studies</button>'); }
+    else { html += row('Case study track', 'wait'); }
+  }
+
+  // Post-test
+  if (postDone) { html += row('Post-test (macroeconomics assessment)', 'done'); }
+  else if (sec.posttest_open) { html += row('Post-test (45 min, ~40 questions)', 'open', '<button class="btn btn--primary btn--sm" onclick="res2_startTest(\'post\')">Start Post-Test</button>'); }
+  else { html += row('Post-test', 'locked'); }
+
+  // Policy reasoning
+  if (prDone) { html += row('Policy-reasoning task', 'done'); }
+  else if (sec.policy_task_open) { html += row('Policy-reasoning task (written)', 'open', '<button class="btn btn--primary btn--sm" onclick="res2_openPolicyTask()">Open Task</button>'); }
+  else { html += row('Policy-reasoning task', 'locked'); }
+
+  // Endline
+  if (endDone) { html += row('Endline survey', 'done'); }
+  else if (sec.endline_open) { html += row('Endline survey (~3 min)', 'open', '<button class="btn btn--primary btn--sm" onclick="res2_openEndline()">Open Survey</button>'); }
+  else { html += row('Endline survey', 'locked'); }
+
+  html += '</div></div>';
+  mount.innerHTML = html;
+}
+
+// ─── Assessment runner (pre/post MKRA) ─────────────────────────────────────
+async function res2_startTest(phase) {
+  if (!_res2Consent || !_res2Section) { return; }
+  var rid = _res2Consent.research_id;
+  // Guard: already complete?
+  try {
+    var done = await sbGet('mn_assessment_administrations',
+      'research_id=eq.' + encodeURIComponent(rid) + '&phase=eq.' + phase + '&is_complete=eq.true&limit=1');
+    if (done && done.length) { flash('You have already completed this assessment.', 'info'); return; }
+  } catch (e) {}
+
+  // Load items for active form
+  var form = String((_resSettings && _resSettings.mkra_form_id) ? _resSettings.mkra_form_id : 'A');
+  var items = [];
+  try {
+    items = await sbGet('mn_assessment_items',
+      'form=eq.' + form + '&is_active=eq.true&order=position.asc&limit=100');
+  } catch (e) {}
+  if (!items || !items.length) { flash('Assessment items are not yet loaded. Contact your instructor.', 'error'); return; }
+
+  // Randomize item order (Fisher-Yates)
+  var order = items.slice();
+  for (var i = order.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+
+  _res2Test = {
+    phase: phase, items: order, answers: {},
+    startMs: Date.now(), durationSec: 45 * 60,
+    rid: rid, form: form, sectionId: _res2Section.id
+  };
+  res2_renderTest();
+  res2_tickTimer();
+}
+
+function res2_renderTest() {
+  var t = _res2Test;
+  if (!t) { return; }
+  var answered = 0;
+  for (var k in t.answers) { if (t.answers.hasOwnProperty(k)) { answered++; } }
+
+  var qhtml = '';
+  for (var i = 0; i < t.items.length; i++) {
+    var it = t.items[i];
+    var sel = t.answers[it.id];
+    qhtml += '<div class="res2-q"><div class="res2-q__num">Question ' + (i + 1) + ' of ' + t.items.length + '</div>' +
+      '<div class="res2-q__stem">' + esc(it.stem) + '</div>';
+    var letters = ['A','B','C','D'];
+    var choices = [it.choice_a, it.choice_b, it.choice_c, it.choice_d];
+    for (var c = 0; c < 4; c++) {
+      var isSel = (sel === letters[c]);
+      qhtml += '<label class="res2-opt' + (isSel ? ' res2-opt--sel' : '') + '" onclick="res2_answer(\'' + it.id + '\',\'' + letters[c] + '\')">' +
+        '<span class="res2-opt__letter">' + letters[c] + '</span>' + esc(choices[c]) + '</label>';
+    }
+    qhtml += '</div>';
+  }
+
+  var html =
+    '<div class="res2-test-overlay" id="res2-test-overlay"><div class="res2-test-wrap">' +
+      '<div class="res2-test-bar">' +
+        '<div><strong>' + (t.phase === 'pre' ? 'Pre-Test' : 'Post-Test') + '</strong> &middot; Macroeconomic Knowledge &amp; Reasoning</div>' +
+        '<div><span class="res2-progress" id="res2-progress">' + answered + '/' + t.items.length + ' answered</span> &nbsp; ' +
+        '<span class="res2-timer" id="res2-timer">45:00</span></div>' +
+      '</div>' +
+      qhtml +
+      '<div class="res2-test-foot">' +
+        '<div style="font-size:0.85rem;color:var(--text-500);">Your answers are saved as you go. Submit when finished.</div>' +
+        '<button class="btn btn--primary" onclick="res2_submitTest(false)">Submit Assessment</button>' +
+      '</div>' +
+    '</div></div>';
+
+  var holder = document.getElementById('res2-test-holder');
+  if (!holder) { holder = document.createElement('div'); holder.id = 'res2-test-holder'; document.body.appendChild(holder); }
+  holder.innerHTML = html;
+}
+
+function res2_answer(itemId, letter) {
+  if (!_res2Test) { return; }
+  _res2Test.answers[itemId] = letter;
+  // Update just the progress count + selection styling without full re-render
+  res2_renderTest();
+}
+
+function res2_tickTimer() {
+  if (!_res2Test) { return; }
+  var t = _res2Test;
+  var elapsed = Math.floor((Date.now() - t.startMs) / 1000);
+  var remain = t.durationSec - elapsed;
+  var el = document.getElementById('res2-timer');
+  if (remain <= 0) {
+    if (el) { el.textContent = '0:00'; }
+    res2_submitTest(true);
+    return;
+  }
+  if (el) {
+    var m = Math.floor(remain / 60), s = remain % 60;
+    el.textContent = m + ':' + (s < 10 ? '0' + s : s);
+    if (remain <= 300) { el.classList.add('res2-timer--warn'); }
+  }
+  if (document.getElementById('res2-test-overlay')) {
+    setTimeout(res2_tickTimer, 1000);
+  }
+}
+
+async function res2_submitTest(auto) {
+  var t = _res2Test;
+  if (!t) { return; }
+  if (!auto) {
+    var answered = 0; for (var k in t.answers) { if (t.answers.hasOwnProperty(k)) { answered++; } }
+    if (answered < t.items.length) {
+      if (!confirm('You have answered ' + answered + ' of ' + t.items.length + ' questions. Submit anyway? Unanswered questions are marked incorrect.')) { return; }
+    }
+  }
+  _res2Test = null; // stop timer
+  var holder = document.getElementById('res2-test-holder');
+  if (holder) { holder.innerHTML = '<div class="res2-test-overlay"><div class="res2-test-wrap"><div class="res2-test-bar"><div>Submitting\u2026</div></div></div></div>'; }
+
+  try {
+    // Score
+    var raw = 0, recall = 0, application = 0;
+    for (var i = 0; i < t.items.length; i++) {
+      var it = t.items[i];
+      var sel = t.answers[it.id] || null;
+      var correct = (sel === it.correct_answer);
+      if (correct) {
+        raw++;
+        if ((it.cognitive_level || '').toLowerCase() === 'recall') { recall++; } else { application++; }
+      }
+    }
+    var timeSpent = Math.floor((Date.now() - t.startMs) / 1000);
+    var orderIds = t.items.map(function(x) { return x.id; });
+
+    // Create administration row
+    var admin = await sbPost('mn_assessment_administrations', {
+      research_id: t.rid, section_id: t.sectionId, form: t.form, phase: t.phase,
+      submitted_at: new Date().toISOString(), time_spent_seconds: timeSpent,
+      score_raw: raw, score_recall: recall, score_application: application,
+      is_complete: true, item_order: orderIds
+    });
+
+    // Store per-item responses
+    if (admin && admin.id) {
+      for (var r = 0; r < t.items.length; r++) {
+        var rit = t.items[r];
+        var rsel = t.answers[rit.id] || null;
+        try {
+          await sbPost('mn_assessment_responses', {
+            administration_id: admin.id, item_id: rit.id,
+            selected_answer: rsel, is_correct: (rsel === rit.correct_answer),
+            item_order_position: (r + 1)
+          });
+        } catch (re) { /* continue */ }
+      }
+    }
+
+    if (holder) { holder.innerHTML = ''; }
+    flash('Assessment submitted. Thank you!', 'success');
+    renderDashboard();
+  } catch (e) {
+    if (holder) { holder.innerHTML = ''; }
+    flash('Could not submit: ' + (e.message || 'error') + '. Please try again.', 'error');
+  }
+}
+
+// ─── Case study track ──────────────────────────────────────────────────────
+async function res2_openCaseTrack() {
+  if (!_res2Consent) { return; }
+  var rid = _res2Consent.research_id;
+  var cases = [], responses = {};
+  try {
+    cases = await sbGet('mn_case_study_assignments', 'is_active=eq.true&order=position.asc&limit=20');
+    var resp = await sbGet('mn_case_study_responses', 'research_id=eq.' + encodeURIComponent(rid) + '&limit=20');
+    if (resp) { for (var i = 0; i < resp.length; i++) { responses[resp[i].assignment_id] = resp[i]; } }
+  } catch (e) {}
+  if (!cases || !cases.length) { flash('No case studies available.', 'info'); return; }
+
+  var html = '<div class="res2-test-overlay" id="res2-case-overlay"><div class="res2-test-wrap">' +
+    '<div class="res2-test-bar"><div><strong>Case Study Track</strong> &middot; Control Arm</div>' +
+    '<button class="btn btn--ghost btn--sm" onclick="res2_closeCaseTrack()" style="color:#fff;border-color:rgba(255,255,255,0.4);">Close</button></div>';
+  for (var c = 0; c < cases.length; c++) {
+    var cs = cases[c];
+    var existing = responses[cs.id];
+    var done = !!existing;
+    html += '<div class="res2-case"><div class="res2-case__num">Case ' + cs.position + (done ? ' \u00b7 Submitted' : '') + '</div>' +
+      '<div class="res2-case__title">' + esc(cs.title) + '</div>' +
+      '<div class="res2-case__scenario">' + esc(cs.scenario_text) + '</div>' +
+      '<div class="res2-case__prompt">' + esc(cs.prompt_text) + '</div>';
+    if (done) {
+      html += '<div style="font-size:0.9rem;color:#065f46;">\u2713 Submitted (' + (existing.word_count || 0) + ' words). Responses are final once submitted.</div>';
+    } else {
+      html += '<textarea class="res2-textarea" id="res2-case-' + cs.id + '" oninput="res2_caseWordCount(\'' + cs.id + '\')" placeholder="Write your 200-300 word response here\u2026"></textarea>' +
+        '<div class="res2-wordcount" id="res2-case-wc-' + cs.id + '">0 words</div>' +
+        '<button class="btn btn--primary btn--sm" onclick="res2_submitCase(\'' + cs.id + '\',' + cs.position + ')">Submit Case ' + cs.position + '</button>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+  var holder = document.getElementById('res2-case-holder');
+  if (!holder) { holder = document.createElement('div'); holder.id = 'res2-case-holder'; document.body.appendChild(holder); }
+  holder.innerHTML = html;
+}
+function res2_closeCaseTrack() { var h = document.getElementById('res2-case-holder'); if (h) { h.innerHTML = ''; } }
+function res2_caseWordCount(id) {
+  var ta = document.getElementById('res2-case-' + id);
+  var wc = document.getElementById('res2-case-wc-' + id);
+  if (!ta || !wc) { return; }
+  var n = res2_countWords(ta.value);
+  wc.textContent = n + ' words';
+  wc.className = 'res2-wordcount' + (n >= 200 && n <= 320 ? ' res2-wordcount--ok' : '');
+}
+async function res2_submitCase(id, position) {
+  var ta = document.getElementById('res2-case-' + id);
+  if (!ta) { return; }
+  var text = (ta.value || '').trim();
+  var n = res2_countWords(text);
+  if (n < 100) { flash('Your response is quite short (' + n + ' words). Aim for 200-300 words.', 'info'); return; }
+  if (!confirm('Submit your response to Case ' + position + '? Submissions are final.')) { return; }
+  try {
+    await sbPost('mn_case_study_responses', {
+      research_id: _res2Consent.research_id, section_id: _res2Section.id,
+      assignment_id: id, response_text: text, word_count: n
+    });
+    flash('Case ' + position + ' submitted.', 'success');
+    res2_openCaseTrack();
+  } catch (e) {
+    flash('Could not submit: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// ─── Policy-reasoning task ─────────────────────────────────────────────────
+async function res2_openPolicyTask() {
+  if (!_res2Consent) { return; }
+  var tasks = [];
+  try { tasks = await sbGet('mn_policy_reasoning_tasks', 'is_active=eq.true&order=created_at.asc&limit=1'); } catch (e) {}
+  if (!tasks || !tasks.length) { flash('No policy task is available.', 'info'); return; }
+  var task = tasks[0];
+  var html = '<div class="res2-test-overlay" id="res2-pr-overlay"><div class="res2-test-wrap">' +
+    '<div class="res2-test-bar"><div><strong>Policy-Reasoning Task</strong></div>' +
+    '<button class="btn btn--ghost btn--sm" onclick="res2_closePolicyTask()" style="color:#fff;border-color:rgba(255,255,255,0.4);">Close</button></div>' +
+    '<div class="res2-case"><div class="res2-case__title">' + esc(task.task_label) + '</div>' +
+    '<div class="res2-case__scenario">' + esc(task.scenario_text) + '</div>' +
+    '<div class="res2-case__prompt">' + esc(task.prompt_text) + '</div>' +
+    '<textarea class="res2-textarea" id="res2-pr-text" oninput="res2_prWordCount()" style="min-height:260px;" placeholder="Write your 250-500 word response here\u2026"></textarea>' +
+    '<div class="res2-wordcount" id="res2-pr-wc">0 words</div>' +
+    '<button class="btn btn--primary" onclick="res2_submitPolicyTask(\'' + task.id + '\')">Submit Response</button>' +
+    '</div></div></div>';
+  var holder = document.getElementById('res2-pr-holder');
+  if (!holder) { holder = document.createElement('div'); holder.id = 'res2-pr-holder'; document.body.appendChild(holder); }
+  holder.innerHTML = html;
+}
+function res2_closePolicyTask() { var h = document.getElementById('res2-pr-holder'); if (h) { h.innerHTML = ''; } }
+function res2_prWordCount() {
+  var ta = document.getElementById('res2-pr-text'); var wc = document.getElementById('res2-pr-wc');
+  if (!ta || !wc) { return; }
+  var n = res2_countWords(ta.value);
+  wc.textContent = n + ' words';
+  wc.className = 'res2-wordcount' + (n >= 250 && n <= 520 ? ' res2-wordcount--ok' : '');
+}
+async function res2_submitPolicyTask(taskId) {
+  var ta = document.getElementById('res2-pr-text');
+  if (!ta) { return; }
+  var text = (ta.value || '').trim();
+  var n = res2_countWords(text);
+  if (n < 100) { flash('Your response is quite short (' + n + ' words). Aim for 250-500 words.', 'info'); return; }
+  if (!confirm('Submit your policy-reasoning response? This is final.')) { return; }
+  try {
+    await sbPost('mn_policy_reasoning_responses', {
+      research_id: _res2Consent.research_id, section_id: _res2Section.id,
+      task_id: taskId, response_text: text, word_count: n
+    });
+    res2_closePolicyTask();
+    flash('Policy-reasoning response submitted.', 'success');
+    renderDashboard();
+  } catch (e) {
+    flash('Could not submit: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// ─── Endline survey ────────────────────────────────────────────────────────
+var RES2_SE_ITEMS = [
+  'I am confident I can apply macroeconomic concepts to real-world situations.',
+  'I understand how monetary and fiscal policy affect the economy.',
+  'I can interpret macroeconomic data and indicators.',
+  'I feel prepared to discuss economic policy trade-offs.',
+  'I can reason about the likely effects of a policy change.',
+  'I am confident explaining macroeconomic ideas to others.',
+  'I enjoy analyzing macroeconomic problems.',
+  'I see myself using economics in my future studies or career.'
+];
+var _res2EndlineState = {};
+function res2_openEndline() {
+  _res2EndlineState = {};
+  var html = '<div class="res2-test-overlay" id="res2-end-overlay"><div class="res2-test-wrap">' +
+    '<div class="res2-test-bar"><div><strong>Endline Survey</strong></div>' +
+    '<button class="btn btn--ghost btn--sm" onclick="res2_closeEndline()" style="color:#fff;border-color:rgba(255,255,255,0.4);">Close</button></div>' +
+    '<div class="res2-case"><div class="res2-case__title">Your experience in this course</div>' +
+    '<p style="font-size:0.9rem;color:var(--text-600);">For each statement, select 1 (strongly disagree) to 5 (strongly agree).</p>';
+  for (var i = 0; i < RES2_SE_ITEMS.length; i++) {
+    html += '<div class="res2-likert-row"><div class="res2-likert-q">' + esc(RES2_SE_ITEMS[i]) + '</div><div class="res2-likert-opts">';
+    for (var v = 1; v <= 5; v++) {
+      html += '<div class="res2-likert-opt" id="res2-se-' + i + '-' + v + '" onclick="res2_setLikert(' + i + ',' + v + ')">' + v + '</div>';
+    }
+    html += '</div></div>';
+  }
+  html += '<div class="res2-likert-row"><div class="res2-likert-q">How likely are you to take another economics course? (1 = very unlikely, 5 = very likely)</div><div class="res2-likert-opts">';
+  for (var p = 1; p <= 5; p++) {
+    html += '<div class="res2-likert-opt" id="res2-pi-' + p + '" onclick="res2_setPersist(' + p + ')">' + p + '</div>';
+  }
+  html += '</div></div>' +
+    '<div style="margin-top:1rem;"><label style="font-size:0.9rem;color:var(--text-700);">Any comments on your experience (optional):</label>' +
+    '<textarea class="res2-textarea" id="res2-end-fb" style="min-height:90px;margin-top:0.4rem;"></textarea></div>' +
+    '<button class="btn btn--primary" style="margin-top:1rem;" onclick="res2_submitEndline()">Submit Survey</button>' +
+    '</div></div></div>';
+  var holder = document.getElementById('res2-end-holder');
+  if (!holder) { holder = document.createElement('div'); holder.id = 'res2-end-holder'; document.body.appendChild(holder); }
+  holder.innerHTML = html;
+}
+function res2_closeEndline() { var h = document.getElementById('res2-end-holder'); if (h) { h.innerHTML = ''; } }
+function res2_setLikert(idx, val) {
+  _res2EndlineState['se_' + idx] = val;
+  for (var v = 1; v <= 5; v++) {
+    var el = document.getElementById('res2-se-' + idx + '-' + v);
+    if (el) { if (v === val) { el.classList.add('res2-likert-opt--sel'); } else { el.classList.remove('res2-likert-opt--sel'); } }
+  }
+}
+function res2_setPersist(val) {
+  _res2EndlineState['persist'] = val;
+  for (var v = 1; v <= 5; v++) {
+    var el = document.getElementById('res2-pi-' + v);
+    if (el) { if (v === val) { el.classList.add('res2-likert-opt--sel'); } else { el.classList.remove('res2-likert-opt--sel'); } }
+  }
+}
+async function res2_submitEndline() {
+  var seItems = {}, seSum = 0, answered = 0;
+  for (var i = 0; i < RES2_SE_ITEMS.length; i++) {
+    var v = _res2EndlineState['se_' + i];
+    if (v) { seItems['q' + (i + 1)] = v; seSum += v; answered++; }
+  }
+  if (answered < RES2_SE_ITEMS.length) { flash('Please answer all self-efficacy statements.', 'info'); return; }
+  if (!_res2EndlineState['persist']) { flash('Please answer the persistence-intent question.', 'info'); return; }
+  var fbEl = document.getElementById('res2-end-fb');
+  try {
+    await sbPost('mn_endline_surveys', {
+      research_id: _res2Consent.research_id, section_id: _res2Section.id,
+      self_efficacy_score: seSum, self_efficacy_items: seItems,
+      persistence_intent_score: _res2EndlineState['persist'],
+      general_feedback: fbEl ? (fbEl.value || '').trim() : ''
+    });
+    res2_closeEndline();
+    flash('Survey submitted. Thank you for participating in the study!', 'success');
+    renderDashboard();
+  } catch (e) {
+    flash('Could not submit: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INSTRUCTOR (Site PI) — section management & randomization
+// Rendered inside the research dashboard (Phase 1) when verified.
+// ════════════════════════════════════════════════════════════════════════════
+
+function res2_genCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code = '';
+  for (var i = 0; i < 7; i++) { code += chars.charAt(Math.floor(Math.random() * chars.length)); }
+  return code;
+}
+
+async function res2_createSection() {
+  if (!_resCurrentSite) { flash('Register your research site first (step 4).', 'info'); return; }
+  if (_resCurrentSite.verification_status !== 'verified') { flash('Your site must be verified by the Lead PI before creating sections.', 'info'); return; }
+  var label = prompt('Section label (e.g., "Econ 162 Section 1, Fall 2026"):');
+  if (!label) { return; }
+  var roundsStr = prompt('Number of tournament rounds for the treatment arm (5-10):', '5');
+  var rounds = parseInt(roundsStr, 10); if (!rounds || rounds < 1) { rounds = 5; }
+  var code = res2_genCode();
+  try {
+    await sbPost('mn_research_sections', {
+      site_id: _resCurrentSite.id, section_label: label.trim(),
+      protocol_rounds: rounds, enrollment_code: code, enrollment_open: true
+    });
+    flash('Section created. Enrollment code: ' + code, 'success');
+    res2_renderInstructorSections();
+  } catch (e) {
+    flash('Could not create section: ' + (e.message || 'error'), 'error');
+  }
+}
+
+async function res2_renderInstructorSections() {
+  var mount = document.getElementById('res2-instructor-sections');
+  if (!mount) { return; }
+  if (!_resCurrentSite) { mount.innerHTML = ''; return; }
+  mount.innerHTML = '<div class="res-empty">Loading sections\u2026</div>';
+  var secs = [];
+  try { secs = await sbGet('mn_research_sections', 'site_id=eq.' + _resCurrentSite.id + '&order=created_at.desc&limit=50'); } catch (e) {}
+
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">' +
+    '<h2 class="res-section__title" style="font-size:1.25rem;margin:0;">Your Research Sections</h2>' +
+    '<button class="btn btn--primary btn--sm" onclick="res2_createSection()">+ New Section</button></div>';
+
+  if (!secs || !secs.length) {
+    html += '<div class="res-empty">No sections yet. Create one to get an enrollment code for your students.</div>';
+    mount.innerHTML = html; return;
+  }
+
+  for (var i = 0; i < secs.length; i++) {
+    var s = secs[i];
+    // Counts
+    var consents = [], armed = [], pre = 0, post = 0;
+    try {
+      consents = await sbGet('mn_research_consents', 'section_id=eq.' + s.id + '&limit=500');
+      armed    = await sbGet('mn_research_arms', 'section_id=eq.' + s.id + '&limit=500');
+      var admins = await sbGet('mn_assessment_administrations', 'section_id=eq.' + s.id + '&is_complete=eq.true&limit=1000');
+      if (admins) { for (var a = 0; a < admins.length; a++) { if (admins[a].phase === 'pre') { pre++; } if (admins[a].phase === 'post') { post++; } } }
+    } catch (e) {}
+    var consented = 0; if (consents) { for (var ci = 0; ci < consents.length; ci++) { if (consents[ci].consent_given) { consented++; } } }
+    var nTreat = 0, nCtrl = 0; if (armed) { for (var ai = 0; ai < armed.length; ai++) { if (armed[ai].arm === 'treatment') { nTreat++; } else { nCtrl++; } } }
+    var randomized = (armed && armed.length > 0);
+
+    html += '<div class="res2-sec-card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">' +
+        '<div><div style="font-weight:600;color:var(--navy-900);font-size:1.05rem;">' + esc(s.section_label) + '</div>' +
+        '<div style="font-size:0.83rem;color:var(--text-500);margin-top:0.2rem;">' + s.protocol_rounds + ' rounds &middot; enrollment code:</div>' +
+        '<div class="res2-sec-code" style="margin-top:0.3rem;">' + esc(s.enrollment_code || '\u2014') + '</div></div>' +
+      '</div>' +
+      '<div class="res2-stat-grid">' +
+        '<div class="res2-stat"><div class="res2-stat__num">' + consented + '</div><div class="res2-stat__lbl">Consented</div></div>' +
+        '<div class="res2-stat"><div class="res2-stat__num">' + pre + '</div><div class="res2-stat__lbl">Pre-test done</div></div>' +
+        '<div class="res2-stat"><div class="res2-stat__num">' + (randomized ? (nTreat + '/' + nCtrl) : '\u2014') + '</div><div class="res2-stat__lbl">Treat/Control</div></div>' +
+        '<div class="res2-stat"><div class="res2-stat__num">' + post + '</div><div class="res2-stat__lbl">Post-test done</div></div>' +
+      '</div>';
+
+    // Gates
+    html += '<div class="res2-gate-grid">' +
+      res2_gateToggle(s, 'pretest_open',   'Pre-test') +
+      res2_gateToggle(s, 'casestudy_open', 'Case studies') +
+      res2_gateToggle(s, 'posttest_open',  'Post-test') +
+      res2_gateToggle(s, 'policy_task_open','Policy task') +
+      res2_gateToggle(s, 'endline_open',   'Endline survey') +
+      '</div>';
+
+    // Randomize button
+    if (!randomized) {
+      html += '<div style="margin-top:0.85rem;"><button class="btn btn--primary btn--sm" onclick="res2_randomize(\'' + s.id + '\')">Form Teams &amp; Randomize</button> ' +
+        '<span style="font-size:0.82rem;color:var(--text-500);">Run after pre-tests are in. Forms balanced teams and assigns arms.</span></div>';
+    } else {
+      html += '<div style="margin-top:0.85rem;font-size:0.85rem;color:#065f46;">\u2713 Randomized: ' + nTreat + ' treatment, ' + nCtrl + ' control students.</div>';
+    }
+
+    // Exam upload
+    html += '<div style="margin-top:0.6rem;"><button class="btn btn--ghost btn--sm" onclick="res2_examUpload(\'' + s.id + '\')">Upload Exam Scores (CSV)</button></div>';
+
+    html += '</div>';
+  }
+  mount.innerHTML = html;
+}
+
+function res2_gateToggle(section, field, label) {
+  var on = !!section[field];
+  return '<div class="res2-gate"><div class="res2-gate__name">' + esc(label) + '</div>' +
+    '<button class="btn ' + (on ? 'btn--primary' : 'btn--ghost') + ' btn--sm" onclick="res2_toggleGate(\'' + section.id + '\',\'' + field + '\',' + (on ? 'false' : 'true') + ')">' +
+    (on ? 'Open' : 'Closed') + '</button></div>';
+}
+
+async function res2_toggleGate(sectionId, field, newVal) {
+  try {
+    var patch = {}; patch[field] = newVal;
+    await sbPatch('mn_research_sections', 'id=eq.' + sectionId, patch);
+    res2_renderInstructorSections();
+  } catch (e) {
+    flash('Could not update: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// Randomization: balanced team formation + arm assignment.
+async function res2_randomize(sectionId) {
+  if (!confirm('Form teams and randomize this section now? This is done once and recorded immutably. Run only after pre-tests are substantially complete.')) { return; }
+  try {
+    var sec = null;
+    var ss = await sbGet('mn_research_sections', 'id=eq.' + sectionId + '&limit=1');
+    if (ss && ss.length) { sec = ss[0]; }
+    if (!sec) { flash('Section not found.', 'error'); return; }
+
+    // Gather consented students with pre-test scores
+    var consents = await sbGet('mn_research_consents', 'section_id=eq.' + sectionId + '&consent_given=eq.true&limit=1000');
+    if (!consents || consents.length < 4) { flash('Need at least 4 consented students to form teams.', 'info'); return; }
+
+    var admins = await sbGet('mn_assessment_administrations',
+      'section_id=eq.' + sectionId + '&phase=eq.pre&is_complete=eq.true&limit=1000');
+    var scoreByRid = {};
+    if (admins) { for (var i = 0; i < admins.length; i++) { scoreByRid[admins[i].research_id] = admins[i].score_raw || 0; } }
+
+    // Build student list (research_id + score); students without pretest get median later
+    var students = [];
+    for (var c = 0; c < consents.length; c++) {
+      var rid = consents[c].research_id;
+      students.push({ rid: rid, uid: consents[c].user_id, score: (scoreByRid.hasOwnProperty(rid) ? scoreByRid[rid] : -1) });
+    }
+    // Replace missing scores (-1) with median of known scores
+    var known = students.filter(function(s){return s.score>=0;}).map(function(s){return s.score;}).sort(function(a,b){return a-b;});
+    var median = known.length ? known[Math.floor(known.length/2)] : 0;
+    students.forEach(function(s){ if (s.score < 0) { s.score = median; } });
+
+    // Sort by score, snake-draft into teams of 4 (balances mean score across teams)
+    students.sort(function(a,b){ return b.score - a.score; });
+    var teamSize = 4;
+    var nTeams = Math.max(2, Math.ceil(students.length / teamSize));
+    var teams = []; for (var t = 0; t < nTeams; t++) { teams.push([]); }
+    var dir = 1, ti = 0;
+    for (var si = 0; si < students.length; si++) {
+      teams[ti].push(students[si]);
+      ti += dir;
+      if (ti === nTeams) { ti = nTeams - 1; dir = -1; }
+      else if (ti < 0) { ti = 0; dir = 1; }
+    }
+
+    // Randomly assign teams to arms (~half each), seeded
+    var seed = 'seed-' + sectionId + '-' + Date.now();
+    var teamIdx = []; for (var k = 0; k < teams.length; k++) { teamIdx.push(k); }
+    for (var z = teamIdx.length - 1; z > 0; z--) { var j = Math.floor(Math.random()*(z+1)); var tmp=teamIdx[z]; teamIdx[z]=teamIdx[j]; teamIdx[j]=tmp; }
+    var halfT = Math.floor(teams.length / 2);
+    var armOfTeam = {};
+    for (var m = 0; m < teamIdx.length; m++) { armOfTeam[teamIdx[m]] = (m < halfT) ? 'treatment' : 'control'; }
+
+    // Persist: one mn_research_arms row per student (team_id = research_id for student-level tracking)
+    // Also create real tournament teams for treatment groups when section has a tournament.
+    var tournId = sec.tournament_id || null;
+    for (var tm = 0; tm < teams.length; tm++) {
+      var arm = armOfTeam[tm];
+      var group = teams[tm];
+      var realTeamId = null;
+
+      if (arm === 'treatment' && tournId) {
+        try {
+          var members = group.map(function(g){ return g.uid; });
+          var inviteCode = (typeof _genInviteCode === 'function') ? _genInviteCode() : ('R' + Math.random().toString(36).slice(2,8).toUpperCase());
+          var teamRow = await sbPost('teams', {
+            name: 'Research Team ' + (tm + 1),
+            tournament_id: tournId,
+            captain_id: group[0].uid,
+            members: members,
+            invite_code: inviteCode,
+            fee_paid: true
+          });
+          if (teamRow && teamRow.id) {
+            realTeamId = teamRow.id;
+            if (typeof defaultEconomy === 'function') {
+              try {
+                await sbPost('economies', {
+                  team_id: teamRow.id, tournament_id: tournId,
+                  current: defaultEconomy(), snapshots: [], current_round: 0, scores_history: []
+                });
+              } catch (ee) {}
+            }
+          }
+        } catch (te) { /* continue; arm rows still recorded */ }
+      }
+
+      for (var g = 0; g < group.length; g++) {
+        try {
+          await sbPost('mn_research_arms', {
+            section_id: sectionId, team_id: group[g].rid, arm: arm, assignment_seed: seed
+          });
+        } catch (ae) {}
+      }
+    }
+
+    await sbPatch('mn_research_sections', 'id=eq.' + sectionId, {
+      randomization_seed: seed, randomization_completed_at: new Date().toISOString()
+    });
+
+    flash('Randomization complete: ' + teams.length + ' teams formed and assigned to arms.', 'success');
+    res2_renderInstructorSections();
+  } catch (e) {
+    flash('Randomization failed: ' + (e.message || 'error'), 'error');
+  }
+}
+
+// Exam score upload (CSV paste): research_id or student email, midterm, final, common, grade
+async function res2_examUpload(sectionId) {
+  var help = 'Paste CSV rows, one student per line, in this format:\n\n' +
+    'student_email, midterm_score, final_score, common_items_subscore, course_grade\n\n' +
+    'Example:\n  jdoe@uni.edu, 82, 88, 9, B+\n\n' +
+    'Scores are matched to consented students by email and stored de-identified.';
+  var csv = prompt(help);
+  if (!csv) { return; }
+  var lines = csv.split('\n');
+  var ok = 0, fail = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) { continue; }
+    var parts = line.split(',');
+    if (parts.length < 2) { fail++; continue; }
+    var email = parts[0].trim().toLowerCase();
+    var mid = parts[1] ? parseFloat(parts[1]) : null;
+    var fin = parts[2] ? parseFloat(parts[2]) : null;
+    var common = parts[3] ? parseFloat(parts[3]) : null;
+    var grade = parts[4] ? parts[4].trim() : null;
+    try {
+      // Find user by email, then their consent (research_id) in this section
+      var users = await sbGetPublic('mn_users', 'email=eq.' + encodeURIComponent(email) + '&select=id&limit=1');
+      if (!users || !users.length) { fail++; continue; }
+      var cons = await sbGet('mn_research_consents',
+        'user_id=eq.' + users[0].id + '&section_id=eq.' + sectionId + '&limit=1');
+      if (!cons || !cons.length) { fail++; continue; }
+      await sbPost('mn_course_exam_uploads', {
+        research_id: cons[0].research_id, section_id: sectionId,
+        midterm_score: mid, final_score: fin, common_items_subscore: common,
+        course_grade: grade, uploaded_by: currentUser.id
+      });
+      ok++;
+    } catch (e) { fail++; }
+  }
+  flash('Exam upload: ' + ok + ' saved, ' + fail + ' skipped.', ok ? 'success' : 'info');
+}
+
+// END RESEARCH MODULE — Phase 1
+// ════════════════════════════════════════════════════════════════════════════
 
 </script>
 
