@@ -3045,7 +3045,8 @@ h1, h2, h3, h4, h5 {
 /* ── Course Portal (Palette A: Oxford navy & gold on cool paper) ── */
 body.on-portal .nav__links,
 body.on-portal .nav__cta,
-body.on-portal .nav__hamburger { display: none; }
+body.on-portal .nav__hamburger,
+body.on-portal .footer { display: none; }
 .portal {
   min-height: calc(100vh - var(--nav-h));
   display: flex;
@@ -4348,7 +4349,7 @@ body.sandbox-mode {
           </span>
         </div>
         <h1 class="portal__wordmark"><em>Macro</em>Nations</h1>
-        <p class="portal__tagline">Learn economics by running it. Choose a course.</p>
+        <p class="portal__tagline">Learn economics by playing it. Choose a course.</p>
 
         <div class="portal__grid">
           <button class="portal-card portal-card--active" onclick="enterCourse('macro')" aria-label="Open the Macroeconomics course">
@@ -19851,13 +19852,14 @@ if (typeof PAGE_LOADERS === 'object' && PAGE_LOADERS !== null) {
   PAGE_LOADERS.sandbox = function() { sbxRenderPage(); };
 }
 
-// On initial page load, if sandbox was active, restore it
+// On initial page load the portal is the top-level entry, so we never
+// auto-restore the sandbox banner. Clear any stale sandbox flag so the
+// banner doesn't appear over the portal. (Entering the sandbox via its
+// button still works normally within the session.)
 (function sbxBootstrap() {
   function init() {
-    if (sbxIsActive()) {
-      document.body.classList.add('sandbox-mode');
-      sbxRenderBanner();
-    }
+    try { localStorage.removeItem(SBX_ACTIVE_KEY); } catch(e) {}
+    document.body.classList.remove('sandbox-mode');
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
