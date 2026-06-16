@@ -3047,6 +3047,12 @@ body.on-portal .nav__links,
 body.on-portal .nav__cta,
 body.on-portal .nav__hamburger,
 body.on-portal .footer { display: none; }
+
+/* Context-aware footer: macro footer on course pages, general platform
+   footer on the portal-level About page. */
+.footer--platform { display: none; }
+body.on-pabout .footer--macro { display: none; }
+body.on-pabout .footer--platform { display: block; }
 .portal {
   min-height: calc(100vh - var(--nav-h));
   display: flex;
@@ -3118,6 +3124,12 @@ body.on-portal .footer { display: none; }
   .portal__grid { grid-template-columns: 1fr; }
   .portal__wordmark { font-size: 2.1rem; }
 }
+.portal__about { margin-top: 2rem; text-align: center; }
+.portal__about a {
+  font-size: 0.8125rem; color: var(--text-400); text-decoration: none;
+  border-bottom: 1px solid transparent; transition: color 0.15s ease, border-color 0.15s ease;
+}
+.portal__about a:hover { color: var(--blue); border-bottom-color: var(--blue); }
 
 /* ── Free (Open Season) mode: hide fee/payment-only surfaces ── */
 body.mn-free-mode [data-dash-tab="payment"],
@@ -4376,6 +4388,18 @@ body.sandbox-mode {
             <span class="portal-card__arrow" aria-hidden="true">→</span>
           </button>
 
+          <button class="portal-card portal-card--active" onclick="enterCourse('econometrics')" aria-label="Open the Econometrics course">
+            <span class="portal-card__chip">📊</span>
+            <span class="portal-card__body">
+              <span class="portal-card__row">
+                <span class="portal-card__name">Econometrics</span>
+                <span class="portal-card__badge portal-card__badge--live">Live</span>
+              </span>
+              <span class="portal-card__desc">Run real regressions in your browser, lab by lab.</span>
+            </span>
+            <span class="portal-card__arrow" aria-hidden="true">→</span>
+          </button>
+
           <div class="portal-card portal-card--soon" aria-disabled="true">
             <span class="portal-card__chip portal-card__chip--muted">🛒</span>
             <span class="portal-card__body">
@@ -4394,9 +4418,38 @@ body.sandbox-mode {
             </span>
           </div>
         </div>
+        <div class="portal__about">
+          <a href="#" onclick="showPage('pabout');return false;">About MacroNations</a>
+        </div>
       </div>
     </div>
   </div><!-- /page-portal -->
+
+  <!-- ── PAGE: PLATFORM ABOUT (portal-level) ── -->
+  <div class="page page-pabout" id="page-pabout">
+    <div class="page-header">
+      <div class="page-header__inner">
+        <div>
+          <h1 class="page-header__title">About MacroNations</h1>
+          <p class="page-header__sub">Learn economics by playing it — one platform, many disciplines.</p>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--bg-white);border-bottom:1px solid var(--border);">
+      <div class="container" style="padding-top:0;padding-bottom:0;">
+        <div class="admin-tabs" role="tablist" style="border-bottom:none;margin-bottom:0;overflow-x:auto;">
+          <button class="admin-tab active" data-pabout-tab="platform" onclick="showPAbout('platform')">Platform</button>
+          <button class="admin-tab"        data-pabout-tab="courses"  onclick="showPAbout('courses')">Courses</button>
+          <button class="admin-tab"        data-pabout-tab="how"      onclick="showPAbout('how')">How It Works</button>
+          <button class="admin-tab"        data-pabout-tab="founder"  onclick="showPAbout('founder')">Founder</button>
+          <button class="admin-tab"        data-pabout-tab="legal"    onclick="showPAbout('legal')">Legal</button>
+        </div>
+      </div>
+    </div>
+    <div class="container" style="padding-top:2.5rem;padding-bottom:4rem;">
+      <div id="pabout-content"></div>
+    </div>
+  </div><!-- /page-pabout -->
 
 
   <div class="page page-home" id="page-home">
@@ -5180,8 +5233,7 @@ body.sandbox-mode {
     <div style="background:var(--bg-white);border-bottom:1px solid var(--border);">
       <div class="container" style="padding-top:0;padding-bottom:0;">
         <div class="admin-tabs" role="tablist" style="border-bottom:none;margin-bottom:0;overflow-x:auto;">
-          <button class="admin-tab active" data-about-tab="founder"    onclick="showAbout('founder')">Founder</button>
-          <button class="admin-tab"        data-about-tab="how"        onclick="showAbout('how')">How It Works</button>
+          <button class="admin-tab active" data-about-tab="how"        onclick="showAbout('how')">How It Works</button>
           <button class="admin-tab"        data-about-tab="curriculum" onclick="showAbout('curriculum')">Curriculum Guide</button>
           <button class="admin-tab"        data-about-tab="legal"      onclick="showAbout('legal')">Legal</button>
         </div>
@@ -5508,7 +5560,7 @@ body.sandbox-mode {
   </div><!-- /page-sandbox -->
 
 
-<footer class="footer" role="contentinfo">
+<footer class="footer footer--macro" role="contentinfo">
   <div class="footer__main">
 
     <div>
@@ -5581,6 +5633,55 @@ body.sandbox-mode {
       <a href="#" class="footer__legal-link">Privacy</a>
       <a href="#" class="footer__legal-link">Terms</a>
       <a href="#" class="footer__legal-link">Rules</a>
+    </nav>
+  </div>
+</footer>
+
+<footer class="footer footer--platform" role="contentinfo">
+  <div class="footer__main">
+    <div>
+      <a href="#" class="wordmark wordmark--footer" aria-label="MacroNations course portal" onclick="showPage('portal');return false;">
+        <span class="wordmark__text"><em>Macro</em>Nations</span>
+      </a>
+      <p class="footer__brand-desc">
+        Learn economics by playing it. One platform, many disciplines — each pairing an interactive course with a full textbook, for students and the professors who teach them.
+      </p>
+    </div>
+
+    <div>
+      <div class="footer__col-title">Courses</div>
+      <ul class="footer__links">
+        <li><a href="#" class="footer__link" onclick="enterCourse('macro');return false;">Macroeconomics</a></li>
+        <li><a href="#" class="footer__link" onclick="enterCourse('gametheory');return false;">Game Theory</a></li>
+        <li><a href="#" class="footer__link" onclick="enterCourse('econometrics');return false;">Econometrics</a></li>
+        <li><a href="#" class="footer__link" onclick="showPage('portal');return false;">All courses</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer__col-title">Platform</div>
+      <ul class="footer__links">
+        <li><a href="#" class="footer__link" onclick="showPage('pabout');return false;">About MacroNations</a></li>
+        <li><a href="#" class="footer__link" onclick="showPage('pabout');setTimeout(function(){var e=document.querySelector('[data-pabout-tab=\&quot;how\&quot;]');if(e){e.click();}},80);return false;">How it Works</a></li>
+        <li><a href="#" class="footer__link" onclick="showPage('pabout');setTimeout(function(){var e=document.querySelector('[data-pabout-tab=\&quot;founder\&quot;]');if(e){e.click();}},80);return false;">Founder</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer__col-title">Legal</div>
+      <ul class="footer__links">
+        <li><a href="#" class="footer__link" onclick="showPage('pabout');setTimeout(function(){var e=document.querySelector('[data-pabout-tab=\&quot;legal\&quot;]');if(e){e.click();}},80);return false;">Terms of Service</a></li>
+        <li><a href="#" class="footer__link" onclick="showPage('pabout');setTimeout(function(){var e=document.querySelector('[data-pabout-tab=\&quot;legal\&quot;]');if(e){e.click();}},80);return false;">Privacy Policy</a></li>
+        <li><a href="mailto:support@macronations.com" class="footer__link">Contact Us</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <p class="footer__copy">© 2026 MacroNations LLC · A New York Limited Liability Company · All rights reserved.</p>
+    <nav class="footer__legal-links" aria-label="Legal links">
+      <a href="#" class="footer__legal-link" onclick="showPage('pabout');setTimeout(function(){var e=document.querySelector('[data-pabout-tab=\&quot;legal\&quot;]');if(e){e.click();}},80);return false;">Privacy</a>
+      <a href="#" class="footer__legal-link" onclick="showPage('pabout');setTimeout(function(){var e=document.querySelector('[data-pabout-tab=\&quot;legal\&quot;]');if(e){e.click();}},80);return false;">Terms</a>
     </nav>
   </div>
 </footer>
@@ -5836,6 +5937,7 @@ function setLoading(btnId, bool, label) {
 
 function showPage(id) {
   document.body.classList.toggle('on-portal', id === 'portal');
+  document.body.classList.toggle('on-pabout', id === 'pabout');
   var pages = document.querySelectorAll('.page');
   for (var i = 0; i < pages.length; i++) {
     if (pages[i].id === 'page-' + id) { pages[i].classList.add('on'); }
@@ -5851,19 +5953,66 @@ function showPage(id) {
   if (loader) { loader(); }
 }
 
+// Lightweight analytics event — writes a row to page_views tagged with
+// the course and an event_type ('visit' = page load, 'open' = course
+// card click). Fire-and-forget; never blocks navigation. Geo is captured
+// on the initial portal visit, so click events skip it.
+function mnTrackEvent(course, eventType) {
+  try {
+    var sid = sessionStorage.getItem('mn_sid');
+    if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('mn_sid', sid); }
+    fetch(SUPA_URL + '/rest/v1/page_views', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        SUPA_ANON,
+        'Authorization': 'Bearer ' + SUPA_ANON
+      },
+      body: JSON.stringify({
+        session_id: sid,
+        user_id:    (currentUser && currentUser.id) || null,
+        referrer:   document.referrer ? document.referrer.slice(0, 500) : null,
+        visited_at: new Date().toISOString(),
+        course:     course || null,
+        event_type: eventType || 'visit'
+      })
+    }).catch(function() {});
+  } catch(e) {}
+}
+
 // Course portal router — a course tile routes into that course.
 // 'macro' opens the in-app MacroNations landing; 'gametheory' navigates
-// to the externally hosted StrategyArena platform.
+// to the externally hosted StrategyArena platform. Each click is logged
+// so the super-admin Analytics tab can show the portal funnel.
 function enterCourse(courseId) {
   if (courseId === 'gametheory') {
+    mnTrackEvent('gametheory', 'open');
     if (GAME_THEORY_URL && GAME_THEORY_URL.indexOf('http') === 0) {
-      window.location.href = GAME_THEORY_URL;
+      var sid = '';
+      try { sid = sessionStorage.getItem('mn_sid') || ''; } catch(e) {}
+      var sep = GAME_THEORY_URL.indexOf('?') === -1 ? '?' : '&';
+      var dest = sid ? (GAME_THEORY_URL + sep + 'mn_sid=' + encodeURIComponent(sid)) : GAME_THEORY_URL;
+      window.location.href = dest;
     } else {
       flash('Game Theory course URL is not set yet.', 'info');
     }
     return;
   }
+  if (courseId === 'econometrics') {
+    mnTrackEvent('econometrics', 'open');
+    if (ECONOMETRICS_URL && ECONOMETRICS_URL.indexOf('http') === 0) {
+      var esid = '';
+      try { esid = sessionStorage.getItem('mn_sid') || ''; } catch(e) {}
+      var esep = ECONOMETRICS_URL.indexOf('?') === -1 ? '?' : '&';
+      var edest = esid ? (ECONOMETRICS_URL + esep + 'mn_sid=' + encodeURIComponent(esid)) : ECONOMETRICS_URL;
+      window.location.href = edest;
+    } else {
+      flash('Econometrics course URL is not set yet.', 'info');
+    }
+    return;
+  }
   // default: Macroeconomics → the current MacroNations experience
+  mnTrackEvent('macroeconomics', 'open');
   showPage('home');
 }
 
@@ -6966,11 +7115,16 @@ function _applyPlatformModeUI() {
         var liveSeed = Number(pb.award_seed);
         if (liveSeed >= 0) { AWARD_SEED = liveSeed; }
       }
-      // Platform mode: 'free' converts the whole platform to Open Season.
-      if (pb.platform_mode === 'free') {
+      // Platform mode: Open Season is the default. Only an explicit
+      // 'tiered' setting switches the platform to Competitive mode;
+      // anything else (including unset or 'free') stays Open Season.
+      if (pb.platform_mode === 'tiered') {
+        PLATFORM_FREE_MODE = false;   // fees already loaded from pb.entry_fee above
+      } else {
         PLATFORM_FREE_MODE = true;
         mnApplyFreeModeToFees();
       }
+      if (pb.founder_bio) { FOUNDER_BIO = pb.founder_bio; }
     }
   } catch(feeErr) { /* keep hardcoded defaults */ }
   _updateFeeDisplays();
@@ -6985,7 +7139,9 @@ function _applyPlatformModeUI() {
         session_id: sid,
         user_id:    (currentUser && currentUser.id) || null,
         referrer:   document.referrer ? document.referrer.slice(0, 500) : null,
-        visited_at: new Date().toISOString()
+        visited_at: new Date().toISOString(),
+        course:     'portal',
+        event_type: 'visit'
       };
       function _trackVisit(data) {
         return fetch(SUPA_URL + '/rest/v1/page_views', {
@@ -7518,11 +7674,81 @@ function calcPrizePool(entryFee, numTeams, tier) {
 //  startDate: 'YYYY-MM-DD' string
 //  returns: [ { round: 1, date: 'YYYY-MM-DD', deadline: 'YYYY-MM-DD' }, … ]
 // ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+//  parseLocalDate('YYYY-MM-DD'[, endOfDay])
+//  Parses a date-only string as LOCAL time. Plain new Date('YYYY-MM-DD')
+//  parses as UTC midnight, which in US time zones lands the previous
+//  evening — shifting every countdown and deadline a few hours early.
+// ─────────────────────────────────────────────────────────────────
+function parseLocalDate(s, endOfDay) {
+  if (!s) { return new Date(NaN); }
+  var p = String(s).slice(0, 10).split('-');
+  if (p.length !== 3) { return new Date(s); }
+  var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  if (endOfDay) { d.setHours(23, 59, 59, 999); }
+  return d;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  mnEffectiveRound(tourn)
+//  The round currently OPEN for submissions, driven by the stored
+//  schedule and the local date. Returns 0 before the start date, so a
+//  tournament that has not reached its Round 1 date cannot be played
+//  even if current_round was left at its default. Rounds auto-open on
+//  their scheduled date with no manual "Start" click. A manually
+//  advanced current_round is still respected (whichever is further).
+// ─────────────────────────────────────────────────────────────────
+function mnEffectiveRound(tourn) {
+  if (!tourn) { return 0; }
+  if (tourn.tier === 'open_championship') { return Number(tourn.current_round) || 0; }
+  var stored = Number(tourn.current_round) || 0;
+  var startStr = mnTournStartStr(tourn);
+  if (startStr) {
+    var started = Date.now() >= parseLocalDate(startStr).getTime();
+    if (!started) { return 0; }        // before the Round 1 date -> nothing open
+    return Math.max(stored, 1);        // on/after start -> Round 1 auto-opens; later rounds follow processing
+  }
+  return stored;                        // no schedule on file -> rely on manual current_round
+}
+
+// Bring stored round/status into line with the schedule date (staff load).
+// Auto-STARTS a tournament (Round 1) on its start date with no click;
+// it does NOT auto-advance later rounds, because each round's economy must
+// be simulated from submitted policies via the professor's Advance Round.
+async function mnReconcileSchedules(list) {
+  if (!list || !list.length) { return; }
+  for (var i = 0; i < list.length; i++) {
+    var t = list[i];
+    if (!t || t.tier === 'open_championship') { continue; }
+    if (t.status === 'completed' || t.status === 'draft') { continue; }
+    var startStr = mnTournStartStr(t);
+    if (!startStr) { continue; }
+    if (Date.now() < parseLocalDate(startStr).getTime()) { continue; } // not yet
+    var patch = {};
+    if ((Number(t.current_round) || 0) === 0) { patch.current_round = 1; }
+    if (t.status === 'upcoming' || t.status === 'registration') { patch.status = 'active'; }
+    if (patch.current_round === undefined && !patch.status) { continue; }
+    try {
+      await sbPatch('tournaments', 'id=eq.' + t.id, patch);
+      if (patch.current_round !== undefined) { t.current_round = patch.current_round; }
+      if (patch.status) { t.status = patch.status; }
+    } catch (e) { /* non-fatal: students are gated client-side regardless */ }
+  }
+}
+
+// mnTournStartStr(tourn) -> the Round 1 open date string, for "starts on" copy
+function mnTournStartStr(tourn) {
+  if (tourn && tourn.schedule && tourn.schedule.length && tourn.schedule[0].date) {
+    return tourn.schedule[0].date;
+  }
+  return '';
+}
+
 function buildSchedule(startDate, rounds, intervalDays) {
   rounds       = Number(rounds)       || 5;
   intervalDays = Number(intervalDays) || 7;
   var schedule  = [];
-  var base      = new Date(startDate);
+  var base      = parseLocalDate(startDate);
   if (isNaN(base.getTime())) { base = new Date(); }
 
   for (var r = 1; r <= rounds; r++) {
@@ -7567,8 +7793,8 @@ function _fmtDate(d) {
 //  countdownTo(dateString)
 //  returns human-readable string like "3d 4h" or "Expired"
 // ─────────────────────────────────────────────────────────────────
-function countdownTo(dateString) {
-  var target = new Date(dateString);
+function countdownTo(dateString, endOfDay) {
+  var target = parseLocalDate(dateString, endOfDay);
   if (isNaN(target.getTime())) { return 'Invalid date'; }
   var now  = Date.now();
   var diff = target.getTime() - now;
@@ -7703,13 +7929,30 @@ async function _renderWCBanner() {
     var sched = (season && season.playoff_bracket && season.playoff_bracket.schedule)
       ? season.playoff_bracket.schedule
       : [
-          { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + curYear,  note: 'Paid teams in elected tournaments and Open Championship qualifiers' },
+          { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + curYear,  note: (mnIsFreeMode() ? 'Every team that plays this season qualifies' : 'Paid teams in elected tournaments and Open Championship qualifiers') },
           { label: 'Qualification cutoff', date: 'Nov 30, ' + curYear,          note: 'Elected tournaments must complete by this date' },
           { label: 'Quarterfinals',        date: 'Dec 7, ' + curYear,           note: 'Top 8 teams compete' },
           { label: 'Semifinals',           date: 'Dec 14, ' + curYear,          note: 'Top 4 advance' },
           { label: 'Final',               date: 'Dec 21, ' + curYear,           note: 'Championship match' },
           { label: 'Prize announcement',  date: 'Dec 22, ' + curYear,           note: 'Winners announced and prize distributed' }
         ];
+
+    // Keep schedule notes in sync with the active platform mode. A schedule
+    // saved in the database may carry stale "paid"/"elected" wording, so we
+    // override the qualification-related notes here regardless of source.
+    for (var sni = 0; sni < sched.length; sni++) {
+      var sit = sched[sni];
+      if (!sit || !sit.label) { continue; }
+      if (sit.label === 'Qualifying period') {
+        sit.note = mnIsFreeMode()
+          ? 'Every team that plays this season qualifies'
+          : 'Paid teams in elected tournaments and Open Championship qualifiers';
+      } else if (sit.label === 'Qualification cutoff') {
+        sit.note = mnIsFreeMode()
+          ? 'All season tournaments must complete by this date'
+          : 'Elected tournaments must complete by this date';
+      }
+    }
 
     // Prize pool — seed + paid teams in global elected tournaments only
     var prizePool = 1000; // seed minimum
@@ -7967,7 +8210,7 @@ function _buildTournamentCard(t) {
       if (sched[si].round === curRound + 1) { nextRound = sched[si]; break; }
     }
     if (nextRound && nextRound.deadline) {
-      var cd = countdownTo(nextRound.deadline);
+      var cd = countdownTo(nextRound.deadline, true);
       if (cd !== 'Expired') {
         countdownHtml = '<span class="countdown-chip" title="Round ' + (curRound+1) + ' deadline">⏱ ' + esc(cd) + '</span>';
       }
@@ -8845,9 +9088,21 @@ function renderDashOverview() {
   // For OC: use economy current_round (simulated rounds) set by renderDashboard
   var ocSimulated = isOC ? ((_dashEconomy && _dashEconomy.current_round) ? Number(_dashEconomy.current_round) : (team.oc_round || 0)) : 0;
   var ocNotStarted = isOC && ocSimulated === 0;
-  var round  = isOC ? (ocSimulated + 1) : (tourn.current_round || 1);
+  var round  = isOC ? (ocSimulated + 1) : mnEffectiveRound(tourn);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
+
+  // Non-OC tournament that hasn't reached its Round 1 date yet
+  if (!isOC && round < 1) {
+    el.innerHTML =
+      '<div class="dash-alert dash-alert--info" style="margin-bottom:1.5rem;">' +
+        '<div class="dash-alert__icon">i</div>' +
+        '<div class="dash-alert__body"><div class="dash-alert__title">Tournament hasn\'t started yet</div>' +
+        (mnTournStartStr(tourn) ? ('Round 1 opens on <strong>' + esc(mnTournStartStr(tourn)) + '</strong>. ') : '') +
+        'You can set up your team now; policy submissions open automatically on the start date.</div>' +
+      '</div>';
+    return;
+  }
 
   // If OC team hasn't played, show a simple "not started" panel
   if (ocNotStarted) {
@@ -8928,7 +9183,7 @@ function renderDashOverview() {
   if (sched && Array.isArray(sched)) {
     for (var si = 0; si < sched.length; si++) {
       if (sched[si].round === round) {
-        var cd = countdownTo(sched[si].deadline || '');
+        var cd = countdownTo(sched[si].deadline || '', true);
         if (cd && cd !== 'Expired' && cd !== 'Invalid date') {
           alertsHtml +=
             '<div class="dash-alert dash-alert--info">' +
@@ -9070,11 +9325,23 @@ function renderDashPolicy() {
   // The next round to submit = highest submitted + 1
   var round  = (tourn.tier === 'open_championship')
     ? Math.min((team.oc_round || 0) + 1, OC_ROUNDS)
-    : (tourn.current_round || 1);
+    : mnEffectiveRound(tourn);
   var fee    = Number(tourn.entry_fee) || 0;
   var feePaid = team.fee_paid;
   var locked  = (fee > 0 && !feePaid);
   var already = (_dashDecision && _dashDecision.is_final);
+
+  // Non-OC tournament before its Round 1 date — no submissions yet
+  if (tourn.tier !== 'open_championship' && round < 1) {
+    el.innerHTML =
+      '<div class="dash-alert dash-alert--info" style="margin-bottom:1.5rem;">' +
+        '<div class="dash-alert__icon">i</div>' +
+        '<div class="dash-alert__body"><div class="dash-alert__title">Policy submissions aren\'t open yet</div>' +
+        (mnTournStartStr(tourn) ? ('Round 1 opens on <strong>' + esc(mnTournStartStr(tourn)) + '</strong>. ') : '') +
+        'The policy form unlocks automatically when the round opens — no action is needed from your professor.</div>' +
+      '</div>';
+    return;
+  }
 
   if (already) {
     el.innerHTML =
@@ -9205,7 +9472,13 @@ async function doSaveDraft() {
   setLoading('btn-save-draft', true, 'Saving…');
   try {
     var policy = _collectPolicy();
-    var round  = _dashTourn.current_round || 1;
+    var round  = (_dashTourn.tier === 'open_championship')
+      ? (_dashTourn.current_round || 1)
+      : mnEffectiveRound(_dashTourn);
+    if (_dashTourn.tier !== 'open_championship' && round < 1) {
+      flash('This tournament hasn\'t started yet.', 'error');
+      setLoading('btn-save-draft', false, 'Save Draft'); return;
+    }
     if (_dashDecision) {
       await sbPatch('decisions', 'id=eq.' + _dashDecision.id, { policy: policy });
     } else {
@@ -9236,7 +9509,11 @@ async function doSubmitPolicy() {
     // For OC: submit to next round after highest submitted (derived, no DB column needed)
     var round  = (_dashTourn.tier === 'open_championship')
       ? Math.min((_dashTeam && (_dashTeam.oc_round || 0)) + 1, OC_ROUNDS)
-      : (_dashTourn.current_round || 1);
+      : mnEffectiveRound(_dashTourn);
+    if (_dashTourn.tier !== 'open_championship' && round < 1) {
+      flash('This tournament hasn\'t started yet — submissions open on the start date.', 'error');
+      setLoading('btn-submit-policy', false, 'Submit Final Decision'); return;
+    }
     if (_dashDecision) {
       _dashDecision = await sbPatch('decisions', 'id=eq.' + _dashDecision.id, { policy: policy, is_final: true });
     } else {
@@ -9837,6 +10114,10 @@ var DEFAULT_PAYMENT_LINK = 'https://buy.stripe.com/8x2cMYbjfcsk2ON7se5ZC01';
 // ═══════════════════════════════════════════════════════════════════
 var GAME_THEORY_URL = 'https://amarendra-sharma.github.io/strategyarena/';
 
+// Econometrics course → served at its own macronations.com subdomain
+// (GitHub Pages custom domain; the repo's CNAME file maps it to this host).
+var ECONOMETRICS_URL = 'https://econometrics.macronations.com/';
+
 // Dynamic Stripe Checkout — creates a session with team metadata so webhook can auto-mark paid
 async function doStripeCheckout(teamId, tournamentId, amountDollars, teamName) {
   if (!teamId) { flash('Team not found — cannot initiate payment.', 'error'); return; }
@@ -9888,7 +10169,7 @@ var AWARD_SEED           = 1000;  // Seed contribution — overridden by global_
 //  The tiered fee is preserved in playoff_bracket.tiered_entry_fee so it
 //  can be restored intact when the super admin switches back.
 // ═══════════════════════════════════════════════════════════════════
-var PLATFORM_FREE_MODE = false;
+var PLATFORM_FREE_MODE = true;   // Open Season is the DEFAULT mode — only an explicit 'tiered' setting turns it off
 
 function mnIsFreeMode() { return !!PLATFORM_FREE_MODE; }
 
@@ -9900,6 +10181,7 @@ function mnApplyFreeModeToFees() {
     if (typeof OC_ENTRY_FEE !== 'undefined') { OC_ENTRY_FEE = 0; }
   }
 }
+mnApplyFreeModeToFees();   // start zeroed-out / Open Season by default
 
 function renderDashPayment() {
   var el = document.getElementById('dash-panel-payment');
@@ -10100,6 +10382,11 @@ async function renderAdmin() {
       ? 'order=created_at.desc&limit=200'
       : 'created_by=eq.' + currentUser.id + '&order=created_at.desc&limit=100';
     _adminTournaments = await sbGet('tournaments', tournQuery) || [];
+
+    // Auto-open by schedule: bring each tournament's stored round/status into
+    // line with its scheduled dates, so admin views and round scoring match
+    // what students see. Rounds open on their dates with no manual "Start".
+    await mnReconcileSchedules(_adminTournaments);
 
     if (_isAdmin()) {
       _adminUsers   = await sbGet('mn_users', 'order=created_at.desc&limit=500') || [];
@@ -12077,7 +12364,7 @@ function _buildRoundCard(t, isCompleted) {
     var cd = '';
     for (var si = 0; si < sched.length; si++) {
       if (sched[si].round === r) {
-        var d = countdownTo(sched[si].deadline || '');
+        var d = countdownTo(sched[si].deadline || '', true);
         if (d && d !== 'Expired' && d !== 'Invalid date' && r === round) { cd = d; }
         break;
       }
@@ -13843,8 +14130,8 @@ async function renderAdminGlobalSeasons(el) {
         var champSched = (seas.playoff_bracket && seas.playoff_bracket.schedule)
           ? seas.playoff_bracket.schedule
           : [
-              { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + seas.year, note: 'All paid teams in elected tournaments qualify' },
-              { label: 'Qualification cutoff', date: 'Nov 30, ' + seas.year,         note: 'Elected tournaments must complete by this date' },
+              { label: 'Qualifying period',    date: 'Jan 1 – Nov 30, ' + seas.year, note: (mnIsFreeMode() ? 'All teams that play this season qualify' : 'All paid teams in elected tournaments qualify') },
+              { label: 'Qualification cutoff', date: 'Nov 30, ' + seas.year,         note: (mnIsFreeMode() ? 'All season tournaments must complete by this date' : 'Elected tournaments must complete by this date') },
               { label: 'Quarterfinals',        date: 'Dec 7, ' + seas.year,          note: 'Top 8 teams compete' },
               { label: 'Semifinals',           date: 'Dec 14, ' + seas.year,         note: 'Top 4 advance' },
               { label: 'Final',               date: 'Dec 21, ' + seas.year,          note: 'Championship match' },
@@ -14453,6 +14740,39 @@ async function renderAdminAnalytics(el) {
       '</div>' +
     '</div>';
 
+  // Section 1b: Traffic by Course (portal funnel + cross-app visits)
+  var cPortal = 0, cMacroOpen = 0, cGtOpen = 0, cGtVisit = 0, cEcoOpen = 0, cEcoVisit = 0, cUntagged = 0;
+  for (var cv = 0; cv < allViews.length; cv++) {
+    var row = allViews[cv];
+    var crs = row.course || '';
+    var evt = row.event_type || 'visit';
+    if (!crs)                                   { cUntagged++; }
+    else if (crs === 'portal')                  { cPortal++; }
+    else if (crs === 'macroeconomics')          { cMacroOpen++; }
+    else if (crs === 'gametheory' && evt === 'open')  { cGtOpen++; }
+    else if (crs === 'gametheory')              { cGtVisit++; }
+    else if (crs === 'econometrics' && evt === 'open') { cEcoOpen++; }
+    else if (crs === 'econometrics')            { cEcoVisit++; }
+  }
+  html +=
+    '<div class="card" style="margin-bottom:1.25rem;">' +
+      '<div class="card__header"><span class="card__title">🧭 Traffic by Course</span></div>' +
+      '<div class="card__body">' +
+        '<div class="admin-metric-grid">' +
+          _metricCard('🚪', cPortal,     'Portal Visits') +
+          _metricCard('📈', cMacroOpen,  'Macroeconomics Opens') +
+          _metricCard('♟️', cGtOpen,     'Game Theory Opens (from portal)') +
+          _metricCard('🎲', cGtVisit,    'Game Theory Visits (StrategyArena)') +
+          _metricCard('📊', cEcoOpen,    'Econometrics Opens (from portal)') +
+          _metricCard('🔢', cEcoVisit,   'Econometrics Visits (app)') +
+          (cUntagged ? _metricCard('🗂️', cUntagged, 'Untagged (legacy visits)') : '') +
+        '</div>' +
+        '<p style="font-size:0.8125rem;color:var(--text-400);margin-top:0.875rem;">' +
+          '“Opens” count clicks from the course portal; “Game Theory Visits” are sessions logged by the StrategyArena app into this same table. Legacy rows recorded before course tagging show as untagged.' +
+        '</p>' +
+      '</div>' +
+    '</div>';
+
   // Section 2: Engagement & Conversion
   var anonViews = allViews.length - loggedInViews;
   var conversionPct = allViews.length ? Math.round(loggedInViews / allViews.length * 100) : 0;
@@ -14837,11 +15157,13 @@ async function exportAnalyticsCSV() {
   try {
     var views = await sbGet('page_views', 'order=visited_at.desc&limit=10000') || [];
     if (!views.length) { flash('No visitor data to export.', 'info'); return; }
-    var rows = [['visited_at','session_id','user_id','country','country_code','city','region','referrer']];
+    var rows = [['visited_at','course','event_type','session_id','user_id','country','country_code','city','region','referrer']];
     for (var i = 0; i < views.length; i++) {
       var v = views[i];
       rows.push([
         v.visited_at || '',
+        v.course     || '',
+        v.event_type || '',
         v.session_id || '',
         v.user_id    || '',
         (v.country || '').replace(/"/g, '""'),
@@ -15888,6 +16210,61 @@ var LEGAL_CONTENT = {
   }
 };
 
+// General, platform-wide legal — covers all courses (not tournament-specific).
+// Used by the portal-level About page. The course-specific LEGAL_CONTENT
+// (with tournament Award Rules) stays in the Macroeconomics course.
+var PLATFORM_LEGAL = {
+  terms: {
+    title: 'Terms of Service',
+    updated: 'June 2026',
+    sections: [
+      { h: 'Agreement to Terms', p: 'By accessing or using the MacroNations platform at macronations.com, you agree to be bound by these Terms of Service. MacroNations is operated by MacroNations LLC, a New York Limited Liability Company, and offers a growing range of economics courses, each combining an interactive learning experience with course materials. If you do not agree to these terms, please do not use the platform.' },
+      { h: 'Eligibility', p: 'MacroNations is open to everyone worldwide. Students may join and use any course; educators may create and manage course spaces for their classes; and independent learners may use the platform without any institutional affiliation. By registering, you affirm that the information you provide is accurate and complete.' },
+      { h: 'User Accounts', p: 'You are responsible for maintaining the confidentiality of your login credentials and for activity under your account. Notify us immediately of any unauthorized access at support@macronations.com. MacroNations LLC is not liable for losses resulting from unauthorized account use.' },
+      { h: 'Acceptable Use & Academic Integrity', p: 'You agree to use the platform and its courses honestly and in good faith. Collusion, exploiting software defects, reverse-engineering scoring or simulation logic, sharing answers where prohibited, or any other conduct inconsistent with academic integrity may result in suspension or removal from the platform. Individual courses may publish additional rules that apply to that course.' },
+      { h: 'Platform Availability', p: 'MacroNations LLC makes no warranty that the platform will be available at all times. We reserve the right to suspend, modify, or discontinue any course or the platform as a whole at any time.' },
+      { h: 'Limitation of Liability', p: 'To the maximum extent permitted by applicable law, MacroNations LLC shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability arising from your use of the platform shall not exceed the total amounts, if any, you paid to MacroNations LLC in the twelve (12) months preceding the claim.' },
+      { h: 'Governing Law', p: 'These Terms are governed by the laws of the State of New York, without regard to its conflict-of-law provisions. Any dispute arising from these terms shall be resolved exclusively in the state or federal courts of New York County, New York, and you waive any objection to personal jurisdiction there.' },
+      { h: 'Changes to Terms', p: 'We may modify these terms at any time. Continued use of the platform after changes constitutes acceptance of the revised terms. We will notify registered users of material changes via email.' }
+    ]
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    updated: 'June 2026',
+    sections: [
+      { h: 'Information We Collect', p: 'We collect: (1) registration information such as name, email address, affiliation (if any), and country; (2) course activity data such as your progress, submissions, and results within the courses you use; and (3) technical data such as browser type, IP address, and usage patterns. We do not collect payment card information directly — any payment processing is handled by third-party services.' },
+      { h: 'How We Use Your Information', p: 'Your information is used to operate the platform and its courses, record and display your progress and results, send relevant notifications, populate public leaderboards or recognition listings where a course provides them, enforce eligibility and integrity, and improve the platform.' },
+      { h: 'Public Information', p: 'Where a course includes public results (such as a leaderboard or roll of achievement), your name and results for that course may be displayed. Your email address is not displayed publicly. If you prefer anonymity, contact support@macronations.com to discuss options.' },
+      { h: 'Data Storage', p: 'Data is stored on Supabase infrastructure hosted in the United States. We implement industry-standard security measures including encryption in transit and access controls, and retain your data for the duration of your account and for a reasonable period thereafter for record-keeping.' },
+      { h: 'Your Rights', p: 'Under applicable law, you may have rights to access, correct, or delete your personal data. To exercise these rights, email support@macronations.com; we will respond within 30 days. Certain records (such as public results) may be retained even after account deletion as part of the public record.' },
+      { h: 'Governing Law', p: 'This Privacy Policy is governed by the laws of the State of New York and applicable federal privacy law, including the New York SHIELD Act. For users in the European Economic Area, additional rights may apply under the GDPR.' },
+      { h: 'Contact', p: 'For privacy inquiries, contact MacroNations LLC at support@macronations.com. As a New York Limited Liability Company, we are subject to New York State jurisdiction.' }
+    ]
+  },
+  disclaimer: {
+    title: 'Disclaimer',
+    updated: 'June 2026',
+    sections: [
+      { h: 'Educational Purpose', p: 'MacroNations is an educational platform. Its courses use simplified interactive simulations and games designed for teaching and learning. They do not constitute financial, investment, legal, or economic advice, and outcomes within a course do not predict real-world results.' },
+      { h: 'No Warranty', p: 'The platform and its courses are provided "as is" without warranty of any kind, express or implied. MacroNations LLC makes no warranties regarding the accuracy of any course model, the availability of the platform, or fitness for any particular purpose.' },
+      { h: 'Model & Content Accuracy', p: 'Each course incorporates simplified representations of real-world relationships for pedagogical purposes. These are approximations; real systems are substantially more complex and uncertain. Learners should not rely on course outcomes as predictions of real-world behavior.' },
+      { h: 'Third-Party Services', p: 'The platform integrates with third-party services including Supabase (database), Anthropic (AI features), and payment processors. MacroNations LLC is not responsible for the availability, accuracy, or privacy practices of these third-party services.' }
+    ]
+  },
+  copyright: {
+    title: 'Copyright & Intellectual Property',
+    updated: 'June 2026',
+    sections: [
+      { h: 'Ownership', p: 'MacroNations, the MacroNations logo and navy shield crest, the course content, simulations, games, scoring logic, website design, and all associated materials are the exclusive intellectual property of MacroNations LLC, a New York Limited Liability Company. All rights reserved.' },
+      { h: 'Limited License', p: 'Registered users are granted a limited, non-exclusive, non-transferable license to access and use the platform and its courses for personal learning and authorized classroom use. This license does not include the right to copy, reproduce, distribute, modify, or create derivative works from any MacroNations content.' },
+      { h: 'Prohibited Uses', p: 'You may not: (1) reproduce or distribute any course engine, simulation, or scoring logic; (2) use the MacroNations name or logo without written permission; (3) reverse-engineer, decompile, or disassemble any portion of the platform; (4) frame or mirror any part of the platform on another site; or (5) use automated means to access the platform.' },
+      { h: 'User Content', p: 'Submissions and other content you enter remain your intellectual property. By submitting content, you grant MacroNations LLC a non-exclusive, royalty-free license to display it on the platform (including any public results or recognition listings).' },
+      { h: 'DMCA', p: 'If you believe any content on the platform infringes your copyright, send a notice to support@macronations.com identifying the work, the allegedly infringing material, and your contact information. MacroNations LLC will respond in accordance with the Digital Millennium Copyright Act.' },
+      { h: 'Contact for Permissions', p: 'For licensing inquiries, partnership proposals, or academic-use permissions, contact MacroNations LLC at support@macronations.com. We welcome educational partnerships and can discuss appropriate licensing for classroom use.' }
+    ]
+  }
+};
+
 function showLegal(section) {
   // Update tab active state
   var tabs = document.querySelectorAll('[data-legal]');
@@ -15974,7 +16351,7 @@ PAGE_LOADERS['legal'] = function() { showLegal('terms'); };
 //  ABOUT PAGE (How It Works, Founder, Legal)
 // ═══════════════════════════════════════════════════════════════════
 
-PAGE_LOADERS['about'] = function() { showAbout('founder'); };
+PAGE_LOADERS['about'] = function() { showAbout('how'); };
 
 function showAbout(tab) {
   // Update tab active state
@@ -16475,7 +16852,249 @@ showPage = function(id) {
     if (!activeLegal) { showLegal('terms'); }
     else { showLegal(activeLegal.getAttribute('data-legal')); }
   }
+  if (id === 'pabout') {
+    var activePA = document.querySelector('[data-pabout-tab].active');
+    showPAbout(activePA ? activePA.getAttribute('data-pabout-tab') : 'platform');
+  }
 };
+
+// ═══════════════════════════════════════════════════════════════════
+//  PLATFORM ABOUT PAGE (portal-level: Platform · Courses · How It Works
+//  · Founder · Legal). Separate from the Macroeconomics course About so
+//  that page is left intact. Founder bio is generalized and editable by
+//  the super admin; the photo reuses the existing profile-image upload.
+// ═══════════════════════════════════════════════════════════════════
+var FOUNDER_BIO_DEFAULT =
+  'MacroNations grew out of a simple idea: economics is learned best by doing it. ' +
+  'What started as an experiential, competitive way to teach macroeconomics is becoming a broader platform ' +
+  'where every area of economics — from macro and game theory to microeconomics and beyond — can be learned by playing it.' +
+  '\n\n' +
+  'Dr. Sharma is an economist and educator focused on bridging classroom theory and real-world reasoning through ' +
+  'interactive simulation and game-based learning, building tools that work for both students and the professors who teach them.';
+var FOUNDER_BIO = (function() { try { return localStorage.getItem('mn_founder_bio') || FOUNDER_BIO_DEFAULT; } catch(e) { return FOUNDER_BIO_DEFAULT; } })();
+
+function showPAbout(tab) {
+  var tabs = document.querySelectorAll('[data-pabout-tab]');
+  for (var i = 0; i < tabs.length; i++) {
+    if (tabs[i].getAttribute('data-pabout-tab') === tab) { tabs[i].classList.add('active'); }
+    else { tabs[i].classList.remove('active'); }
+  }
+  var el = document.getElementById('pabout-content');
+  if (!el) { return; }
+  if (tab === 'platform')   { el.innerHTML = _pAboutPlatform(); }
+  if (tab === 'courses')    { el.innerHTML = _pAboutCourses(); }
+  if (tab === 'how')        { el.innerHTML = _pAboutHow(); }
+  if (tab === 'founder')    { el.innerHTML = _pAboutFounder(); _pAboutFounderMount(); }
+  if (tab === 'legal')      { el.innerHTML = _pAboutLegal(); }
+  window.scrollTo(0, 0);
+}
+
+function _pAboutPlatform() {
+  return '' +
+    '<div style="max-width:760px;margin:0 auto;">' +
+      '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);">Our mission</div>' +
+      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.875rem;color:var(--text-900);line-height:1.2;margin:0.4rem 0 0;">A new way to learn economics.</h2>' +
+      '<p style="font-size:1rem;color:var(--text-500);line-height:1.8;margin:1rem 0 0;">MacroNations turns economics into something you <em>do</em>, not just read. Each discipline pairs an interactive simulation or game with a full course and textbook, so students learn by making decisions and seeing the consequences — and professors get a ready-to-teach, ready-to-assign platform. It began with macroeconomics and is growing, one discipline at a time.</p>' +
+      '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin:2rem 0 0.75rem;">Disciplines on the platform</div>' +
+      '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;">' +
+        _paChip('📈', 'Macroeconomics', 'live') +
+        _paChip('♟️', 'Game Theory', 'live') +
+        _paChip('🛒', 'Microeconomics', 'soon') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.75rem;">' +
+        '<div class="card"><div class="card__body"><h3 style="margin:0 0 0.25rem;font-size:1rem;color:var(--text-900);">For students</h3><p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">Play, compete, and learn the theory behind every decision you make.</p></div></div>' +
+        '<div class="card"><div class="card__body"><h3 style="margin:0 0 0.25rem;font-size:1rem;color:var(--text-900);">For professors</h3><p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">Run a course, set assignments, and follow your whole class in one place.</p></div></div>' +
+      '</div>' +
+    '</div>';
+}
+function _paChip(icon, label, status) {
+  var badge = status === 'live'
+    ? '<span style="font-size:0.6875rem;color:var(--success);background:var(--success-bg);padding:1px 8px;border-radius:5px;">Live</span>'
+    : '<span style="font-size:0.6875rem;color:var(--text-500);background:var(--bg-subtle);padding:1px 8px;border-radius:5px;">Soon</span>';
+  var muted = status === 'live' ? '' : 'color:var(--text-400);';
+  return '<span style="display:inline-flex;align-items:center;gap:0.5rem;background:var(--bg-white);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.85rem;font-size:0.875rem;' + muted + '">' + icon + ' ' + label + ' ' + badge + '</span>';
+}
+
+function _pAboutCourses() {
+  function ccard(icon, name, status, desc) {
+    var live = status === 'live';
+    var badge = live
+      ? '<span style="font-size:0.6875rem;color:var(--success);background:var(--success-bg);padding:1px 8px;border-radius:5px;">Live</span>'
+      : '<span style="font-size:0.6875rem;color:var(--text-500);background:var(--bg-subtle);padding:1px 8px;border-radius:5px;">' + (status === 'soon' ? 'Soon' : 'Planned') + '</span>';
+    return '<div class="card"' + (live ? ' style="border:1.5px solid var(--blue-dark);"' : '') + '>' +
+      '<div class="card__body">' +
+        '<div style="width:42px;height:42px;border-radius:10px;background:' + (live ? 'var(--gold-light)' : 'var(--bg-subtle)') + ';display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:0.6rem;">' + icon + '</div>' +
+        '<h3 style="margin:0 0 0.3rem;font-size:1rem;color:' + (live ? 'var(--text-900)' : 'var(--text-400)') + ';">' + name + ' &nbsp;' + badge + '</h3>' +
+        '<p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">' + desc + '</p>' +
+      '</div>' +
+    '</div>';
+  }
+  return '' +
+    '<div style="max-width:760px;margin:0 auto;">' +
+      '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);">The catalog</div>' +
+      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.75rem;color:var(--text-900);margin:0.4rem 0 0;">Courses on MacroNations.</h2>' +
+      '<p style="font-size:1rem;color:var(--text-500);line-height:1.75;margin:0.75rem 0 1.5rem;max-width:600px;">A growing library of economics disciplines. New courses join the platform as we build them — each with its own simulation, course, and textbook.</p>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' +
+        ccard('📈', 'Macroeconomics', 'live', 'Govern a national economy across growth, stability, equality, sustainability and innovation.') +
+        ccard('♟️', 'Game Theory', 'live', 'Strategic-reasoning arenas — equilibria, auctions, bargaining and repeated games.') +
+        ccard('🛒', 'Microeconomics', 'soon', 'Markets, firms and consumer choice, explored through interactive models.') +
+        ccard('➕', 'And beyond', 'planned', 'Econometrics, trade, development and behavioral economics as the platform grows.') +
+      '</div>' +
+    '</div>';
+}
+
+function _pAboutHow() {
+  function step(n, title, body) {
+    return '<div style="display:flex;gap:1rem;padding:1.1rem 0;border-top:1px solid var(--border);">' +
+      '<span class="text-mono" style="color:var(--gold);font-size:0.9375rem;width:26px;flex-shrink:0;">' + n + '</span>' +
+      '<div><h3 style="margin:0;font-size:1rem;color:var(--text-900);">' + title + '</h3>' +
+      '<p style="margin:0.2rem 0 0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">' + body + '</p></div>' +
+    '</div>';
+  }
+  return '' +
+    '<div style="max-width:680px;margin:0 auto;">' +
+      '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);">Getting started</div>' +
+      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.75rem;color:var(--text-900);margin:0.4rem 0 1rem;">How the platform works.</h2>' +
+      '<div style="border-bottom:1px solid var(--border);">' +
+        step('01', 'Choose a course', 'Everyone enters through the portal and picks a discipline — Macroeconomics, Game Theory, and more to come.') +
+        step('02', 'Learn by playing', 'Each course is an interactive simulation or game paired with a full textbook, so the theory lands while you make real decisions.') +
+        step('03', 'Students &amp; professors together', 'Students join and play; professors create their course space, assign work, and watch their class progress.') +
+        step('04', 'Track progress &amp; earn recognition', 'Each course has its own way to measure learning and celebrate achievement.') +
+      '</div>' +
+      '<p style="font-size:0.8125rem;color:var(--text-400);line-height:1.6;margin-top:1.1rem;">Course-specific details (e.g., tournaments, scoring, and curriculum) live inside each course\'s own About page.</p>' +
+    '</div>';
+}
+
+function _pAboutFounder() {
+  var cached = _founderPhotoCache || '';
+  var photoHtml = cached
+    ? '<img src="' + cached + '" style="width:150px;height:150px;border-radius:12px;object-fit:cover;display:block;" alt="Amarendra Sharma">'
+    : '<div id="pabout-photo-slot" style="width:150px;height:150px;border-radius:12px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;"><div class="spinner" style="width:24px;height:24px;"></div></div>';
+
+  var bioParas = (FOUNDER_BIO || FOUNDER_BIO_DEFAULT).split('\n\n').map(function(p) {
+    return '<p style="color:var(--text-500);line-height:1.8;margin:0 0 0.9rem;">' + esc(p) + '</p>';
+  }).join('');
+
+  var adminBar = '';
+  if (typeof _isAdmin === 'function' && _isAdmin()) {
+    adminBar =
+      '<div style="margin-top:1.5rem;padding:0.9rem 1rem;background:var(--bg-white);border:1px dashed var(--gold);border-radius:10px;">' +
+        '<div style="display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;">' +
+          '<span style="font-size:0.6875rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--gold);">Admin only</span>' +
+          '<button class="btn btn--gold btn--sm" onclick="_pAboutToggleUploader()">Change photo</button>' +
+          '<button class="btn btn--ghost btn--sm" onclick="doEditFounderBio()">Edit bio</button>' +
+          '<span style="font-size:0.75rem;color:var(--text-400);">Photo uses your profile upload; bio is saved to the platform.</span>' +
+        '</div>' +
+        '<div id="pabout-photo-uploader" style="display:none;margin-top:1rem;"></div>' +
+      '</div>';
+  }
+
+  return '' +
+    '<div style="max-width:720px;margin:0 auto;">' +
+      '<div class="card"><div class="card__body" style="padding:2rem;">' +
+        '<div style="display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap;">' +
+          '<div style="flex-shrink:0;text-align:center;min-width:150px;">' + photoHtml + '</div>' +
+          '<div style="flex:1;min-width:240px;">' +
+            '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.625rem;margin:0 0 0.2rem;">Amarendra Sharma, PhD</h2>' +
+            '<p style="color:var(--blue);font-weight:600;margin:0 0 1rem;">Founder &amp; Director, MacroNations LLC</p>' +
+            bioParas +
+            '<p style="color:var(--text-400);font-size:0.875rem;margin-top:0.4rem;">📧 <a href="mailto:support@macronations.com">support@macronations.com</a> &nbsp;&middot;&nbsp; 🌐 macronations.com</p>' +
+          '</div>' +
+        '</div>' +
+        adminBar +
+      '</div></div>' +
+    '</div>';
+}
+
+// Load the founder photo into the slot after mount (mirrors the macro About)
+function _pAboutFounderMount() {
+  if (_founderPhotoCache) { return; }
+  setTimeout(function() {
+    var slot = document.getElementById('pabout-photo-slot');
+    if (!slot) { return; }
+    _loadFounderPhoto().then(function(url) {
+      var s = document.getElementById('pabout-photo-slot');
+      if (!s) { return; }
+      if (url) {
+        var img = document.createElement('img');
+        img.src = url; img.alt = 'Amarendra Sharma';
+        img.style.cssText = 'width:150px;height:150px;border-radius:12px;object-fit:cover;display:block;';
+        s.parentNode.replaceChild(img, s);
+      } else {
+        s.innerHTML = '<div style="width:150px;height:150px;border-radius:12px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;">AS</div>';
+        s.id = '';
+      }
+    });
+  }, 60);
+}
+
+// Reveal the existing profile-image uploader (reuses the working feature)
+function _pAboutToggleUploader() {
+  var box = document.getElementById('pabout-photo-uploader');
+  if (!box) { return; }
+  if (box.style.display === 'none' || !box.style.display) {
+    box.style.display = 'block';
+    if (typeof renderProfileUploader === 'function') { renderProfileUploader(box); }
+    _founderPhotoCache = null; // force a fresh load next time the tab opens
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+// Super-admin: edit the (platform-wide) founder bio. Saved to the season
+// config JSON + localStorage so it loads on next visit.
+async function doEditFounderBio() {
+  if (!(typeof _isAdmin === 'function' && _isAdmin())) { flash('Super-admin only.', 'error'); return; }
+  var current = FOUNDER_BIO || FOUNDER_BIO_DEFAULT;
+  var next = window.prompt('Edit the founder bio. Separate paragraphs with a blank line.\n', current);
+  if (next === null) { return; }
+  next = next.trim();
+  if (!next) { return; }
+  FOUNDER_BIO = next;
+  try { localStorage.setItem('mn_founder_bio', next); } catch(e) {}
+  try {
+    var year = new Date().getFullYear();
+    await _ensureGlobalSeason(year);
+    var rows = await sbGet('global_seasons', 'year=eq.' + year + '&limit=1') || [];
+    var bracket = (rows.length && rows[0].playoff_bracket) ? rows[0].playoff_bracket : {};
+    bracket.founder_bio = next;
+    await sbPatch('global_seasons', 'year=eq.' + year, { playoff_bracket: bracket });
+    flash('Founder bio updated.', 'success');
+  } catch(err) {
+    flash('Saved locally; cloud save failed: ' + (err.message || ''), 'info');
+  }
+  showPAbout('founder');
+}
+
+// Platform-level legal — shared MacroNations LLC policies. Excludes the
+// course-specific Award Rules (those stay in the Macroeconomics About).
+function _pAboutLegal() {
+  var sections = ['terms','privacy','disclaimer','copyright'];
+  var labels   = ['Terms of Service','Privacy Policy','Disclaimer','Copyright'];
+  var tabs = '<div class="admin-tabs" style="border-bottom:2px solid var(--border);margin-bottom:2rem;overflow-x:auto;">';
+  for (var i = 0; i < sections.length; i++) {
+    tabs += '<button class="admin-tab' + (i===0?' active':'') + '" onclick="(function(s,b){' +
+      'var all=document.querySelectorAll(\'.pabout-legal-panel\');for(var j=0;j<all.length;j++){all[j].style.display=\'none\';}' +
+      'var panel=document.getElementById(\'pabout-legal-\'+s);if(panel){panel.style.display=\'block\';}' +
+      'var btns=b.closest(\'.admin-tabs\').querySelectorAll(\'.admin-tab\');for(var k=0;k<btns.length;k++){btns[k].classList.remove(\'active\');}' +
+      'b.classList.add(\'active\');' +
+    '})(\''+sections[i]+'\',this)">' + labels[i] + '</button>';
+  }
+  tabs += '</div>';
+  var panels = '';
+  for (var pi = 0; pi < sections.length; pi++) {
+    var data = PLATFORM_LEGAL[sections[pi]];
+    if (!data) { continue; }
+    var html = '<div style="margin-bottom:0.25rem;font-size:0.8125rem;color:var(--text-400);">Last updated: ' + esc(data.updated) + '</div>';
+    if (data.highlight) { html += '<div class="legal-highlight">' + esc(data.highlight) + '</div>'; }
+    var secs = data.sections || [];
+    for (var si = 0; si < secs.length; si++) {
+      html += '<h2>' + esc(secs[si].h) + '</h2><p>' + esc(secs[si].p) + '</p>';
+    }
+    panels += '<div class="pabout-legal-panel legal-body" id="pabout-legal-' + sections[pi] + '" style="' + (pi===0?'':'display:none;') + '">' + html + '</div>';
+  }
+  return '<div style="max-width:720px;margin:0 auto;">' + tabs + panels + '</div>';
+}
 
 // ═══════════════════════════════════════════════════════════════════
 //  CERTIFICATE — Signature fix (professor name + admin name)
