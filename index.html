@@ -4361,7 +4361,8 @@ body.sandbox-mode {
           </span>
         </div>
         <h1 class="portal__wordmark"><em>Macro</em>Nations</h1>
-        <p class="portal__tagline">Learn economics by playing it. Choose a course.</p>
+        <p class="portal__tagline">The dedicated LMS where economics is taught, played &amp; assessed.</p>
+        <p class="portal__tagline" style="font-size:0.9rem;color:var(--text-400);max-width:580px;margin:0.45rem auto 0;">Interactive books, games, and tournaments. Simulate economies, run real regressions, grade derivations, AI-proof proctored exams &mdash; and a gradebook that understands the subject. Choose a course below.</p>
 
         <div class="portal__grid">
           <button class="portal-card portal-card--active" onclick="enterCourse('macro')" aria-label="Open the Macroeconomics course">
@@ -16893,17 +16894,21 @@ function _pAboutPlatform() {
   return '' +
     '<div style="max-width:760px;margin:0 auto;">' +
       '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);">Our mission</div>' +
-      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.875rem;color:var(--text-900);line-height:1.2;margin:0.4rem 0 0;">A new way to learn economics.</h2>' +
-      '<p style="font-size:1rem;color:var(--text-500);line-height:1.8;margin:1rem 0 0;">MacroNations turns economics into something you <em>do</em>, not just read. Each discipline pairs an interactive simulation or game with a full course and textbook, so students learn by making decisions and seeing the consequences — and professors get a ready-to-teach, ready-to-assign platform. It began with macroeconomics and is growing, one discipline at a time.</p>' +
+      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.875rem;color:var(--text-900);line-height:1.2;margin:0.4rem 0 0;">The dedicated LMS where economics is taught, played, and assessed.</h2>' +
+      '<p style="font-size:1rem;color:var(--text-500);line-height:1.8;margin:1rem 0 0;">MacroNations turns economics into something you <em>do</em>, not just read &mdash; and runs the whole course around it. Each discipline pairs an interactive simulation or game with a full textbook, then adds the parts a course actually needs: an assessment engine with AI-proof, auto-reseeding question banks; automatic and AI-assisted grading of free-response and derivations; soft-proctored exams; a gradebook, accommodations, and progress tracking. In short, it is a learning-management system built for one subject &mdash; economics. It began with macroeconomics and now spans game theory and econometrics, growing one discipline at a time.</p>' +
       '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin:2rem 0 0.75rem;">Disciplines on the platform</div>' +
       '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;">' +
         _paChip('📈', 'Macroeconomics', 'live') +
         _paChip('♟️', 'Game Theory', 'live') +
+        _paChip('📊', 'Econometrics', 'live') +
         _paChip('🛒', 'Microeconomics', 'soon') +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.75rem;">' +
-        '<div class="card"><div class="card__body"><h3 style="margin:0 0 0.25rem;font-size:1rem;color:var(--text-900);">For students</h3><p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">Play, compete, and learn the theory behind every decision you make.</p></div></div>' +
-        '<div class="card"><div class="card__body"><h3 style="margin:0 0 0.25rem;font-size:1rem;color:var(--text-900);">For professors</h3><p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">Run a course, set assignments, and follow your whole class in one place.</p></div></div>' +
+        '<div class="card"><div class="card__body"><h3 style="margin:0 0 0.25rem;font-size:1rem;color:var(--text-900);">For students</h3><p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">Play, compete, run real regressions in the browser, and learn the theory behind every decision you make.</p></div></div>' +
+        '<div class="card"><div class="card__body"><h3 style="margin:0 0 0.25rem;font-size:1rem;color:var(--text-900);">For professors</h3><p style="margin:0;font-size:0.875rem;color:var(--text-500);line-height:1.6;">Run a course, assemble exams from ready-made banks, auto- and AI-grade, proctor online tests, and follow your whole class &mdash; all in one place.</p></div></div>' +
+      '</div>' +
+      '<div style="text-align:center;margin-top:1.5rem;">' +
+        '<a href="#" onclick="showPAbout(\'courses\');return false;" style="display:inline-flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--blue);text-decoration:none;">For professors &rarr; explore the LMS</a>' +
       '</div>' +
     '</div>';
 }
@@ -16933,12 +16938,13 @@ function _pAboutCourses() {
     '<div style="max-width:760px;margin:0 auto;">' +
       '<div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);">The catalog</div>' +
       '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;font-size:1.75rem;color:var(--text-900);margin:0.4rem 0 0;">Courses on MacroNations.</h2>' +
-      '<p style="font-size:1rem;color:var(--text-500);line-height:1.75;margin:0.75rem 0 1.5rem;max-width:600px;">A growing library of economics disciplines. New courses join the platform as we build them — each with its own simulation, course, and textbook.</p>' +
+      '<p style="font-size:1rem;color:var(--text-500);line-height:1.75;margin:0.75rem 0 1.5rem;max-width:600px;">A growing library of economics disciplines &mdash; each a full course on a dedicated LMS: an interactive textbook, a simulation or game, an AI-proof assessment engine, proctored exams, and a gradebook that understands the subject.</p>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' +
-        ccard('📈', 'Macroeconomics', 'live', 'Govern a national economy across growth, stability, equality, sustainability and innovation.') +
-        ccard('♟️', 'Game Theory', 'live', 'Strategic-reasoning arenas — equilibria, auctions, bargaining and repeated games.') +
-        ccard('🛒', 'Microeconomics', 'soon', 'Markets, firms and consumer choice, explored through interactive models.') +
-        ccard('➕', 'And beyond', 'planned', 'Econometrics, trade, development and behavioral economics as the platform grows.') +
+        ccard('📈', 'Macroeconomics', 'live', 'Govern a national economy across growth, stability, equality, sustainability and innovation &mdash; a full course with an interactive textbook and the season tournament. The LMS assessment toolkit &mdash; auto-reseeding exam banks, proctored AI-graded exams, and a gradebook &mdash; is rolling out.') +
+        ccard('♟️', 'Game Theory', 'live', 'Strategic-reasoning arenas &mdash; equilibria, auctions, bargaining and repeated games &mdash; in the StrategyArena, with an interactive textbook, auto-reseeding exam banks, proctored AI-graded assessments, and a gradebook.') +
+        ccard('📊', 'Econometrics', 'live', 'A 17-chapter interactive textbook and 14 browser-based labs that run real regressions &mdash; OLS, IV, panel/GMM, difference-in-differences, regression discontinuity, and logit/probit &mdash; with auto-reseeding exam banks and proctored, AI-graded assessments.') +
+        ccard('🛒', 'Microeconomics', 'soon', 'Markets, firms and consumer choice, explored through interactive models in a persistent world.') +
+        ccard('➕', 'And beyond', 'planned', 'Trade, development and behavioral economics as the platform grows.') +
       '</div>' +
     '</div>';
 }
